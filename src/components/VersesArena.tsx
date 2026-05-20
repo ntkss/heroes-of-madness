@@ -14,8 +14,10 @@ interface VersesArenaProps {
 
 const ROLES = ["EXP LANE", "JUNGLE", "MIDDLE", "GOLD LANE", "ROAMER"];
 const DUMMY_POOL = [
-  "Layla", "Miya", "Alucard", "Gusion", "Chou", "Fanny", "Saber", "Tigreal", "Balmond", "Eudora",
-  "Bruno", "Zilong", "Kagura", "Lancelot", "Akai", "Rafaela", "Estes", "Hayabusa", "Nana", "Karina"
+  "Shadow", "Phoenix", "Viper", "Gladiator", "Rogue", "Specter", "Apex", "Titan", "Phantom", "Ghost",
+  "Alpha", "Nexus", "Slayer", "Striker", "Storm", "Raven", "Blaze", "Hunter", "Maverick", "Wolf",
+  "Echo", "Falcon", "Kaiser", "Zero", "Nova", "Cipher", "Ryder", "Lynx", "Ace", "Krypton",
+  "Zephyr", "Faker", "Shroud", "Simple", "Ninja", "Tenz", "Bugha", "Vortex", "Cyber", "Reaper"
 ];
 
 export default function VersesArena({

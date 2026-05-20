@@ -1,26 +1,131 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Esports Neon Retro Color Palette */
+  --color-bg-darker: #050508;
+  --color-bg-cabinet: #101016;
+  --color-bg-panel: #1a1a24;
+  
+  --color-neon-blue: #00d2ff;
+  --color-neon-red: #ff2a5f;
+  --color-neon-yellow: #ffd200;
+  
+  /* Esport Action / Pixel Fonts */
+  --font-action: var(--font-teko), Impact, sans-serif;
+  --font-pixel: var(--font-press-start), monospace;
+  --font-tech: var(--font-orbitron), sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Custom base resets */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg-darker);
+  color: #ffffff;
+  font-family: var(--font-tech);
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* Retro Grid Backdrop */
+  background-image: 
+    linear-gradient(rgba(18, 18, 26, 0.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 18, 26, 0.6) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center;
+}
+
+/* --- Retro CRT Hardware Visual Effects --- */
+
+.crt-screen {
+  position: relative;
+  overflow: hidden;
+}
+
+.crt-screen::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 99;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+.crt-scanlines {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.3)
+  );
+  background-size: 100% 8px;
+  z-index: 98;
+  opacity: 0.15;
+  pointer-events: none;
+  animation: scanlineScroll 6s linear infinite;
+}
+
+@keyframes scanlineScroll {
+  from { background-position: 0 0; }
+  to { background-position: 0 100%; }
+}
+
+.crt-flicker {
+  animation: crtFlicker 0.15s infinite;
+}
+
+@keyframes crtFlicker {
+  0% { opacity: 0.995; }
+  50% { opacity: 1; }
+  100% { opacity: 0.995; }
+}
+
+.shake-screen {
+  animation: shake 0.4s ease-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-4px, -6px); }
+  30% { transform: translate(6px, 4px); }
+  50% { transform: translate(-6px, 6px); }
+  70% { transform: translate(4px, -4px); }
+  90% { transform: translate(-2px, 2px); }
+}
+
+/* Custom Esports Glow filters (can also be mapped into custom classes) */
+.glow-blue {
+  text-shadow: 0 0 10px var(--color-neon-blue), 0 0 20px rgba(0, 210, 255, 0.4);
+}
+
+.glow-red {
+  text-shadow: 0 0 10px var(--color-neon-red), 0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.glow-yellow {
+  text-shadow: 0 0 8px var(--color-neon-yellow), 0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+/* Animated Diagonal Background Stripes */
+.stripes-blue {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 210, 255, 0.06),
+    rgba(0, 210, 255, 0.06) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
+.stripes-red {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 42, 95, 0.06),
+    rgba(255, 42, 95, 0.06) 10px,
+    transparent 10px,
+    transparent 20px
+  );
 }

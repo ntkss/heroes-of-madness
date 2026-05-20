@@ -20,10 +20,10 @@ interface PlayerInputProps {
 //   "Yawi", "OhMyV33nus", "Wise", "Oheb", "Butsss"
 // ];
 
-const PRESET_CUSTOM = [
+export const PRESET_CUSTOM = [
   "Nutty", "Bas", "Jajou", "Moonshadow", "jimmy", 
   "ตงเผง", "อ้ายสี", "หมิงใจเด็ด", "iiTumii", "Beer", 
-  "ป๋าคนแก่", "มังกือ", "ไตเติ้ล"
+  "ป๋าคนแก่", "มังกือ", "ไตเติ้ล",
 ];
 
 export default function PlayerInput({ names, onChange, onGenerate, isGenerating }: PlayerInputProps) {

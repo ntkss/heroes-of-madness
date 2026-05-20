@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { playLockName, playExplosion, playWin, speakAnnounce, playBeep } from "@/utils/audio";
+import { PRESET_CUSTOM } from "./PlayerInput";
 
 interface VersesArenaProps {
   teamA: string[];
@@ -11,15 +12,7 @@ interface VersesArenaProps {
   onMarkWinner: (winner: "teamA" | "teamB") => void;
   triggerScreenShake: () => void;
 }
-
 const ROLES = ["EXP LANE", "JUNGLE", "MIDDLE", "GOLD LANE", "ROAMER"];
-const DUMMY_POOL = [
-  "Shadow", "Phoenix", "Viper", "Gladiator", "Rogue", "Specter", "Apex", "Titan", "Phantom", "Ghost",
-  "Alpha", "Nexus", "Slayer", "Striker", "Storm", "Raven", "Blaze", "Hunter", "Maverick", "Wolf",
-  "Echo", "Falcon", "Kaiser", "Zero", "Nova", "Cipher", "Ryder", "Lynx", "Ace", "Krypton",
-  "Zephyr", "Faker", "Shroud", "Simple", "Ninja", "Tenz", "Bugha", "Vortex", "Cyber", "Reaper"
-];
-
 export default function VersesArena({
   teamA,
   teamB,
@@ -57,8 +50,8 @@ export default function VersesArena({
 
       const startRoll = (teamIndex: number, slotIndex: number) => {
         const intervalId = setInterval(() => {
-          const randIndex = Math.floor(Math.random() * DUMMY_POOL.length);
-          const randomName = DUMMY_POOL[randIndex];
+          const randIndex = Math.floor(Math.random() * PRESET_CUSTOM.length);
+          const randomName = PRESET_CUSTOM[randIndex];
           if (teamIndex === 0) {
             activeDispA[slotIndex] = randomName;
             setDispA([...activeDispA]);

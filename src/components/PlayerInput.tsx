@@ -10,15 +10,15 @@ interface PlayerInputProps {
   isGenerating: boolean;
 }
 
-const PRESET_CHAMPIONS = [
-  "Alucard", "Gusion", "Layla", "Chou", "Kagura", 
-  "Fanny", "Lancelot", "Miya", "Saber", "Tigreal"
-];
+// const PRESET_CHAMPIONS = [
+//   "Alucard", "Gusion", "Layla", "Chou", "Kagura", 
+//   "Fanny", "Lancelot", "Miya", "Saber", "Tigreal"
+// ];
 
-const PRESET_PROS = [
-  "Lemon", "Albert", "Sanz", "Kairi", "Kiboy",
-  "Yawi", "OhMyV33nus", "Wise", "Oheb", "Butsss"
-];
+// const PRESET_PROS = [
+//   "Lemon", "Albert", "Sanz", "Kairi", "Kiboy",
+//   "Yawi", "OhMyV33nus", "Wise", "Oheb", "Butsss"
+// ];
 
 const PRESET_CUSTOM = [
   "Nutty", "Bas", "Jajou", "Moonshadow", "jimmy", 
@@ -94,29 +94,29 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
 
       {/* Preset / Action buttons */}
       <div className="grid grid-cols-2 gap-2 mt-4 font-pixel">
-        <button
+        {/* <button
           type="button"
           onClick={() => handlePrefill(PRESET_CHAMPIONS)}
           className="text-[9px] text-[#a0a0c0] bg-transparent border-2 border-slate-600 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-white hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
           disabled={isGenerating}
         >
           MLBB HEROES
-        </button>
-        <button
+        </button> */}
+        {/* <button
           type="button"
           onClick={() => handlePrefill(PRESET_PROS)}
           className="text-[9px] text-[#a0a0c0] bg-transparent border-2 border-slate-600 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-white hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
           disabled={isGenerating}
         >
           PRO LEAGUE
-        </button>
+        </button> */}
         <button
           type="button"
           onClick={() => handlePrefill(PRESET_CUSTOM)}
           className="text-[9px] text-neon-blue bg-transparent border-2 border-neon-blue/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-blue hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
           disabled={isGenerating}
         >
-          MY SQUAD
+          Quik fill
         </button>
         <button
           type="button"

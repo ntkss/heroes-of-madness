@@ -5,13 +5,13 @@ import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
-import { Match, fetchMatches, saveMatch, updateMatchWinner, deleteMatch } from "@/utils/firebase";
+import { Match, fetchMatches, saveMatch, updateMatchWinner, deleteMatch, isFirebaseConfigured } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 
-const HERO_POOL = [
-  "Layla", "Miya", "Alucard", "Gusion", "Chou", "Fanny", "Saber", "Tigreal", "Balmond", "Eudora",
-  "Bruno", "Zilong", "Kagura", "Lancelot", "Akai", "Rafaela", "Estes", "Hayabusa", "Nana", "Karina",
-  "Franco", "Freya", "Lolita", "Johnson", "Ruby", "Yi Sun-shin", "Aurora", "Lapu-Lapu", "Roger", "Karrie"
+const PLAYER_POOL = [
+  "Shadow", "Phoenix", "Viper", "Gladiator", "Rogue", "Specter", "Apex", "Titan", "Phantom", "Ghost",
+  "Alpha", "Nexus", "Slayer", "Striker", "Storm", "Raven", "Blaze", "Hunter", "Maverick", "Wolf",
+  "Echo", "Falcon", "Kaiser", "Zero", "Nova", "Cipher", "Ryder", "Lynx", "Ace", "Krypton", "Zephyr"
 ];
 
 export default function Home() {
@@ -54,12 +54,12 @@ export default function Home() {
     let draftNames = [...names];
     if (draftNames.length < 10) {
       const needed = 10 - draftNames.length;
-      const availableHeroes = HERO_POOL.filter(h => !draftNames.map(n => n.toLowerCase()).includes(h.toLowerCase()));
-      const shuffledHeroes = [...availableHeroes].sort(() => Math.random() - 0.5);
+      const availablePlayers = PLAYER_POOL.filter(p => !draftNames.map(n => n.toLowerCase()).includes(p.toLowerCase()));
+      const shuffledPlayers = [...availablePlayers].sort(() => Math.random() - 0.5);
       
       for (let i = 0; i < needed; i++) {
-        const hero = shuffledHeroes[i] || `BOT_${i + 1}`;
-        draftNames.push(hero);
+        const placeholder = shuffledPlayers[i] || `PLAYER_${i + 1}`;
+        draftNames.push(placeholder);
       }
     }
 
@@ -147,8 +147,15 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end text-[9px] font-pixel text-[#a0a0c0] uppercase">
-              <span>SYSTEM PORT: ONLINE</span>
+            <div className="flex flex-col items-end text-[9px] font-pixel text-[#a0a0c0] uppercase text-right">
+              <span className="flex items-center gap-1.5 justify-end">
+                DB STATUS: 
+                {isFirebaseConfigured ? (
+                  <span className="text-neon-yellow glow-yellow animate-pulse font-bold">ONLINE (FIRESTORE)</span>
+                ) : (
+                  <span className="text-neon-red glow-red font-bold">OFFLINE (LOCAL)</span>
+                )}
+              </span>
               <span className="text-neon-blue glow-blue mt-1">CRT SYSTEM CONNECTED</span>
             </div>
             
@@ -226,7 +233,7 @@ export default function Home() {
 
         {/* Footer banner */}
         <footer className="border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none">
-          <span>HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026</span>
+          <span>HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`</span>
         </footer>
 
       </div>

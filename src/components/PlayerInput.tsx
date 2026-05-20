@@ -20,15 +20,21 @@ const PRESET_PROS = [
   "Yawi", "OhMyV33nus", "Wise", "Oheb", "Butsss"
 ];
 
+const PRESET_CUSTOM = [
+  "Nutty", "Bas", "Jajou", "Moonshadow", "jimmy", 
+  "ตงเผง", "อ้ายสี", "หมิงใจเด็ด", "iiTumii", "Beer", 
+  "ป๋าคนแก่", "มังกือ", "ไตเติ้ล"
+];
+
 export default function PlayerInput({ names, onChange, onGenerate, isGenerating }: PlayerInputProps) {
-  const [inputText, setInputText] = useState(names.join("\n"));
+  const [inputText, setInputText] = useState(names.join(", "));
   
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setInputText(text);
     
     const parsedNames = text
-      .split("\n")
+      .split(/[,\s]+/)
       .map(n => n.trim())
       .filter(n => n.length > 0);
       
@@ -37,7 +43,7 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
 
   const handlePrefill = (preset: string[]) => {
     playCoin();
-    setInputText(preset.join("\n"));
+    setInputText(preset.join(", "));
     onChange(preset);
   };
 
@@ -74,20 +80,20 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
 
       {/* Instructions */}
       <p className="text-[11px] text-[#a0a0c0] uppercase tracking-wider mb-4 leading-relaxed font-mono">
-        ENTER FIGHTER NAMES (1 PER LINE). WE RECOMMEND 10 NAMES FOR A BALANCED 5v5 MATCH. EXTRA SLOTS WILL BE AUTO-FILLED.
+        ENTER FIGHTER NAMES (SEPARATED BY COMMAS OR SPACES). WE RECOMMEND 10 NAMES FOR A BALANCED 5v5 MATCH. EXTRA SLOTS WILL BE AUTO-FILLED.
       </p>
 
       {/* Multi-line Roster Roster */}
       <textarea
         className="w-full h-44 bg-black/60 border-2 border-slate-700 p-3 text-sm text-white font-mono tracking-wide focus:border-neon-yellow focus:outline-none transition-all duration-200 shadow-inner resize-none uppercase focus:ring-1 focus:ring-neon-yellow"
-        placeholder="ENTER FIGHTERS HERE...&#10;e.g.&#10;ALUCARD&#10;LAYLA&#10;GUSION"
+        placeholder="ENTER FIGHTERS HERE...&#10;e.g.&#10;james, kevin, jinny, lark&#10;or&#10;james kevin jinny lark"
         value={inputText}
         onChange={handleTextChange}
         disabled={isGenerating}
       />
 
       {/* Preset / Action buttons */}
-      <div className="grid grid-cols-3 gap-2 mt-4 font-pixel">
+      <div className="grid grid-cols-2 gap-2 mt-4 font-pixel">
         <button
           type="button"
           onClick={() => handlePrefill(PRESET_CHAMPIONS)}
@@ -103,6 +109,14 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
           disabled={isGenerating}
         >
           PRO LEAGUE
+        </button>
+        <button
+          type="button"
+          onClick={() => handlePrefill(PRESET_CUSTOM)}
+          className="text-[9px] text-neon-blue bg-transparent border-2 border-neon-blue/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-blue hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
+          disabled={isGenerating}
+        >
+          MY SQUAD
         </button>
         <button
           type="button"

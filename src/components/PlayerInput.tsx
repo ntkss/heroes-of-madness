@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { playBeep, playCoin } from "@/utils/audio";
+import { SQUAD_NAMES } from "@/constants/players";
 
 interface PlayerInputProps {
   names: string[];
@@ -10,21 +11,6 @@ interface PlayerInputProps {
   isGenerating: boolean;
 }
 
-// const PRESET_CHAMPIONS = [
-//   "Alucard", "Gusion", "Layla", "Chou", "Kagura", 
-//   "Fanny", "Lancelot", "Miya", "Saber", "Tigreal"
-// ];
-
-// const PRESET_PROS = [
-//   "Lemon", "Albert", "Sanz", "Kairi", "Kiboy",
-//   "Yawi", "OhMyV33nus", "Wise", "Oheb", "Butsss"
-// ];
-
-export const PRESET_CUSTOM = [
-  "Nutty", "Bas", "Jajou", "Moonshadow", "jimmy", 
-  "ตงเผง", "อ้ายสี", "หมิงใจเด็ด", "iiTumii", "Beer", 
-  "ป๋าคนแก่", "มังกือ", "ไตเติ้ล",
-];
 
 export default function PlayerInput({ names, onChange, onGenerate, isGenerating }: PlayerInputProps) {
   const [inputText, setInputText] = useState(names.join(", "));
@@ -112,7 +98,7 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
         </button> */}
         <button
           type="button"
-          onClick={() => handlePrefill(PRESET_CUSTOM)}
+          onClick={() => handlePrefill(SQUAD_NAMES)}
           className="text-[9px] text-neon-blue bg-transparent border-2 border-neon-blue/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-blue hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
           disabled={isGenerating}
         >

@@ -7,12 +7,8 @@ import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
 import { Match, fetchMatches, saveMatch, updateMatchWinner, deleteMatch, isFirebaseConfigured } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
+import { FILL_POOL_NAMES, SQUAD } from "@/constants/players";
 
-const PLAYER_POOL = [
-  "Shadow", "Phoenix", "Viper", "Gladiator", "Rogue", "Specter", "Apex", "Titan", "Phantom", "Ghost",
-  "Alpha", "Nexus", "Slayer", "Striker", "Storm", "Raven", "Blaze", "Hunter", "Maverick", "Wolf",
-  "Echo", "Falcon", "Kaiser", "Zero", "Nova", "Cipher", "Ryder", "Lynx", "Ace", "Krypton", "Zephyr"
-];
 
 export default function Home() {
   const [names, setNames] = useState<string[]>([]);
@@ -54,7 +50,7 @@ export default function Home() {
     let draftNames = [...names];
     if (draftNames.length < 10) {
       const needed = 10 - draftNames.length;
-      const availablePlayers = PLAYER_POOL.filter(p => !draftNames.map(n => n.toLowerCase()).includes(p.toLowerCase()));
+      const availablePlayers = FILL_POOL_NAMES.filter(p => !draftNames.map(n => n.toLowerCase()).includes(p.toLowerCase()));
       const shuffledPlayers = [...availablePlayers].sort(() => Math.random() - 0.5);
       
       for (let i = 0; i < needed; i++) {
@@ -182,7 +178,7 @@ export default function Home() {
         </header>
 
         {/* Dashboard Main Grid Area */}
-        <main className="max-w-7xl mx-auto w-full p-4 md:p-8 flex-grow grid grid-cols-1 xl:grid-cols-12 gap-8">
+        <main className="mx-auto w-full p-4 md:p-8 flex-grow grid grid-cols-1 xl:grid-cols-12 gap-8">
           
           {/* Left Column: Fighters Selection list (4 cols) */}
           <section className="xl:col-span-4 flex flex-col">
@@ -218,6 +214,7 @@ export default function Home() {
                 isGenerating={isGenerating}
                 onMarkWinner={handleMarkWinner}
                 triggerScreenShake={triggerScreenShake}
+                squad={SQUAD}
               />
             </div>
 

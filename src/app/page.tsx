@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
@@ -21,6 +21,18 @@ export default function Home() {
   const [isShaking, setIsShaking] = useState(false);
   const [matches, setMatches] = useState<Match[]>([]);
   const [audioInitialized, setAudioInitialized] = useState(false);
+
+  const arenaRef = useRef<HTMLDivElement>(null);
+  const showArena = teamA.length > 0 || isGenerating;
+
+  useEffect(() => {
+    if (showArena) {
+      const timer = setTimeout(() => {
+        arenaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showArena]);
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -193,8 +205,15 @@ export default function Home() {
             />
           </section>
 
-          {/* Middle Section: Verses Arena (Full Width) */}
-          <section className="w-full flex flex-col">
+          {/* Middle Section: Verses Arena (Full Width, Animate Reveal) */}
+          <section 
+            ref={arenaRef}
+            className={`w-full transition-all duration-700 ease-out origin-top overflow-hidden ${
+              showArena 
+                ? "max-h-[1000px] opacity-100 my-8 scale-y-100" 
+                : "max-h-0 opacity-0 my-0 scale-y-0 pointer-events-none"
+            }`}
+          >
             <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] rounded-md transition-all duration-300">
               
               {/* Cabinet Frame Header */}

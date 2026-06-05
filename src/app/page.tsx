@@ -181,9 +181,19 @@ export default function Home() {
         </header>
 
         {/* Dashboard Main Area */}
-        <main className="mx-auto w-full p-4 md:p-8 flex-grow flex flex-col gap-8">
+        <main className="mx-auto w-full p-4 md:p-8 flex-grow flex flex-col gap-8 items-center">
           
-          {/* Top Section: Verses Arena (Full Width) */}
+          {/* Top Section: PlayerInput (Centered, Max 800px) */}
+          <section className="w-full max-w-[800px] flex flex-col">
+            <PlayerInput 
+              names={names}
+              onChange={setNames}
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+            />
+          </section>
+
+          {/* Middle Section: Verses Arena (Full Width) */}
           <section className="w-full flex flex-col">
             <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] rounded-md transition-all duration-300">
               
@@ -211,26 +221,13 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Bottom Section: Grid for Input and History */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
-            {/* PlayerInput random zone on the bottom-left */}
-            <div className="lg:col-span-5 flex flex-col">
-              <PlayerInput 
-                names={names}
-                onChange={setNames}
-                onGenerate={handleGenerate}
-                isGenerating={isGenerating}
-              />
-            </div>
-
-            {/* History ledgers matches list on the bottom-right */}
-            <div className="lg:col-span-7 flex flex-col">
-              <HistoryDashboard 
-                matches={matches}
-                onDeleteMatch={handleDeleteMatch}
-                onUpdateWinner={handleUpdatePastWinner}
-              />
-            </div>
+          {/* Bottom Section: History logs Dashboard */}
+          <section className="w-full max-w-5xl flex flex-col">
+            <HistoryDashboard 
+              matches={matches}
+              onDeleteMatch={handleDeleteMatch}
+              onUpdateWinner={handleUpdatePastWinner}
+            />
           </section>
 
         </main>

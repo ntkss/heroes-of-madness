@@ -11,7 +11,6 @@ interface PlayerInputProps {
   isGenerating: boolean;
 }
 
-
 export default function PlayerInput({ names, onChange, onGenerate, isGenerating }: PlayerInputProps) {
   const [inputText, setInputText] = useState(names.join(", "));
   
@@ -43,7 +42,7 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
   const isReady = currentCount >= 10;
 
   return (
-    <div className="flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-6 shadow-2xl relative overflow-hidden transition-all duration-300">
+    <div className="flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-5 shadow-2xl relative overflow-hidden transition-all duration-300 w-full">
       {/* Decorative metal rivets/screws */}
       <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
       <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
@@ -51,7 +50,7 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
       <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
 
       {/* Screen Title */}
-      <div className="flex items-center justify-between border-b-4 border-slate-700 pb-3.5 mb-4">
+      <div className="flex items-center justify-between border-b-4 border-slate-700 pb-3 mb-4 select-none">
         <h2 className="text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel glow-yellow">
           SELECT FIGHTERS
         </h2>
@@ -64,74 +63,65 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
         </span>
       </div>
 
-      {/* Instructions */}
-      <p className="text-[11px] text-[#a0a0c0] uppercase tracking-wider mb-4 leading-relaxed font-mono">
-        ENTER FIGHTER NAMES (SEPARATED BY COMMAS OR SPACES). WE RECOMMEND 10 NAMES FOR A BALANCED 5v5 MATCH. EXTRA SLOTS WILL BE AUTO-FILLED.
-      </p>
+      {/* Split container for wide desktop layout */}
+      <div className="flex flex-col md:flex-row gap-5">
+        {/* Left Side: Roster input */}
+        <div className="flex-1 flex flex-col">
+          <textarea
+            className="w-full h-36 md:h-40 bg-black/60 border-2 border-slate-700 p-3 text-xs sm:text-sm text-white font-mono tracking-wide focus:border-neon-yellow focus:outline-none transition-all duration-200 shadow-inner resize-none uppercase focus:ring-1 focus:ring-neon-yellow"
+            placeholder="ENTER FIGHTERS HERE...&#10;e.g.&#10;james, kevin, jinny, lark&#10;or&#10;james kevin jinny lark"
+            value={inputText}
+            onChange={handleTextChange}
+            disabled={isGenerating}
+          />
+        </div>
 
-      {/* Multi-line Roster Roster */}
-      <textarea
-        className="w-full h-44 bg-black/60 border-2 border-slate-700 p-3 text-sm text-white font-mono tracking-wide focus:border-neon-yellow focus:outline-none transition-all duration-200 shadow-inner resize-none uppercase focus:ring-1 focus:ring-neon-yellow"
-        placeholder="ENTER FIGHTERS HERE...&#10;e.g.&#10;james, kevin, jinny, lark&#10;or&#10;james kevin jinny lark"
-        value={inputText}
-        onChange={handleTextChange}
-        disabled={isGenerating}
-      />
+        {/* Right Side: Instructions and Actions */}
+        <div className="flex-1 flex flex-col justify-between gap-3">
+          <p className="text-[10.5px] text-[#a0a0c0] uppercase tracking-wider leading-relaxed font-mono">
+            ENTER FIGHTER NAMES (COMMAS OR SPACES). 10 NAMES MINIMUM RECOMMENDED FOR A BALANCED 5v5. EXTRA SLOTS AUTO-FILLED BY SHIELD BOTS.
+          </p>
 
-      {/* Preset / Action buttons */}
-      <div className="grid grid-cols-2 gap-2 mt-4 font-pixel">
-        {/* <button
-          type="button"
-          onClick={() => handlePrefill(PRESET_CHAMPIONS)}
-          className="text-[9px] text-[#a0a0c0] bg-transparent border-2 border-slate-600 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-white hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
-          disabled={isGenerating}
-        >
-          MLBB HEROES
-        </button> */}
-        {/* <button
-          type="button"
-          onClick={() => handlePrefill(PRESET_PROS)}
-          className="text-[9px] text-[#a0a0c0] bg-transparent border-2 border-slate-600 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-white hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
-          disabled={isGenerating}
-        >
-          PRO LEAGUE
-        </button> */}
-        <button
-          type="button"
-          onClick={() => handlePrefill(SQUAD_NAMES)}
-          className="text-[9px] text-neon-blue bg-transparent border-2 border-neon-blue/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-blue hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
-          disabled={isGenerating}
-        >
-          Quik fill
-        </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="text-[9px] text-neon-red/80 bg-transparent border-2 border-neon-red/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-red hover:text-neon-red active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
-          disabled={isGenerating}
-        >
-          CLEAR ALL
-        </button>
-      </div>
-
-      {/* Submit Button */}
-      <div className="mt-6 flex flex-col items-center">
-        {!isReady && currentCount > 0 && (
-          <div className="text-[9px] text-neon-red font-pixel mb-3 uppercase animate-pulse">
-            ⚠️ WARNING: SHORT DRAFT ({currentCount}/10). SHIELD BOTS WILL JOIN!
+          {/* Quick presets */}
+          <div className="grid grid-cols-2 gap-2 font-pixel">
+            <button
+              type="button"
+              onClick={() => handlePrefill(SQUAD_NAMES)}
+              className="text-[9px] text-neon-blue bg-transparent border-2 border-neon-blue/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-blue hover:text-white active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
+              disabled={isGenerating}
+            >
+              Quik fill
+            </button>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-[9px] text-neon-red/80 bg-transparent border-2 border-neon-red/40 py-2.5 cursor-pointer shadow-[0_3px_0_#121214] hover:border-neon-red hover:text-neon-red active:translate-y-0.5 active:shadow-none transition-all transform -translate-y-0.5 uppercase tracking-tighter"
+              disabled={isGenerating}
+            >
+              CLEAR ALL
+            </button>
           </div>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            playBeep(880, 0.15, "sawtooth");
-            onGenerate();
-          }}
-          disabled={isGenerating}
-          className="font-pixel text-xs text-black bg-neon-yellow border-4 border-white px-6 py-3 cursor-pointer shadow-[0_0_0_4px_#121214,0_6px_0_#121214,0_8px_15px_rgba(255,210,0,0.3)] hover:bg-white hover:shadow-[0_0_0_4px_#121214,0_6px_0_#121214,0_8px_20px_rgba(255,255,255,0.4)] active:translate-y-1 active:shadow-[0_0_0_4px_#121214,0_0_0_#121214] transition-all transform -translate-y-1 uppercase font-bold tracking-wide w-full max-w-xs cursor-pointer select-none"
-        >
-          {isGenerating ? "DRAFTING..." : "FIGHT! RANDOMIZE"}
-        </button>
+
+          {/* Submit Actions */}
+          <div className="flex flex-col items-center mt-auto">
+            {!isReady && currentCount > 0 && (
+              <div className="text-[8.5px] text-neon-red font-pixel mb-2 uppercase animate-pulse">
+                ⚠️ SHORT DRAFT ({currentCount}/10). BOTS JOIN!
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                playBeep(880, 0.15, "sawtooth");
+                onGenerate();
+              }}
+              disabled={isGenerating}
+              className="font-pixel text-xs text-black bg-neon-yellow border-4 border-white px-5 py-2.5 cursor-pointer shadow-[0_0_0_4px_#121214,0_5px_0_#121214,0_6px_12px_rgba(255,210,0,0.25)] hover:bg-white hover:shadow-[0_0_0_4px_#121214,0_5px_0_#121214,0_6px_15px_rgba(255,255,255,0.35)] active:translate-y-0.5 active:shadow-[0_0_0_4px_#121214,0_0_0_#121214] transition-all transform -translate-y-0.5 uppercase font-bold tracking-wide w-full max-w-xs cursor-pointer select-none"
+            >
+              {isGenerating ? "DRAFTING..." : "FIGHT! RANDOMIZE"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

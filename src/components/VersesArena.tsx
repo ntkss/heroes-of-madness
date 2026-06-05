@@ -7,139 +7,6 @@ import { SQUAD_NAMES, Player } from "@/constants/players";
 
 const ROLES = ["EXP LANE", "JUNGLE", "MIDDLE", "GOLD LANE", "ROAMER"];
 
-// ─── SVG Icons for Spells ──────────────────────────────────────────────────
-function SpellIcon({ name }: { name: string }) {
-  const baseClass = "w-full h-full";
-  switch (name) {
-    case "Retribution":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#ff3e3e]`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="11" className="fill-[#1a0508] stroke-[#ff3e3e]/50" />
-          <path d="M12 4c-1 2-2 4-2 6 0 3.5 2.5 6 6 6 .5 0 1 0 1.5-.2C16 19 12 21 9 21c-3.5 0-6-2.5-6-6 0-5 5-9 9-11z" fill="#ff7700" />
-          <path d="M14 6l-2 3h3l-2 3" stroke="#ffd200" strokeWidth="1.5" />
-        </svg>
-      );
-    case "Flicker":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#00d2ff]`} strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="11" className="fill-[#051329] stroke-[#00d2ff]/50" />
-          <path d="M12 4L6 11h5l-1 9 7-8h-5l1-8z" fill="#00d2ff" />
-          <circle cx="12" cy="12" r="2" className="fill-white animate-ping" />
-        </svg>
-      );
-    case "Execute":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#ffd200]`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="11" className="fill-[#1c1c0a] stroke-[#ffd200]/50" />
-          <path d="M14.5 9.5L9.5 14.5M10.5 8.5L7 12M12 6.5l5.5 5.5M7 17l1.5-1.5M17 7l1.5-1.5" stroke="#ffd200" />
-          <path d="M7 17l-1 1 .5.5 1-1-.5-.5z" fill="#ffd200" />
-        </svg>
-      );
-    case "Flameshot":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#ff7700]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#1a0c02] stroke-[#ff7700]/50" />
-          <circle cx="12" cy="12" r="4" fill="#ff3e3e" className="animate-pulse" />
-          <path d="M5 12h14M12 5v14M7 7l10 10M17 7L7 17" stroke="#ffd200" strokeWidth="1" />
-        </svg>
-      );
-    case "Inspire":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#d480ff]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#14051a] stroke-[#d480ff]/50" />
-          <path d="M12 6v12M6 12h12M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#fff" strokeWidth="1" />
-          <circle cx="12" cy="12" r="3" fill="#d480ff" />
-        </svg>
-      );
-    case "Purify":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#00ff88]`} strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="11" className="fill-[#021a0e] stroke-[#00ff88]/50" />
-          <path d="M12 6a6 6 0 00-6 6c0 3.3 2.7 6 6 6s6-2.7 6-6a6 6 0 00-6-6z" fill="#00ff88" fillOpacity="0.2" />
-          <path d="M12 9v6M9 12h6" stroke="#fff" />
-        </svg>
-      );
-    case "Aegis":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#ffb300]`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="11" className="fill-[#1c1405] stroke-[#ffb300]/50" />
-          <path d="M12 6s-5 1.5-5 5v3.5c0 2.5 5 4.5 5 4.5s5-2 5-4.5V11c0-3.5-5-5-5-5z" fill="#ffb300" fillOpacity="0.2" />
-        </svg>
-      );
-    default:
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#00d2ff]`} strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="11" className="fill-[#051329] stroke-[#00d2ff]/50" />
-          <path d="M12 4L6 11h5l-1 9 7-8h-5l1-8z" fill="#00d2ff" />
-        </svg>
-      );
-  }
-}
-
-// ─── SVG Icons for Emblems ──────────────────────────────────────────────────
-function EmblemIcon({ name }: { name: string }) {
-  const baseClass = "w-full h-full";
-  switch (name) {
-    case "Assassin":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#d946ef]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#1c0222] stroke-[#d946ef]/40" />
-          <path d="M12 5l4 4-4 4-4-4 4-4z" fill="#d946ef" fillOpacity="0.3" />
-          <path d="M6 12h12M12 6v12" stroke="#d946ef" strokeWidth="1" />
-          <circle cx="12" cy="12" r="2" fill="#fff" />
-        </svg>
-      );
-    case "Mage":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#3b82f6]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#02132c] stroke-[#3b82f6]/40" />
-          <path d="M12 7a3 3 0 100 6 3 3 0 000-6z" fill="#3b82f6" fillOpacity="0.3" />
-          <path d="M12 13v5M9 18h6" stroke="#3b82f6" />
-          <circle cx="12" cy="10" r="1" fill="#fff" />
-        </svg>
-      );
-    case "Fighter":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#ef4444]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#240404] stroke-[#ef4444]/40" />
-          <path d="M9 15v-3.5a3 3 0 016 0v3.5M8 15h8M12 8v3" stroke="#ef4444" strokeLinecap="round" />
-          <circle cx="12" cy="15" r="1.5" fill="#fff" />
-        </svg>
-      );
-    case "Marksman":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#eab308]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#201802] stroke-[#eab308]/40" />
-          <path d="M7 12h10M13 8l4 4-4 4" stroke="#eab308" strokeLinecap="round" />
-          <circle cx="9" cy="12" r="2" fill="#eab308" />
-        </svg>
-      );
-    case "Tank":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#06b6d4]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#021a22] stroke-[#06b6d4]/40" />
-          <rect x="8" y="7" width="8" height="10" rx="1" fill="#06b6d4" fillOpacity="0.3" stroke="#06b6d4" />
-          <path d="M12 7v10" stroke="#fff" strokeWidth="1" />
-        </svg>
-      );
-    case "Support":
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#22c55e]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#02200a] stroke-[#22c55e]/40" />
-          <path d="M12 6v12M6 12h12" stroke="#22c55e" strokeLinecap="round" />
-          <circle cx="12" cy="12" r="3" fill="#22c55e" fillOpacity="0.3" />
-        </svg>
-      );
-    default:
-      return (
-        <svg viewBox="0 0 24 24" className={`${baseClass} fill-none stroke-[#64748b]`} strokeWidth="2">
-          <circle cx="12" cy="12" r="11" className="fill-[#0f172a] stroke-[#64748b]/40" />
-          <circle cx="12" cy="12" r="4" stroke="#64748b" />
-        </svg>
-      );
-  }
-}
-
 // ─── Deterministic Cosmetics Builder ─────────────────────────────────────────
 const getCosmetics = (name: string, role: string) => {
   if (!name || name === "???" || name === "DRAFTING") {
@@ -147,8 +14,6 @@ const getCosmetics = (name: string, role: string) => {
       flag: "🏳️",
       skinTier: null,
       skinName: "",
-      spell: "Flicker",
-      emblem: "Common",
       heroName: "HERO DRAFT"
     };
   }
@@ -186,43 +51,6 @@ const getCosmetics = (name: string, role: string) => {
     skinName = skinObj.name;
   }
 
-  // Spell based on role and hash
-  let spell = "Flicker";
-  if (role === "JUNGLE") {
-    spell = "Retribution";
-  } else if (role === "EXP LANE") {
-    const expSpells = ["Execute", "Vengeance", "Flicker"];
-    spell = expSpells[hash % expSpells.length];
-  } else if (role === "MIDDLE") {
-    const midSpells = ["Flameshot", "Flicker", "Purify"];
-    spell = midSpells[hash % midSpells.length];
-  } else if (role === "GOLD LANE") {
-    const goldSpells = ["Inspire", "Flicker", "Purify"];
-    spell = goldSpells[hash % goldSpells.length];
-  } else if (role === "ROAMER") {
-    const roamSpells = ["Revitalize", "Aegis", "Flicker", "Sprint"];
-    spell = roamSpells[hash % roamSpells.length];
-  }
-
-  // Emblem based on role
-  let emblem = "Common";
-  if (role === "JUNGLE") {
-    const jungleEmblems = ["Assassin", "Fighter", "Mage"];
-    emblem = jungleEmblems[hash % jungleEmblems.length];
-  } else if (role === "EXP LANE") {
-    const expEmblems = ["Fighter", "Tank"];
-    emblem = expEmblems[hash % expEmblems.length];
-  } else if (role === "MIDDLE") {
-    const midEmblems = ["Mage", "Support"];
-    emblem = midEmblems[hash % midEmblems.length];
-  } else if (role === "GOLD LANE") {
-    const goldEmblems = ["Marksman", "Assassin"];
-    emblem = goldEmblems[hash % goldEmblems.length];
-  } else if (role === "ROAMER") {
-    const roamEmblems = ["Tank", "Support"];
-    emblem = roamEmblems[hash % roamEmblems.length];
-  }
-
   // Pick a random cool MLBB hero name
   const heroes = [
     "Angela", "Karina", "Lesley", "Cyclops", "Miya", 
@@ -233,7 +61,7 @@ const getCosmetics = (name: string, role: string) => {
   ];
   const heroName = heroes[hash % heroes.length];
 
-  return { flag, skinTier, skinName, spell, emblem, heroName };
+  return { flag, skinTier, skinName, heroName };
 };
 
 // ─── Skin Tier Badge component ──────────────────────────────────────────────
@@ -317,7 +145,7 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
         flex: "1 1 0", 
         minWidth: 0,
         aspectRatio: "1/2.2",
-        maxHeight: "235px",
+        maxHeight: "300px",
         minHeight: "130px",
         background: isBlue
           ? "linear-gradient(to bottom, #071324 0%, #0d1e36 50%, #0b1522 100%)"
@@ -400,46 +228,36 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
             </span>
           )}
 
-          {/* Hero Name (Large font) */}
-          <span className="font-action text-[9.5px] sm:text-[11px] md:text-[12px] font-bold text-white text-center block truncate leading-none mt-0.5 tracking-wide drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+          {/* Hero Name (Medium font) */}
+          <span className="font-action text-[9px] sm:text-[10px] md:text-[11px] font-bold text-slate-300 text-center block truncate leading-none mt-0.5 tracking-wide drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
             {cosmetics.heroName}
           </span>
 
-          {/* Player drafted Name */}
-          <span className="font-mono text-[7px] sm:text-[8.5px] text-slate-300 text-center block truncate mt-0.5 opacity-90 drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.8)]">
+          {/* Player drafted Name (Large font, full-width focus) */}
+          <span className="font-action text-sm sm:text-base md:text-lg lg:text-xl font-black text-white text-center block truncate mt-0.5 tracking-tighter uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
             {name}
           </span>
 
-          {/* Loading Stats Bottom row */}
-          <div className="flex items-center justify-between w-full mt-1 p-0.5 sm:p-1 bg-black/60 rounded border border-white/5 shadow-inner">
-            
-            {/* Progress bar container */}
-            <div className="flex-grow flex flex-col mr-1">
-              <span className="font-mono text-[7px] sm:text-[8px] font-bold text-white text-left pl-0.5 leading-none mb-0.5">
+          {/* Loading Stats Bottom row (Stretched full-width) */}
+          <div className="flex flex-col w-full mt-1.5 p-1 bg-black/60 rounded border border-white/5 shadow-inner">
+            <div className="flex justify-between items-center w-full leading-none mb-1">
+              <span className="font-mono text-[8px] sm:text-[9.5px] font-bold text-white pl-0.5 leading-none">
                 {percentage}%
               </span>
-              <div className="w-full h-0.5 bg-slate-950 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-150 ${
-                    isBlue 
-                      ? 'bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.8)]' 
-                      : 'bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.8)]'
-                  }`}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
+              <span className="text-[6.5px] sm:text-[7.5px] text-slate-400 font-pixel uppercase tracking-tighter leading-none">
+                LOADING
+              </span>
             </div>
-
-            {/* Emblem and Spell badges */}
-            <div className="flex gap-0.5 shrink-0">
-              <div className="w-3 h-3 rounded-full overflow-hidden bg-slate-950 border border-white/10" title={`Emblem: ${cosmetics.emblem}`}>
-                <EmblemIcon name={cosmetics.emblem} />
-              </div>
-              <div className="w-3 h-3 rounded-full overflow-hidden bg-slate-950 border border-white/10" title={`Spell: ${cosmetics.spell}`}>
-                <SpellIcon name={cosmetics.spell} />
-              </div>
+            <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-150 ${
+                  isBlue 
+                    ? 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]' 
+                    : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                }`}
+                style={{ width: `${percentage}%` }}
+              />
             </div>
-
           </div>
 
         </div>
@@ -680,7 +498,7 @@ export default function VersesArena({
 
   return (
     <div 
-      className="flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 lg:aspect-[16/9] min-h-[380px] lg:max-h-[500px]"
+      className="flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 lg:aspect-[16/9] min-h-[380px] lg:min-h-[70vh]"
       style={{
         background: "linear-gradient(180deg, #0f172a 0%, #090d16 50%, #030712 100%)",
         backgroundImage: "radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%)",

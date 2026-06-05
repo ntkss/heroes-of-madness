@@ -282,7 +282,7 @@ export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinne
 
                   {/* Fighter Name */}
                   <div className="col-span-4">
-                    <span className="font-action text-2xl font-black tracking-wide text-white uppercase truncate block">
+                    <span className="font-action text-2xl md:text-[40px] font-black tracking-wide text-white uppercase truncate block leading-none">
                       {stats.name}
                     </span>
                   </div>

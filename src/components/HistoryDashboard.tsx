@@ -200,18 +200,18 @@ export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinne
                   ) : (
                     <div className="flex flex-col items-center w-full">
                       <span className="font-pixel text-[8px] text-neon-yellow uppercase mb-1.5 animate-pulse glow-yellow">PENDING OUTCOME</span>
-                      <div className="flex gap-2 w-full font-pixel">
+                      <div className="flex gap-2 w-full font-pixel mt-1">
                         <button 
                           onClick={() => handleWinnerChange(match.id, "teamA")}
-                          className="flex-grow font-pixel text-[8px] text-neon-blue bg-neon-blue/10 border border-neon-blue/40 py-1 px-1.5 hover:bg-neon-blue hover:text-black transition-all duration-200 uppercase cursor-pointer"
+                          className="flex-grow font-pixel text-[8px] text-cyan-400 bg-cyan-950/20 border border-cyan-500/30 py-1.5 px-2 hover:bg-cyan-400 hover:text-black transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.15)] rounded-sm"
                         >
-                          BLUE W
+                          👑 BLUE WIN
                         </button>
                         <button 
                           onClick={() => handleWinnerChange(match.id, "teamB")}
-                          className="flex-grow font-pixel text-[8px] text-neon-red bg-neon-red/10 border border-neon-red/40 py-1 px-1.5 hover:bg-neon-red hover:text-black transition-all duration-200 uppercase cursor-pointer"
+                          className="flex-grow font-pixel text-[8px] text-rose-500 bg-rose-950/20 border border-rose-500/30 py-1.5 px-2 hover:bg-rose-500 hover:text-white transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(244,63,94,0.15)] rounded-sm"
                         >
-                          RED W
+                          👑 RED WIN
                         </button>
                       </div>
                     </div>

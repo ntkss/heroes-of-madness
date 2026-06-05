@@ -102,6 +102,9 @@ export default function Home() {
 
   const handleUpdatePastWinner = async (matchId: string, winner: "teamA" | "teamB") => {
     await updateMatchWinner(matchId, winner);
+    if (matchId === activeMatchId) {
+      setActiveWinner(winner);
+    }
     
     const updatedLogs = await fetchMatches();
     setMatches(updatedLogs);
@@ -177,21 +180,11 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Dashboard Main Grid Area */}
-        <main className="mx-auto w-full p-4 md:p-8 flex-grow grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Dashboard Main Area */}
+        <main className="mx-auto w-full p-4 md:p-8 flex-grow flex flex-col gap-8">
           
-          {/* Left Column: Fighters Selection list (4 cols) */}
-          <section className="xl:col-span-4 flex flex-col">
-            <PlayerInput 
-              names={names}
-              onChange={setNames}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-            />
-          </section>
-
-          {/* Right Column: Verses Arena and Ledgers (8 cols) */}
-          <section className="xl:col-span-8 flex flex-col">
+          {/* Top Section: Verses Arena (Full Width) */}
+          <section className="w-full flex flex-col">
             <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] rounded-md transition-all duration-300">
               
               {/* Cabinet Frame Header */}
@@ -212,18 +205,32 @@ export default function Home() {
                 teamB={teamB}
                 winner={activeWinner}
                 isGenerating={isGenerating}
-                onMarkWinner={handleMarkWinner}
                 triggerScreenShake={triggerScreenShake}
                 squad={SQUAD}
               />
             </div>
+          </section>
 
-            {/* History ledgers matches list */}
-            <HistoryDashboard 
-              matches={matches}
-              onDeleteMatch={handleDeleteMatch}
-              onUpdateWinner={handleUpdatePastWinner}
-            />
+          {/* Bottom Section: Grid for Input and History */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+            {/* PlayerInput random zone on the bottom-left */}
+            <div className="lg:col-span-5 flex flex-col">
+              <PlayerInput 
+                names={names}
+                onChange={setNames}
+                onGenerate={handleGenerate}
+                isGenerating={isGenerating}
+              />
+            </div>
+
+            {/* History ledgers matches list on the bottom-right */}
+            <div className="lg:col-span-7 flex flex-col">
+              <HistoryDashboard 
+                matches={matches}
+                onDeleteMatch={handleDeleteMatch}
+                onUpdateWinner={handleUpdatePastWinner}
+              />
+            </div>
           </section>
 
         </main>

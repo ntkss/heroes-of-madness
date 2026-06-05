@@ -21,8 +21,11 @@ export interface Match {
   winner: "teamA" | "teamB" | null;
 }
 
+const isDev = process.env.NODE_ENV === "development";
+
 // Check if all essential Firebase variables are defined in the environment
-export const isFirebaseConfigured = !!(
+// In development, always use LocalStorage to avoid polluting production data
+export const isFirebaseConfigured = !isDev && !!(
   process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
   process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
@@ -31,15 +34,19 @@ export const isFirebaseConfigured = !!(
   process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 );
 
-console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
-  apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  isFirebaseConfigured
-});
+if (isDev) {
+  console.log("🛠️ Development mode — using LocalStorage only (Firebase disabled).");
+} else {
+  console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
+    apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    isFirebaseConfigured
+  });
+}
 
 let db: Firestore | null = null;
 
@@ -61,7 +68,7 @@ if (isFirebaseConfigured) {
   } catch (error) {
     console.error("❌ Firebase initialization error, falling back to LocalStorage:", error);
   }
-} else {
+} else if (!isDev) {
   console.log("💾 Firebase environment variables missing. Operating in offline LocalStorage mode.");
 }
 

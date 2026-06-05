@@ -5,7 +5,7 @@ import Image from "next/image";
 import { playLockName, playExplosion, speakAnnounce, playBeep } from "@/utils/audio";
 import { SQUAD_NAMES, Player } from "@/constants/players";
 
-const ROLES = ["EXP LANE", "JUNGLE", "MIDDLE", "GOLD LANE", "ROAMER"];
+const ROLES = ["EXP LANE", "JUNGLE", "MID", "GOLD LANE", "ROAMING"];
 
 // ─── Deterministic Cosmetics Builder ─────────────────────────────────────────
 const getCosmetics = (name: string, role: string) => {
@@ -234,9 +234,16 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
           </span>
 
           {/* Player drafted Name (Large font, full-width focus) */}
-          <span className="font-action text-sm sm:text-base md:text-lg lg:text-xl font-black text-white text-center block truncate mt-0.5 tracking-tighter uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+          <span className="font-action text-sm sm:text-base md:text-lg lg:text-4xl font-black text-white text-center block truncate mt-0.5 tracking-tighter uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
             {name}
           </span>
+
+          {/* Player Role / Lane */}
+          {role && (
+            <span className="font-pixel text-[6.5px] sm:text-[7.5px] text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+              {role}
+            </span>
+          )}
 
           {/* Loading Stats Bottom row (Stretched full-width) */}
           <div className="flex flex-col w-full mt-1.5 p-1 bg-black/60 rounded border border-white/5 shadow-inner">

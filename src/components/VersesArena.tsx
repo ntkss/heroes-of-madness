@@ -53,9 +53,9 @@ const getCosmetics = (name: string, role: string) => {
 
   // Pick a random cool MLBB hero name
   const heroes = [
-    "Angela", "Karina", "Lesley", "Cyclops", "Miya", 
-    "Gusion", "Chou", "Lancelot", "Cecilion", "Tigreal", 
-    "Balmond", "Bruno", "Layla", "Fanny", "Saber", 
+    "Angela", "Karina", "Lesley", "Cyclops", "Miya",
+    "Gusion", "Chou", "Lancelot", "Cecilion", "Tigreal",
+    "Balmond", "Bruno", "Layla", "Fanny", "Saber",
     "Hayabusa", "Zilong", "Eudora", "Nana", "Rafaela",
     "Franco", "Akai", "Alice", "Clint", "Alucard"
   ];
@@ -67,9 +67,9 @@ const getCosmetics = (name: string, role: string) => {
 // ─── Skin Tier Badge component ──────────────────────────────────────────────
 function SkinTierBadge({ tier }: { tier: string | null }) {
   if (!tier) return null;
-  
+
   let bgGradient = "from-slate-600 to-slate-800 border-slate-400 text-white";
-  
+
   if (tier === "LEGEND") {
     bgGradient = "from-red-600 via-yellow-500 to-red-600 border-yellow-400 text-yellow-100 animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.8)]";
   } else if (tier === "EPIC" || tier === "COLLECTOR") {
@@ -141,8 +141,8 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
             : "border-[#b85b5b] shadow-[0_0_8px_rgba(239,68,68,0.2)]"
         }
       `}
-      style={{ 
-        flex: "1 1 0", 
+      style={{
+        flex: "1 1 0",
         minWidth: 0,
         aspectRatio: "1/2.2",
         maxHeight: "300px",
@@ -159,7 +159,7 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
 
       {/* Unskewed Content Wrapper */}
       <div className="w-full h-full transform skew-x-[6deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none">
-        
+
         {/* Country Flag (Top Left) */}
         {name !== "???" && name !== "DRAFTING" && (
           <div className="absolute top-0.5 left-0.5 z-20 w-4.5 h-4.5 rounded-full overflow-hidden bg-slate-900 border border-white/20 flex items-center justify-center shadow-md text-[8.5px]">
@@ -215,15 +215,14 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
 
         {/* Bottom Hero & Player detail card */}
         <div className="mt-auto w-full relative z-20 flex flex-col pt-2">
-          
+
           {/* Skin Name */}
           {cosmetics.skinName && (
-            <span className={`text-[6px] sm:text-[7px] font-pixel tracking-wider text-center block truncate leading-tight uppercase ${
-              cosmetics.skinTier === "LEGEND" ? "text-red-400 glow-red" :
+            <span className={`text-[6px] sm:text-[7px] font-pixel tracking-wider text-center block truncate leading-tight uppercase ${cosmetics.skinTier === "LEGEND" ? "text-red-400 glow-red" :
               cosmetics.skinTier === "EPIC" ? "text-purple-400 glow-purple" :
-              cosmetics.skinTier === "LIMITED" ? "text-cyan-400 glow-blue" :
-              "text-emerald-400"
-            }`}>
+                cosmetics.skinTier === "LIMITED" ? "text-cyan-400 glow-blue" :
+                  "text-emerald-400"
+              }`}>
               {cosmetics.skinName}
             </span>
           )}
@@ -234,7 +233,7 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
           </span>
 
           {/* Player drafted Name (Large font, full-width focus) */}
-          <span className="font-action text-sm sm:text-base md:text-lg lg:text-4xl font-black text-white text-center block truncate mt-0.5 tracking-tighter uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+          <span className="font-action text-sm sm:text-base md:text-lg lg:text-4xl font-black text-white text-center block truncate mt-0.5 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
             {name}
           </span>
 
@@ -256,12 +255,11 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
               </span>
             </div>
             <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-150 ${
-                  isBlue 
-                    ? 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]' 
-                    : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
-                }`}
+              <div
+                className={`h-full transition-all duration-150 ${isBlue
+                  ? 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]'
+                  : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                  }`}
                 style={{ width: `${percentage}%` }}
               />
             </div>
@@ -298,29 +296,26 @@ function TeamRow({ label, side, display, locked, lockedOffset, winner, squad, pe
       {/* Team lane role markers */}
       <div className={`flex items-center justify-between mb-0.5 px-1 max-w-5xl w-full mx-auto ${isBlue ? 'lg:pl-[8%]' : 'lg:pr-[8%]'}`}>
         <span
-          className={`font-pixel text-[7.5px] md:text-[8.5px] uppercase tracking-widest ${
-            isBlue ? "text-cyan-400 glow-blue" : "text-rose-500 glow-red"
-          }`}
+          className={`font-pixel text-[7.5px] md:text-[8.5px] uppercase tracking-widest ${isBlue ? "text-cyan-400 glow-blue" : "text-rose-500 glow-red"
+            }`}
         >
           {label}
         </span>
         <span
-          className={`font-pixel text-[6.5px] px-1 py-0.2 border ${
-            isBlue
-              ? "border-cyan-500/20 text-cyan-400/60 bg-cyan-950/20"
-              : "border-rose-500/20 text-rose-400/60 bg-rose-950/20"
-          }`}
+          className={`font-pixel text-[6.5px] px-1 py-0.2 border ${isBlue
+            ? "border-cyan-500/20 text-cyan-400/60 bg-cyan-950/20"
+            : "border-rose-500/20 text-rose-400/60 bg-rose-950/20"
+            }`}
         >
           TEAM {side}
         </span>
       </div>
 
       {/* 5 slanted cards - staggered left (Blue) or right (Red) on large screens, centered on mobile */}
-      <div className={`flex gap-1 md:gap-1.5 w-full max-w-5xl mx-auto ${
-        isBlue 
-          ? 'justify-center lg:justify-start lg:pl-[8%]' 
-          : 'justify-center lg:justify-end lg:pr-[8%]'
-      }`}>
+      <div className={`flex gap-1 md:gap-1.5 w-full max-w-5xl mx-auto ${isBlue
+        ? 'justify-center lg:justify-start lg:pl-[8%]'
+        : 'justify-center lg:justify-end lg:pr-[8%]'
+        }`}>
         {display.map((name, idx) => {
           const player = getPlayer(name);
           return (
@@ -355,7 +350,7 @@ export default function VersesArena({
   const [dispA, setDispA] = useState<string[]>(Array(5).fill("???"));
   const [dispB, setDispB] = useState<string[]>(Array(5).fill("???"));
   const [lockedSlots, setLockedSlots] = useState<boolean[]>(Array(10).fill(true));
-  
+
   // Loading percentage state (climbing from 5% to 100%)
   const [percentages, setPercentages] = useState<number[]>(Array(10).fill(100));
 
@@ -373,7 +368,7 @@ export default function VersesArena({
 
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
   const lockTimersRef = useRef<NodeJS.Timeout[]>([]);
-  
+
   // Independent ref for the simulated percentage incremental tick to avoid React state closure stale bugs
   const pctIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -504,7 +499,7 @@ export default function VersesArena({
   }, [isGenerating, teamA, teamB]);
 
   return (
-    <div 
+    <div
       className="flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 lg:aspect-[16/9] min-h-[380px] lg:min-h-[70vh]"
       style={{
         background: "linear-gradient(180deg, #0f172a 0%, #090d16 50%, #030712 100%)",
@@ -540,11 +535,10 @@ export default function VersesArena({
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-yellow-500/40" />
           <div className="relative flex items-center justify-center w-8 h-8 rounded-full border border-yellow-500/30 bg-slate-950/90 shadow-[0_0_8px_rgba(234,179,8,0.2)]">
             <span
-              className={`font-action font-black italic text-base tracking-tighter transition-all duration-150 ${
-                isGenerating
-                  ? "text-yellow-400 glow-yellow scale-110 animate-pulse"
-                  : "text-yellow-500 glow-yellow"
-              }`}
+              className={`font-action font-black italic text-base tracking-tighter transition-all duration-150 ${isGenerating
+                ? "text-yellow-400 glow-yellow scale-110 animate-pulse"
+                : "text-yellow-500 glow-yellow"
+                }`}
               style={{ textShadow: "0 0 6px rgba(234, 179, 8, 0.6)" }}
             >
               VS

@@ -24,7 +24,7 @@ export default function VersesArena({
   const [dispA, setDispA] = useState<string[]>(Array(5).fill("???"));
   const [dispB, setDispB] = useState<string[]>(Array(5).fill("???"));
   const [lockedSlots, setLockedSlots] = useState<boolean[]>(Array(10).fill(true));
-  
+
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
   const lockTimersRef = useRef<NodeJS.Timeout[]>([]);
 
@@ -44,7 +44,7 @@ export default function VersesArena({
       clearAllTimers();
       setLockedSlots(Array(10).fill(false));
       playBeep(440, 0.2, "sawtooth");
-      
+
       const activeDispA = [...dispA];
       const activeDispB = [...dispB];
 
@@ -70,7 +70,7 @@ export default function VersesArena({
 
       for (let i = 0; i < 5; i++) {
         const delay = 400 + i * 450;
-        
+
         const timerId = setTimeout(() => {
           clearInterval(intervalsRef.current[i]);
           clearInterval(intervalsRef.current[i + 5]);
@@ -117,7 +117,7 @@ export default function VersesArena({
     if (isGenerating) return;
     playWin();
     onMarkWinner(winningTeam);
-    
+
     const teamLabel = winningTeam === "teamA" ? "BLUE TEAM" : "RED TEAM";
     setTimeout(() => {
       speakAnnounce(`${teamLabel} VICTORIOUS!`);
@@ -128,11 +128,11 @@ export default function VersesArena({
     <div className="flex flex-col flex-grow p-4 md:p-8">
       {/* VS Screen Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 items-stretch flex-grow">
-        
+
         {/* Team A (Blue Team Side) */}
         <div className="lg:col-span-5 flex flex-col h-full">
           <div className="flex flex-col bg-slate-950/70 border-t-4 border-l-4 border-b-4 border-neon-blue p-5 shadow-[0_0_25px_rgba(0,210,255,0.15)] relative h-full justify-between stripes-blue min-h-[420px] rounded-l-md transition-all duration-300">
-            
+
             {/* Victory overlay banner */}
             {winner === "teamA" && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/75 z-20 border-2 border-neon-yellow animate-bounce rounded-l-sm">
@@ -157,19 +157,17 @@ export default function VersesArena({
             {/* 5 Fighter Cards */}
             <div className="flex flex-col gap-3.5 flex-grow justify-center font-mono">
               {dispA.map((name, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`flex items-center justify-between p-3 border-2 transition-all duration-200 ${
-                    lockedSlots[idx] 
-                      ? "border-neon-blue/20 bg-slate-950/90 hover:border-neon-blue/40" 
-                      : "border-neon-yellow bg-neon-yellow/10 animate-pulse"
-                  }`}
+                  className={`flex items-center justify-between p-3 border-2 transition-all duration-200 ${lockedSlots[idx]
+                    ? "border-neon-blue/20 bg-slate-950/90 hover:border-neon-blue/40"
+                    : "border-neon-yellow bg-neon-yellow/10 animate-pulse"
+                    }`}
                 >
                   <div className="flex flex-col">
-                    <span 
-                      className={`text-2xl font-bold uppercase tracking-wider font-action leading-none ${
-                        lockedSlots[idx] ? "text-white" : "text-neon-yellow"
-                      }`}
+                    <span
+                      className={`text-2xl font-bold tracking-wider font-action leading-none ${lockedSlots[idx] ? "text-white" : "text-neon-yellow"
+                        }`}
                     >
                       {name}
                     </span>
@@ -181,7 +179,7 @@ export default function VersesArena({
             </div>
 
             {!winner && teamA.length > 0 && !isGenerating && (
-              <button 
+              <button
                 onClick={() => handleWinnerSelection("teamA")}
                 className="mt-6 font-pixel text-[10px] bg-transparent border-2 border-neon-blue text-neon-blue py-3 px-4 hover:bg-neon-blue hover:text-black transition-all duration-200 uppercase cursor-pointer text-center block w-full select-none"
               >
@@ -193,11 +191,10 @@ export default function VersesArena({
 
         {/* VS Divider column */}
         <div className="lg:col-span-1 flex flex-col items-center justify-center py-4 lg:py-0 select-none">
-          <div 
-            className={`font-action text-7xl md:text-8xl font-black italic select-none tracking-tighter transition-transform duration-100 ${
-              isGenerating ? "scale-125 text-neon-yellow glow-yellow animate-ping" : "text-neon-yellow glow-yellow scale-100 hover:scale-110"
-            }`}
-            style={{ 
+          <div
+            className={`font-action text-7xl md:text-8xl font-black italic select-none tracking-tighter transition-transform duration-100 ${isGenerating ? "scale-125 text-neon-yellow glow-yellow animate-ping" : "text-neon-yellow glow-yellow scale-100 hover:scale-110"
+              }`}
+            style={{
               textShadow: "0 0 10px #ff8800, 0 0 30px #ffd200"
             }}
           >
@@ -209,7 +206,7 @@ export default function VersesArena({
         {/* Team B (Red Team Side) */}
         <div className="lg:col-span-5 flex flex-col h-full">
           <div className="flex flex-col bg-slate-950/70 border-t-4 border-r-4 border-b-4 border-neon-red p-5 shadow-[0_0_25px_rgba(255,42,95,0.15)] relative h-full justify-between stripes-red min-h-[420px] rounded-r-md transition-all duration-300">
-            
+
             {/* Victory overlay banner */}
             {winner === "teamB" && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/75 z-20 border-2 border-neon-yellow animate-bounce rounded-r-sm">
@@ -234,19 +231,17 @@ export default function VersesArena({
             {/* 5 Fighter Cards */}
             <div className="flex flex-col gap-3.5 flex-grow justify-center font-mono">
               {dispB.map((name, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`flex items-center justify-between p-3 border-2 transition-all duration-200 ${
-                    lockedSlots[idx + 5] 
-                      ? "border-neon-red/20 bg-slate-950/90 hover:border-neon-red/40" 
-                      : "border-neon-yellow bg-neon-yellow/10 animate-pulse"
-                  }`}
+                  className={`flex items-center justify-between p-3 border-2 transition-all duration-200 ${lockedSlots[idx + 5]
+                    ? "border-neon-red/20 bg-slate-950/90 hover:border-neon-red/40"
+                    : "border-neon-yellow bg-neon-yellow/10 animate-pulse"
+                    }`}
                 >
                   <div className="flex flex-col">
-                    <span 
-                      className={`text-2xl font-bold uppercase tracking-wider font-action leading-none ${
-                        lockedSlots[idx + 5] ? "text-white" : "text-neon-yellow"
-                      }`}
+                    <span
+                      className={`text-2xl font-bold tracking-wider font-action leading-none ${lockedSlots[idx + 5] ? "text-white" : "text-neon-yellow"
+                        }`}
                     >
                       {name}
                     </span>
@@ -258,7 +253,7 @@ export default function VersesArena({
             </div>
 
             {!winner && teamB.length > 0 && !isGenerating && (
-              <button 
+              <button
                 onClick={() => handleWinnerSelection("teamB")}
                 className="mt-6 font-pixel text-[10px] bg-transparent border-2 border-neon-red text-neon-red py-3 px-4 hover:bg-neon-red hover:text-black transition-all duration-200 uppercase cursor-pointer text-center block w-full select-none"
               >

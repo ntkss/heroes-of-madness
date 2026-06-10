@@ -21,23 +21,23 @@ interface PlayerInputProps {
 // ];
 
 export const PRESET_CUSTOM = [
-  "Nutty", "Bas", "Jajou", "Moonshadow", "jimmy", 
-  "ตงเผง", "อ้ายสี", "หมิงใจเด็ด", "iiTumii", "Beer", 
+  "Nutty", "Bas", "Jajou", "Moonshadow", "jimmy",
+  "ตงเผง", "อ้ายสี", "หมิงใจเด็ด", "iiTumii", "Beer",
   "ป๋าคนแก่", "มังกือ", "ไตเติ้ล",
 ];
 
 export default function PlayerInput({ names, onChange, onGenerate, isGenerating }: PlayerInputProps) {
   const [inputText, setInputText] = useState(names.join(", "));
-  
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setInputText(text);
-    
+
     const parsedNames = text
       .split(/[,\s]+/)
       .map(n => n.trim())
       .filter(n => n.length > 0);
-      
+
     onChange(parsedNames);
   };
 
@@ -69,10 +69,9 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
         <h2 className="text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel glow-yellow">
           SELECT FIGHTERS
         </h2>
-        <span 
-          className={`font-pixel text-[10px] px-2.5 py-0.5 border-2 transition-all duration-300 ${
-            isReady ? "border-neon-blue text-neon-blue glow-blue" : "border-neon-red text-neon-red glow-red"
-          }`}
+        <span
+          className={`font-pixel text-[10px] px-2.5 py-0.5 border-2 transition-all duration-300 ${isReady ? "border-neon-blue text-neon-blue glow-blue" : "border-neon-red text-neon-red glow-red"
+            }`}
         >
           DRAFT: {currentCount}/10
         </span>
@@ -85,7 +84,7 @@ export default function PlayerInput({ names, onChange, onGenerate, isGenerating 
 
       {/* Multi-line Roster Roster */}
       <textarea
-        className="w-full h-44 bg-black/60 border-2 border-slate-700 p-3 text-sm text-white font-mono tracking-wide focus:border-neon-yellow focus:outline-none transition-all duration-200 shadow-inner resize-none uppercase focus:ring-1 focus:ring-neon-yellow"
+        className="w-full h-44 bg-black/60 border-2 border-slate-700 p-3 text-sm text-white font-mono tracking-wide focus:border-neon-yellow focus:outline-none transition-all duration-200 shadow-inner resize-none focus:ring-1 focus:ring-neon-yellow"
         placeholder="ENTER FIGHTERS HERE...&#10;e.g.&#10;james, kevin, jinny, lark&#10;or&#10;james kevin jinny lark"
         value={inputText}
         onChange={handleTextChange}

@@ -5,7 +5,8 @@ import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
-import { Match, fetchMatches, saveMatch, updateMatchWinner, deleteMatch, isFirebaseConfigured } from "@/utils/firebase";
+import DebugBar from "@/components/DebugBar";
+import { Match, fetchMatches, saveMatch, updateMatchWinner, deleteMatch } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES, SQUAD } from "@/constants/players";
 
@@ -159,15 +160,8 @@ export default function Home() {
 
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end text-[9px] font-pixel text-[#a0a0c0] uppercase text-right">
-              <span className="flex items-center gap-1.5 justify-end">
-                DB STATUS: 
-                {isFirebaseConfigured ? (
-                  <span className="text-neon-yellow glow-yellow animate-pulse font-bold">ONLINE (FIRESTORE)</span>
-                ) : (
-                  <span className="text-neon-red glow-red font-bold">OFFLINE (LOCAL)</span>
-                )}
-              </span>
-              <span className="text-neon-blue glow-blue mt-1">CRT SYSTEM CONNECTED</span>
+              <span className="text-neon-blue glow-blue">CRT SYSTEM CONNECTED</span>
+              <span className="text-slate-500 mt-1">DIAGNOSTICS OK</span>
             </div>
             
             {/* Announcer Synth Activator */}
@@ -255,6 +249,9 @@ export default function Home() {
         <footer className="border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none">
           <span>HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`</span>
         </footer>
+
+        {/* Floating Debug Bar Overlay */}
+        <DebugBar />
 
       </div>
     </CRTOverlay>

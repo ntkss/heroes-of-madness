@@ -6,9 +6,9 @@ import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
 import DebugBar from "@/components/DebugBar";
-import { Match, fetchMatches, saveMatch, updateMatchWinner, deleteMatch } from "@/utils/firebase";
+import { Match, DbPlayer, fetchMatches, saveMatch, updateMatchWinner, deleteMatch, fetchPlayers, savePlayer } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
-import { FILL_POOL_NAMES, SQUAD } from "@/constants/players";
+import { FILL_POOL_NAMES } from "@/constants/players";
 
 
 export default function Home() {
@@ -22,6 +22,7 @@ export default function Home() {
   const [isShaking, setIsShaking] = useState(false);
   const [matches, setMatches] = useState<Match[]>([]);
   const [audioInitialized, setAudioInitialized] = useState(false);
+  const [availablePlayers, setAvailablePlayers] = useState<DbPlayer[]>([]);
 
   const arenaRef = useRef<HTMLDivElement>(null);
   const showArena = teamA.length > 0 || isGenerating;
@@ -36,12 +37,19 @@ export default function Home() {
   }, [showArena]);
 
   useEffect(() => {
-    const loadLogs = async () => {
-      const data = await fetchMatches();
-      setMatches(data);
+    const loadData = async () => {
+      const [logs, players] = await Promise.all([fetchMatches(), fetchPlayers()]);
+      setMatches(logs);
+      setAvailablePlayers(players);
     };
-    loadLogs();
+    loadData();
   }, []);
+
+  const handleAddPlayer = async (newPlayer: Omit<DbPlayer, "id">) => {
+    const saved = await savePlayer(newPlayer);
+    setAvailablePlayers((prev) => [...prev, saved]);
+    return saved;
+  };
 
   const triggerScreenShake = () => {
     setIsShaking(true);
@@ -63,11 +71,11 @@ export default function Home() {
     let draftNames = [...names];
     if (draftNames.length < 10) {
       const needed = 10 - draftNames.length;
-      const availablePlayers = FILL_POOL_NAMES.filter(p => !draftNames.map(n => n.toLowerCase()).includes(p.toLowerCase()));
-      const shuffledPlayers = [...availablePlayers].sort(() => Math.random() - 0.5);
+      const availableBots = FILL_POOL_NAMES.filter(p => !draftNames.map(n => n.toLowerCase()).includes(p.toLowerCase()));
+      const shuffledBots = [...availableBots].sort(() => Math.random() - 0.5);
       
       for (let i = 0; i < needed; i++) {
-        const placeholder = shuffledPlayers[i] || `PLAYER_${i + 1}`;
+        const placeholder = shuffledBots[i] || `PLAYER_${i + 1}`;
         draftNames.push(placeholder);
       }
     }
@@ -196,6 +204,8 @@ export default function Home() {
               onChange={setNames}
               onGenerate={handleGenerate}
               isGenerating={isGenerating}
+              availablePlayers={availablePlayers}
+              onAddPlayer={handleAddPlayer}
             />
           </section>
 
@@ -229,7 +239,7 @@ export default function Home() {
                 winner={activeWinner}
                 isGenerating={isGenerating}
                 triggerScreenShake={triggerScreenShake}
-                squad={SQUAD}
+                squad={availablePlayers}
               />
             </div>
           </section>
@@ -240,6 +250,7 @@ export default function Home() {
               matches={matches}
               onDeleteMatch={handleDeleteMatch}
               onUpdateWinner={handleUpdatePastWinner}
+              availablePlayers={availablePlayers}
             />
           </section>
 

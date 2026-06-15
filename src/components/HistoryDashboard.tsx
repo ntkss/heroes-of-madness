@@ -1,16 +1,23 @@
 "use client";
 
 import React from "react";
-import { Match } from "@/utils/firebase";
+import Image from "next/image";
+import { Match, DbPlayer } from "@/utils/firebase";
 import { playBeep, playWin } from "@/utils/audio";
 
 interface HistoryDashboardProps {
   matches: Match[];
   onDeleteMatch: (id: string) => void;
   onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
+  availablePlayers: DbPlayer[];
 }
 
-export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinner }: HistoryDashboardProps) {
+export default function HistoryDashboard({
+  matches,
+  onDeleteMatch,
+  onUpdateWinner,
+  availablePlayers,
+}: HistoryDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">("history");
 
   const formatDate = (timestamp: number) => {
@@ -36,8 +43,24 @@ export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinne
 
   // Dynamically compute player statistics from match history loaded from Cloud Firestore
   const playerStats = React.useMemo(() => {
-    const statsMap: Record<string, { wins: number; losses: number; matches: number }> = {};
+    const statsMap: Record<string, { wins: number; losses: number; matches: number; dbPlayer?: DbPlayer }> = {};
 
+    // 1. Initialize stats map with baseline database stats for all available players
+    availablePlayers.forEach((player) => {
+      const baseMatches = Number(player.total_match_played) || 0;
+      const baseWinrate = Number(player.winrate) || 0;
+      const baseWins = Math.round((baseWinrate / 100) * baseMatches);
+      const baseLosses = baseMatches - baseWins;
+
+      statsMap[player.name.toLowerCase()] = {
+        wins: baseWins,
+        losses: baseLosses,
+        matches: baseMatches,
+        dbPlayer: player
+      };
+    });
+
+    // 2. Accumulate stats from active match history logs
     matches.forEach((match) => {
       if (!match.winner) return; // Skip matches without a confirmed outcome
 
@@ -47,31 +70,36 @@ export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinne
       const winningTeam = match.winner === "teamA" ? teamAPlayers : teamBPlayers;
       const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
 
-      winningTeam.forEach((player) => {
-        if (!statsMap[player]) {
-          statsMap[player] = { wins: 0, losses: 0, matches: 0 };
+      winningTeam.forEach((playerName) => {
+        const key = playerName.toLowerCase();
+        if (!statsMap[key]) {
+          statsMap[key] = { wins: 0, losses: 0, matches: 0 };
         }
-        statsMap[player].wins += 1;
-        statsMap[player].matches += 1;
+        statsMap[key].wins += 1;
+        statsMap[key].matches += 1;
       });
 
-      losingTeam.forEach((player) => {
-        if (!statsMap[player]) {
-          statsMap[player] = { wins: 0, losses: 0, matches: 0 };
+      losingTeam.forEach((playerName) => {
+        const key = playerName.toLowerCase();
+        if (!statsMap[key]) {
+          statsMap[key] = { wins: 0, losses: 0, matches: 0 };
         }
-        statsMap[player].losses += 1;
-        statsMap[player].matches += 1;
+        statsMap[key].losses += 1;
+        statsMap[key].matches += 1;
       });
     });
 
-    const statsList = Object.entries(statsMap).map(([name, data]) => {
+    const statsList = Object.entries(statsMap).map(([key, data]) => {
       const winrate = data.matches > 0 ? (data.wins / data.matches) * 100 : 0;
+      const name = data.dbPlayer ? data.dbPlayer.name : (key.charAt(0).toUpperCase() + key.slice(1));
+      
       return {
         name,
         matches: data.matches,
         wins: data.wins,
         losses: data.losses,
-        winrate
+        winrate,
+        dbPlayer: data.dbPlayer
       };
     });
 
@@ -85,7 +113,7 @@ export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinne
       }
       return a.name.localeCompare(b.name);
     });
-  }, [matches]);
+  }, [matches, availablePlayers]);
 
   return (
     <div className="flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-6 shadow-2xl relative overflow-hidden mt-8 transition-all duration-300">
@@ -276,11 +304,43 @@ export default function HistoryDashboard({ matches, onDeleteMatch, onUpdateWinne
                     </span>
                   </div>
 
-                  {/* Fighter Name */}
-                  <div className="col-span-4">
-                    <span className="font-action text-2xl md:text-[40px] font-black tracking-wide text-white truncate block leading-none">
-                      {stats.name}
-                    </span>
+                  {/* Fighter Name, Avatar, Alias, Role & Rank details */}
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div className="w-10 h-10 relative overflow-hidden rounded-sm border border-slate-700 shrink-0 bg-slate-900">
+                      <Image
+                        src={
+                          stats.dbPlayer?.avatar ||
+                          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${stats.name.toLowerCase()}&backgroundColor=1a1a2e`
+                        }
+                        alt={stats.name}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-action text-2xl md:text-3xl font-black tracking-wide text-white truncate block leading-none">
+                        {stats.name}
+                      </span>
+                      {stats.dbPlayer && (
+                        <span className="text-[8.5px] text-slate-500 uppercase font-pixel tracking-tighter truncate mt-1.5 leading-none">
+                          {stats.dbPlayer.alias} • <span className="text-neon-blue font-bold font-tech">{stats.dbPlayer.role}</span> •{" "}
+                          <span
+                            className={
+                              stats.dbPlayer.current_rank.includes("Mythic")
+                                ? "text-purple-400 font-bold"
+                                : stats.dbPlayer.current_rank === "Legend"
+                                ? "text-orange-400 font-bold"
+                                : stats.dbPlayer.current_rank === "Epic"
+                                ? "text-green-400 font-bold"
+                                : "text-slate-400 font-bold"
+                            }
+                          >
+                            {stats.dbPlayer.current_rank}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Matches Count */}

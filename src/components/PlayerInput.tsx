@@ -222,15 +222,12 @@ export default function PlayerInput({
               throw new Error("FIGHTER NAME ALREADY EXISTS!");
             }
 
-            const seed = data.avatarSeed || data.name.toLowerCase();
-            const avatarUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${seed}&backgroundColor=1a1a2e`;
-
             const added = await onAddPlayer({
               name: data.name,
               alias: data.alias || data.name.toLowerCase(),
-              avatar: avatarUrl,
-              avartar: avatarUrl,
-              imageURL: avatarUrl,
+              avatar: data.avatar,
+              avartar: data.avatar,
+              imageURL: data.avatar,
               winrate: 0,
               current_rank: "Epic",
               highest_rank: "Legend",

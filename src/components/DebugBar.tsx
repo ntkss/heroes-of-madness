@@ -69,8 +69,9 @@ export default function DebugBar() {
   }, []);
 
   const handleClearHistory = () => {
-    if (confirm("⚠️ DESTROY DATABASE HISTORY?\nThis will clear LocalStorage match history logs. Proceed?")) {
+    if (confirm("⚠️ DESTROY DATABASE HISTORY?\nThis will clear LocalStorage match history logs and cached player profiles. Proceed?")) {
       localStorage.removeItem("mlbb_generator_matches");
+      localStorage.removeItem("mlbb_generator_players");
       window.location.reload();
     }
   };

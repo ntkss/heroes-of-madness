@@ -226,6 +226,7 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
       
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
+
         const avatarVal = data.avatar || data.avartar || data.imageURL || "";
         list.push({
           id: docSnap.id,
@@ -244,11 +245,53 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
       });
       
       if (list.length > 0) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(list));
+        }
         return list;
       }
-      console.log("Firestore players collection is empty. Seeding initial squad...");
+      
+      console.log("Firestore players collection is empty. Seeding initial squad to Firestore...");
+      
+      const seedList: DbPlayer[] = SQUAD.map((p) => {
+        const avatarVal = p.imageURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${p.id}&backgroundColor=1a1a2e`;
+        return {
+          id: p.id,
+          name: p.name,
+          alias: p.id,
+          avatar: avatarVal,
+          avartar: avatarVal,
+          imageURL: avatarVal,
+          winrate: 0,
+          current_rank: "Legend",
+          highest_rank: "Legend",
+          total_match_played: 0,
+          role: "ALL-ROUNDER",
+          createdAt: Date.now()
+        };
+      });
+
+      for (const player of seedList) {
+        const docRef = doc(db, "players", player.id);
+        await setDoc(docRef, {
+          name: player.name,
+          alias: player.alias,
+          avatar: player.avatar,
+          winrate: player.winrate,
+          current_rank: player.current_rank,
+          highest_rank: player.highest_rank,
+          total_match_played: player.total_match_played,
+          role: player.role,
+          createdAt: player.createdAt
+        });
+      }
+      
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(seedList));
+      }
+      return seedList;
     } catch (e) {
-      console.error("Error fetching players from Firestore, switching to LocalStorage:", e);
+      console.error("Error fetching/seeding players on Firestore, switching to LocalStorage:", e);
     }
   }
 
@@ -285,30 +328,6 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
       };
     });
 
-    if (db) {
-      // If db is connected, seed Firestore asynchronously
-      try {
-        for (const player of seedList) {
-          const docRef = doc(db, "players", player.id);
-          await setDoc(docRef, {
-            name: player.name,
-            alias: player.alias,
-            avatar: player.avatar,
-            avartar: player.avatar,
-            imageURL: player.avatar,
-            winrate: player.winrate,
-            current_rank: player.current_rank,
-            highest_rank: player.highest_rank,
-            total_match_played: player.total_match_played,
-            role: player.role,
-            createdAt: player.createdAt
-          });
-        }
-      } catch (e) {
-        console.error("Failed to seed Firestore database:", e);
-      }
-    }
-
     localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(seedList));
     return seedList;
   }
@@ -318,24 +337,33 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
 
 // Save a new player to database
 export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPlayer> {
-  const cleanPlayerData = {
-    ...playerData,
-    avatar: playerData.avatar || playerData.avartar || playerData.imageURL || "",
-    avartar: playerData.avatar || playerData.avartar || playerData.imageURL || "",
-    imageURL: playerData.avatar || playerData.avartar || playerData.imageURL || "",
+  const cleanAvatar = playerData.avatar || playerData.avartar || playerData.imageURL || "";
+  
+  const firestoreData = {
+    name: playerData.name,
+    alias: playerData.alias,
+    avatar: cleanAvatar,
+    winrate: Number(playerData.winrate) || 0,
+    current_rank: playerData.current_rank,
+    highest_rank: playerData.highest_rank,
+    total_match_played: Number(playerData.total_match_played) || 0,
+    role: playerData.role || "ALL-ROUNDER",
     createdAt: Date.now()
   };
 
   const id = db ? "" : `player_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
   const newPlayer: DbPlayer = {
-    ...cleanPlayerData,
-    id
+    ...firestoreData,
+    id,
+    avatar: cleanAvatar,
+    avartar: cleanAvatar,
+    imageURL: cleanAvatar
   };
 
   if (db) {
     try {
       const playersCol = collection(db, "players");
-      const docRef = await addDoc(playersCol, cleanPlayerData);
+      const docRef = await addDoc(playersCol, firestoreData);
       newPlayer.id = docRef.id;
       
       // Update local storage too to keep in sync

@@ -94,8 +94,14 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
     e.preventDefault();
     setError("");
 
-    if (!name.trim()) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       setError("FIGHTER NAME REQUIRED!");
+      return;
+    }
+
+    if (trimmedName.length > 16) {
+      setError("NAME TOO LONG (MAX 16 CHARS)!");
       return;
     }
 
@@ -104,12 +110,12 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
       let finalAvatar = avatarBase64;
       if (!finalAvatar) {
         // Fallback to Dicebear pixel art if no image uploaded
-        const seed = name.trim().toLowerCase();
+        const seed = trimmedName.toLowerCase();
         finalAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${seed}&backgroundColor=1a1a2e`;
       }
 
       await onSubmit({
-        name: name.trim(),
+        name: trimmedName,
         alias: alias.trim(),
         avatar: finalAvatar,
       });

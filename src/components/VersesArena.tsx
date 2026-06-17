@@ -161,11 +161,11 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
       <div className="w-full h-full transform skew-x-[6deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none">
 
         {/* Country Flag (Top Left) */}
-        {name !== "???" && name !== "DRAFTING" && (
+        {/* {name !== "???" && name !== "DRAFTING" && (
           <div className="absolute top-0.5 left-0.5 z-20 w-4.5 h-4.5 rounded-full overflow-hidden bg-slate-900 border border-white/20 flex items-center justify-center shadow-md text-[8.5px]">
             {cosmetics.flag}
           </div>
-        )}
+        )} */}
 
         {/* Skin Tier Banner (Top Center) */}
         {name !== "???" && name !== "DRAFTING" && (
@@ -173,9 +173,9 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
         )}
 
         {/* Slot level indicator (Top Right) */}
-        <div className="absolute top-0.5 right-0.5 z-20 w-4.5 h-4.5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center font-pixel text-[6px] text-slate-300 shadow-md">
+        {/* <div className="absolute top-0.5 right-0.5 z-20 w-4.5 h-4.5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center font-pixel text-[6px] text-slate-300 shadow-md">
           {isBlue ? "L12" : "S17"}
-        </div>
+        </div> */}
 
         {/* Background Portrait Image (Unskewed and stretched slightly to cover bounds) */}
         <div className="absolute inset-0 w-[140%] -left-[20%] h-full pointer-events-none z-0">
@@ -217,7 +217,7 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
         <div className="mt-auto w-full relative z-20 flex flex-col pt-2">
 
           {/* Skin Name */}
-          {cosmetics.skinName && (
+          {/* {cosmetics.skinName && (
             <span className={`text-[6px] sm:text-[7px] font-pixel tracking-wider text-center block truncate leading-tight uppercase ${cosmetics.skinTier === "LEGEND" ? "text-red-400 glow-red" :
               cosmetics.skinTier === "EPIC" ? "text-purple-400 glow-purple" :
                 cosmetics.skinTier === "LIMITED" ? "text-cyan-400 glow-blue" :
@@ -225,12 +225,12 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
               }`}>
               {cosmetics.skinName}
             </span>
-          )}
+          )} */}
 
           {/* Hero Name (Medium font) */}
-          <span className="font-action text-[9px] sm:text-[10px] md:text-[11px] font-bold text-slate-300 text-center block truncate leading-none mt-0.5 tracking-wide drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+          {/* <span className="font-action text-[9px] sm:text-[10px] md:text-[11px] font-bold text-slate-300 text-center block truncate leading-none mt-0.5 tracking-wide drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
             {cosmetics.heroName}
-          </span>
+          </span> */}
 
           {/* Player drafted Name (Large font, full-width focus) */}
           <span className="font-action text-sm sm:text-base md:text-lg lg:text-4xl font-black text-white text-center block truncate mt-0.5 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
@@ -239,7 +239,7 @@ function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, i
 
           {/* Player Role / Lane */}
           {role && (
-            <span className="font-pixel text-[6.5px] sm:text-[7.5px] text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+            <span className="font-pixel text-sm sm:text-base italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
               {role}
             </span>
           )}

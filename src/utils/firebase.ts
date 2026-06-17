@@ -5,6 +5,7 @@ import {
   collection, 
   addDoc, 
   setDoc,
+  getDoc,
   getDocs, 
   updateDoc, 
   deleteDoc, 
@@ -337,11 +338,16 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
 
 // Save a new player to database
 export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPlayer> {
+  const nameTrimmed = (playerData.name || "").trim();
+  if (!nameTrimmed) {
+    throw new Error("FIGHTER NAME CANNOT BE EMPTY!");
+  }
+  const docId = nameTrimmed.toLowerCase();
   const cleanAvatar = playerData.avatar || playerData.avartar || playerData.imageURL || "";
   
   const firestoreData = {
-    name: playerData.name,
-    alias: playerData.alias,
+    name: nameTrimmed,
+    alias: playerData.alias || docId,
     avatar: cleanAvatar,
     winrate: Number(playerData.winrate) || 0,
     current_rank: playerData.current_rank,
@@ -351,7 +357,7 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
     createdAt: Date.now()
   };
 
-  const id = db ? "" : `player_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  const id = docId;
   const newPlayer: DbPlayer = {
     ...firestoreData,
     id,
@@ -362,20 +368,28 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
 
   if (db) {
     try {
-      const playersCol = collection(db, "players");
-      const docRef = await addDoc(playersCol, firestoreData);
-      newPlayer.id = docRef.id;
+      const docRef = doc(db, "players", docId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        throw new Error("FIGHTER NAME ALREADY EXISTS!");
+      }
+      
+      await setDoc(docRef, firestoreData);
       
       // Update local storage too to keep in sync
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
         const list = stored ? (JSON.parse(stored) as DbPlayer[]) : [];
-        list.push(newPlayer);
-        localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(list));
+        const filteredList = list.filter(p => p.id !== docId && p.name.toLowerCase() !== docId);
+        filteredList.push(newPlayer);
+        localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filteredList));
       }
       
       return newPlayer;
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.message === "FIGHTER NAME ALREADY EXISTS!") {
+        throw e;
+      }
       console.error("Error writing player to Firestore, saving to LocalStorage instead:", e);
     }
   }
@@ -384,6 +398,10 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
     const list = stored ? (JSON.parse(stored) as DbPlayer[]) : [];
+    const nameExists = list.some(p => p.name.toLowerCase() === docId || p.id === docId);
+    if (nameExists) {
+      throw new Error("FIGHTER NAME ALREADY EXISTS!");
+    }
     list.push(newPlayer);
     localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(list));
   }

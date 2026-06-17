@@ -214,17 +214,22 @@ export default function PlayerInput({
       {isAdding && (
         <RegisterFighterForm
           onSubmit={async (data) => {
+            const trimmedName = (data.name || "").trim();
+            if (!trimmedName) {
+              throw new Error("FIGHTER NAME REQUIRED!");
+            }
+
             // Check uniqueness
             const nameExists = availablePlayers.some(
-              (p) => p.name.toLowerCase() === data.name.toLowerCase()
+              (p) => p.name.toLowerCase() === trimmedName.toLowerCase() || p.id.toLowerCase() === trimmedName.toLowerCase()
             );
             if (nameExists) {
               throw new Error("FIGHTER NAME ALREADY EXISTS!");
             }
 
             const added = await onAddPlayer({
-              name: data.name,
-              alias: data.alias || data.name.toLowerCase(),
+              name: trimmedName,
+              alias: (data.alias || "").trim() || trimmedName.toLowerCase(),
               avatar: data.avatar,
               avartar: data.avatar,
               imageURL: data.avatar,

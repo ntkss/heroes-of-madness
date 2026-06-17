@@ -84,7 +84,7 @@ function RankBadge({ rank, rankClass }: { rank: string | null; rankClass: "high"
   }
 
   return (
-    <div className={`absolute top-1 left-1/2 transform -translate-x-1/2 z-20 px-1.5 py-0.5 border text-[5.5px] font-pixel uppercase tracking-wider leading-none rounded-sm bg-gradient-to-r ${bgGradient}`}>
+    <div className={`absolute top-1 left-1/2 transform -translate-x-1/2 z-20 px-1.5 py-0.5 border text-xs font-pixel uppercase tracking-wider leading-none rounded-sm bg-gradient-to-r ${bgGradient}`}>
       {rank}
     </div>
   );
@@ -144,7 +144,7 @@ export default function PlayerCard({
     <div
       className={`
         relative flex flex-col overflow-hidden border-2
-        transition-all duration-300 origin-bottom transform -skew-x-[6deg]
+        transition-all duration-300 origin-bottom transform -skew-x-[9deg]
         ${rolling ? "scale-105 z-10" : "scale-100"}
         ${isLoser ? "opacity-35 grayscale" : "opacity-100"}
         ${rolling

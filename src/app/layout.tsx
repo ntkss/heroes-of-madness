@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Teko, Press_Start_2P, Orbitron } from "next/font/google";
+import { Teko, Press_Start_2P, Orbitron, Pattaya } from "next/font/google";
 import "./globals.css";
 
 const teko = Teko({
@@ -20,6 +20,12 @@ const orbitron = Orbitron({
   variable: "--font-orbitron",
 });
 
+const pattaya = Pattaya({
+  subsets: ["thai", "latin"],
+  weight: "400",
+  variable: "--font-pattaya",
+});
+
 export const metadata: Metadata = {
   title: "HEROES OF MADNESS - MLBB Random Team Arena",
   description: "Street Fighter styled Random Team Generator for Mobile Legends: Bang Bang, featuring dynamic synthesizers, slot rolling, and database history.",
@@ -33,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${teko.variable} ${pressStart.variable} ${orbitron.variable} h-full antialiased`}
+      className={`${teko.variable} ${pressStart.variable} ${orbitron.variable} ${pattaya.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

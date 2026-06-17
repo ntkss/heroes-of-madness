@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
 import DebugBar from "@/components/DebugBar";
-import { Match, DbPlayer, fetchMatches, saveMatch, updateMatchWinner, deleteMatch, fetchPlayers, savePlayer } from "@/utils/firebase";
+import { Match, DbPlayer, fetchMatches, saveMatch, updateMatchWinner, deleteMatch, fetchPlayers, savePlayer, RankConfig, fetchRankConfig, saveRankConfig, DEFAULT_RANK_CONFIG } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
 
@@ -23,6 +24,7 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [audioInitialized, setAudioInitialized] = useState(false);
   const [availablePlayers, setAvailablePlayers] = useState<DbPlayer[]>([]);
+  const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
 
   const arenaRef = useRef<HTMLDivElement>(null);
   const showArena = teamA.length > 0 || isGenerating;
@@ -38,9 +40,14 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [logs, players] = await Promise.all([fetchMatches(), fetchPlayers()]);
+      const [logs, players, config] = await Promise.all([
+        fetchMatches(),
+        fetchPlayers(),
+        fetchRankConfig()
+      ]);
       setMatches(logs);
       setAvailablePlayers(players);
+      setRankConfig(config);
     };
     loadData();
   }, []);
@@ -49,6 +56,15 @@ export default function Home() {
     const saved = await savePlayer(newPlayer);
     setAvailablePlayers((prev) => [...prev, saved]);
     return saved;
+  };
+
+  const handleSaveRankConfig = async (newConfig: RankConfig) => {
+    await saveRankConfig(newConfig);
+    setRankConfig(newConfig);
+    
+    // Reload players to reflect updated ranks immediately in UI
+    const updatedPlayers = await fetchPlayers();
+    setAvailablePlayers(updatedPlayers);
   };
 
   const triggerScreenShake = () => {
@@ -117,8 +133,9 @@ export default function Home() {
     setActiveWinner(winningTeam);
     await updateMatchWinner(activeMatchId, winningTeam);
 
-    const updatedLogs = await fetchMatches();
+    const [updatedLogs, updatedPlayers] = await Promise.all([fetchMatches(), fetchPlayers()]);
     setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
   };
 
   const handleUpdatePastWinner = async (matchId: string, winner: "teamA" | "teamB") => {
@@ -127,15 +144,17 @@ export default function Home() {
       setActiveWinner(winner);
     }
     
-    const updatedLogs = await fetchMatches();
+    const [updatedLogs, updatedPlayers] = await Promise.all([fetchMatches(), fetchPlayers()]);
     setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
   };
 
   const handleDeleteMatch = async (matchId: string) => {
     await deleteMatch(matchId);
     
-    const updatedLogs = await fetchMatches();
+    const [updatedLogs, updatedPlayers] = await Promise.all([fetchMatches(), fetchPlayers()]);
     setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
   };
 
   const initAudioFeedback = () => {
@@ -191,6 +210,22 @@ export default function Home() {
                 <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M3 9v6h4l5 5V4L7 9H3z"/>
               </svg>
             </button>
+
+            {/* Rank Config Settings Gear Button */}
+            {rankConfig && (
+              <Link 
+                href="/settings"
+                onClick={() => {
+                  playBeep(300, 0.15, "sawtooth");
+                }}
+                className="w-10 h-10 border-2 border-slate-600 text-slate-500 hover:border-neon-yellow hover:text-neon-yellow hover:bg-neon-yellow/10 hover:glow-yellow rounded-none flex items-center justify-center cursor-pointer transition-all duration-200"
+                title="Configure Ranks Settings"
+              >
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+              </Link>
+            )}
           </div>
         </header>
 
@@ -240,6 +275,7 @@ export default function Home() {
                 isGenerating={isGenerating}
                 triggerScreenShake={triggerScreenShake}
                 squad={availablePlayers}
+                rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
               />
             </div>
           </section>
@@ -251,6 +287,7 @@ export default function Home() {
               onDeleteMatch={handleDeleteMatch}
               onUpdateWinner={handleUpdatePastWinner}
               availablePlayers={availablePlayers}
+              rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
             />
           </section>
 
@@ -263,6 +300,8 @@ export default function Home() {
 
         {/* Floating Debug Bar Overlay */}
         <DebugBar />
+
+
 
       </div>
     </CRTOverlay>

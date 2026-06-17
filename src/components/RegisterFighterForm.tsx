@@ -3,12 +3,20 @@
 import React, { useState } from "react";
 
 interface RegisterFighterFormProps {
-  onSubmit: (data: { name: string; alias: string; avatar: string }) => Promise<void>;
+  onSubmit: (data: {
+    name: string;
+    alias: string;
+    avatar: string;
+  }) => Promise<void>;
   onClose: () => void;
 }
 
 // Client-side image compression helper using Canvas
-const compressImage = (file: File, maxWidth = 128, maxHeight = 128): Promise<string> => {
+const compressImage = (
+  file: File,
+  maxWidth = 128,
+  maxHeight = 128,
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -58,7 +66,10 @@ const compressImage = (file: File, maxWidth = 128, maxHeight = 128): Promise<str
   });
 };
 
-export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFighterFormProps) {
+export default function RegisterFighterForm({
+  onSubmit,
+  onClose,
+}: RegisterFighterFormProps) {
   const [name, setName] = useState("");
   const [alias, setAlias] = useState("");
   const [avatarBase64, setAvatarBase64] = useState("");
@@ -80,7 +91,7 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
       const compressed = await compressImage(file);
       setAvatarBase64(compressed);
       setAvatarPreview(compressed);
-    } catch (err: any) {
+    } catch {
       setError("FAILED TO PROCESS IMAGE!");
     }
   };
@@ -119,8 +130,10 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
         alias: alias.trim(),
         avatar: finalAvatar,
       });
-    } catch (err: any) {
-      setError(err?.message || "FAILED TO SAVE FIGHTER!");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "FAILED TO SAVE FIGHTER!";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -145,7 +158,9 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-tech text-xs">
         {/* Fighter Name */}
         <div className="flex flex-col gap-1">
-          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">NAME (REQ)</label>
+          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
+            NAME (REQ)
+          </label>
           <input
             type="text"
             placeholder="e.g. Nutty"
@@ -158,7 +173,9 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
 
         {/* Alias */}
         <div className="flex flex-col gap-1">
-          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">ALIAS</label>
+          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
+            ALIAS
+          </label>
           <input
             type="text"
             placeholder="e.g. nutty"
@@ -171,10 +188,13 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
 
         {/* Portrait Photo */}
         <div className="flex flex-col gap-1">
-          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">PORTRAIT PHOTO</label>
+          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
+            PORTRAIT PHOTO
+          </label>
           <div className="flex items-center gap-2">
             {avatarPreview ? (
               <div className="relative w-10 h-10 border border-neon-yellow bg-slate-950 flex-shrink-0 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarPreview}
                   alt="Avatar Preview"
@@ -224,4 +244,3 @@ export default function RegisterFighterForm({ onSubmit, onClose }: RegisterFight
     </form>
   );
 }
-

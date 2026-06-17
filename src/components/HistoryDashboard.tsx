@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { Match, DbPlayer } from "@/utils/firebase";
+import { Match, DbPlayer, RankConfig } from "@/utils/firebase";
 import { playBeep, playWin } from "@/utils/audio";
 
 interface HistoryDashboardProps {
@@ -10,6 +10,7 @@ interface HistoryDashboardProps {
   onDeleteMatch: (id: string) => void;
   onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
   availablePlayers: DbPlayer[];
+  rankConfig: RankConfig;
 }
 
 export default function HistoryDashboard({
@@ -17,6 +18,7 @@ export default function HistoryDashboard({
   onDeleteMatch,
   onUpdateWinner,
   availablePlayers,
+  rankConfig,
 }: HistoryDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">("history");
 
@@ -41,28 +43,28 @@ export default function HistoryDashboard({
     onUpdateWinner(id, winner);
   };
 
-  // Dynamically compute player statistics from match history loaded from Cloud Firestore
+  // Dynamically compute player statistics from player documents (single source of truth) and matches logs (for unregistered players)
   const playerStats = React.useMemo(() => {
     const statsMap: Record<string, { wins: number; losses: number; matches: number; dbPlayer?: DbPlayer }> = {};
 
-    // 1. Initialize stats map with baseline database stats for all available players
+    // 1. Initialize stats map with database stats for all available players
     availablePlayers.forEach((player) => {
-      const baseMatches = Number(player.total_match_played) || 0;
-      const baseWinrate = Number(player.winrate) || 0;
-      const baseWins = Math.round((baseWinrate / 100) * baseMatches);
-      const baseLosses = baseMatches - baseWins;
+      const dbMatches = Number(player.total_match_played) || 0;
+      const dbWinrate = Number(player.winrate) || 0;
+      const dbWins = Math.round((dbWinrate / 100) * dbMatches);
+      const dbLosses = dbMatches - dbWins;
 
       statsMap[player.name.toLowerCase()] = {
-        wins: baseWins,
-        losses: baseLosses,
-        matches: baseMatches,
+        wins: dbWins,
+        losses: dbLosses,
+        matches: dbMatches,
         dbPlayer: player
       };
     });
 
-    // 2. Accumulate stats from active match history logs
+    // 2. Accumulate stats from matches log ONLY for unregistered players/bots (to avoid double-counting)
     matches.forEach((match) => {
-      if (!match.winner) return; // Skip matches without a confirmed outcome
+      if (!match.winner) return;
 
       const teamAPlayers = match.teamA || [];
       const teamBPlayers = match.teamB || [];
@@ -75,8 +77,10 @@ export default function HistoryDashboard({
         if (!statsMap[key]) {
           statsMap[key] = { wins: 0, losses: 0, matches: 0 };
         }
-        statsMap[key].wins += 1;
-        statsMap[key].matches += 1;
+        if (!statsMap[key].dbPlayer) {
+          statsMap[key].wins += 1;
+          statsMap[key].matches += 1;
+        }
       });
 
       losingTeam.forEach((playerName) => {
@@ -84,8 +88,10 @@ export default function HistoryDashboard({
         if (!statsMap[key]) {
           statsMap[key] = { wins: 0, losses: 0, matches: 0 };
         }
-        statsMap[key].losses += 1;
-        statsMap[key].matches += 1;
+        if (!statsMap[key].dbPlayer) {
+          statsMap[key].losses += 1;
+          statsMap[key].matches += 1;
+        }
       });
     });
 
@@ -114,6 +120,38 @@ export default function HistoryDashboard({
       return a.name.localeCompare(b.name);
     });
   }, [matches, availablePlayers]);
+
+  const renderRankInfo = (dbPlayer: DbPlayer | undefined) => {
+    if (!dbPlayer) return null;
+    const rankName = dbPlayer.current_rank;
+    let rankColorClass = "text-slate-400 font-bold";
+    if (rankConfig) {
+      if (rankName === rankConfig.tiers.high) {
+        rankColorClass = "text-purple-400 font-bold";
+      } else if (rankName === rankConfig.tiers.normal) {
+        rankColorClass = "text-orange-400 font-bold";
+      } else if (rankName === rankConfig.tiers.low) {
+        rankColorClass = "text-green-400 font-bold";
+      } else {
+        // Fallback checks
+        if (rankName.includes("Mythic")) rankColorClass = "text-purple-400 font-bold";
+        else if (rankName === "Legend") rankColorClass = "text-orange-400 font-bold";
+        else if (rankName === "Epic") rankColorClass = "text-green-400 font-bold";
+      }
+    }
+
+    const isThai = /[\u0E00-\u0E7F]/.test(rankName);
+    const fontClass = isThai 
+      ? "font-thai text-[10px] tracking-wide" 
+      : "font-pixel text-[6.5px] uppercase tracking-wider";
+
+    return (
+      <span className="text-[8.5px] text-slate-500 uppercase font-pixel tracking-tighter truncate mt-1.5 leading-none">
+        {dbPlayer.alias} • <span className="text-neon-blue font-bold font-tech">{dbPlayer.role}</span> •{" "}
+        <span className={`${rankColorClass} ${fontClass}`}>{rankName}</span>
+      </span>
+    );
+  };
 
   return (
     <div className="flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-6 shadow-2xl relative overflow-hidden mt-8 transition-all duration-300">
@@ -319,27 +357,18 @@ export default function HistoryDashboard({
                       />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-action text-2xl md:text-3xl font-black tracking-wide text-white truncate block leading-none">
+                      <span 
+                        className={`
+                          text-white truncate block leading-none
+                          ${/[\u0E00-\u0E7F]/.test(stats.name)
+                            ? 'font-thai text-lg md:text-xl font-bold mt-1'
+                            : 'font-action text-2xl md:text-3xl font-black tracking-wide'
+                          }
+                        `}
+                      >
                         {stats.name}
                       </span>
-                      {stats.dbPlayer && (
-                        <span className="text-[8.5px] text-slate-500 uppercase font-pixel tracking-tighter truncate mt-1.5 leading-none">
-                          {stats.dbPlayer.alias} • <span className="text-neon-blue font-bold font-tech">{stats.dbPlayer.role}</span> •{" "}
-                          <span
-                            className={
-                              stats.dbPlayer.current_rank.includes("Mythic")
-                                ? "text-purple-400 font-bold"
-                                : stats.dbPlayer.current_rank === "Legend"
-                                ? "text-orange-400 font-bold"
-                                : stats.dbPlayer.current_rank === "Epic"
-                                ? "text-green-400 font-bold"
-                                : "text-slate-400 font-bold"
-                            }
-                          >
-                            {stats.dbPlayer.current_rank}
-                          </span>
-                        </span>
-                      )}
+                      {renderRankInfo(stats.dbPlayer)}
                     </div>
                   </div>
 

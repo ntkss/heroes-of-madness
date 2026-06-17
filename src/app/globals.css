@@ -14,6 +14,7 @@
   --font-action: var(--font-teko), Impact, sans-serif;
   --font-pixel: var(--font-press-start), monospace;
   --font-tech: var(--font-orbitron), sans-serif;
+  --font-thai: var(--font-pattaya), sans-serif;
 }
 
 /* Custom base resets */

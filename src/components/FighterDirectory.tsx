@@ -50,6 +50,9 @@ export default function FighterDirectory({
         <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto pr-1">
           {filteredPlayers.map((player) => {
             const isSelected = names.includes(player.name);
+            const isThaiName = /[\u0E00-\u0E7F]/.test(player.name);
+            const isThaiRank = /[\u0E00-\u0E7F]/.test(player.current_rank);
+
             const rankColor =
               player.current_rank.includes("Mythic")
                 ? "text-purple-400"
@@ -81,9 +84,9 @@ export default function FighterDirectory({
                   />
                 </div>
                 <div className="flex flex-col items-start leading-none gap-0.5">
-                  <span className="font-bold tracking-wide">{player.name}</span>
+                  <span className={`tracking-wide ${isThaiName ? 'font-thai text-[13px] font-bold' : 'font-bold'}`}>{player.name}</span>
                   <span className="text-[7.5px] uppercase text-slate-500">
-                    {player.alias} • <span className={rankColor}>{player.current_rank}</span>
+                    {player.alias} • <span className={`${rankColor} ${isThaiRank ? 'font-thai text-[8.5px]' : ''}`}>{player.current_rank}</span>
                   </span>
                 </div>
                 {/* WR badge if match played > 0 */}

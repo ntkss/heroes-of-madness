@@ -29,7 +29,6 @@ export interface DbPlayer {
   name: string;
   alias: string;
   avatar: string;
-  avartar?: string;
   imageURL?: string;
   winrate: number;
   current_rank: string;
@@ -38,6 +37,30 @@ export interface DbPlayer {
   role?: string;
   createdAt?: number;
 }
+
+export interface RankConfig {
+  minMatches: number;
+  highTierWinrate: number;
+  lowTierWinrate: number;
+  tiers: {
+    high: string;
+    normal: string;
+    low: string;
+  };
+}
+
+export const DEFAULT_RANK_CONFIG: RankConfig = {
+  minMatches: 3,
+  highTierWinrate: 55,
+  lowTierWinrate: 45,
+  tiers: {
+    high: "คนเก่ง",
+    normal: "คนปกติ",
+    low: "คนกาก"
+  }
+};
+
+const LOCAL_CONFIG_KEY = "mlbb_generator_rank_config";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -162,18 +185,19 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
 
 // Mark match winner
 export async function updateMatchWinner(matchId: string, winner: "teamA" | "teamB" | null): Promise<boolean> {
+  let success = false;
   if (db && !matchId.startsWith("local_")) {
     try {
       const docRef = doc(db, "matches", matchId);
       await updateDoc(docRef, { winner });
-      return true;
+      success = true;
     } catch (e) {
       console.error("Error updating Firestore match, updating LocalStorage instead:", e);
     }
   }
 
   // LocalStorage Fallback
-  if (typeof window !== "undefined") {
+  if (!success && typeof window !== "undefined") {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (stored) {
       const list = JSON.parse(stored) as Match[];
@@ -181,36 +205,48 @@ export async function updateMatchWinner(matchId: string, winner: "teamA" | "team
       if (idx !== -1) {
         list[idx].winner = winner;
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-        return true;
+        success = true;
       }
     }
   }
-  return false;
+
+  if (success) {
+    await recalculateRanks();
+  }
+  return success;
 }
 
 // Delete match from history
 export async function deleteMatch(matchId: string): Promise<boolean> {
+  let success = false;
   if (db && !matchId.startsWith("local_")) {
     try {
       const docRef = doc(db, "matches", matchId);
       await deleteDoc(docRef);
-      return true;
+      success = true;
     } catch (e) {
       console.error("Error deleting from Firestore, deleting from LocalStorage instead:", e);
     }
   }
 
   // LocalStorage Fallback
-  if (typeof window !== "undefined") {
+  if (!success && typeof window !== "undefined") {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (stored) {
       let list = JSON.parse(stored) as Match[];
+      const originalLen = list.length;
       list = list.filter(m => m.id !== matchId);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-      return true;
+      if (list.length < originalLen) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+        success = true;
+      }
     }
   }
-  return false;
+
+  if (success) {
+    await recalculateRanks();
+  }
+  return success;
 }
 
 const LOCAL_PLAYERS_KEY = "mlbb_generator_players";
@@ -228,13 +264,12 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
 
-        const avatarVal = data.avatar || data.avartar || data.imageURL || "";
+        const avatarVal = data.avatar || data.imageURL || "";
         list.push({
           id: docSnap.id,
           name: data.name || "",
           alias: data.alias || "",
           avatar: avatarVal,
-          avartar: avatarVal,
           imageURL: avatarVal,
           winrate: Number(data.winrate) || 0,
           current_rank: data.current_rank || "Epic",
@@ -261,7 +296,6 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           name: p.name,
           alias: p.id,
           avatar: avatarVal,
-          avartar: avatarVal,
           imageURL: avatarVal,
           winrate: 0,
           current_rank: "Legend",
@@ -318,7 +352,6 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
         name: p.name,
         alias: p.id,
         avatar: avatarVal,
-        avartar: avatarVal,
         imageURL: avatarVal,
         winrate: 0,
         current_rank: "Legend",
@@ -343,7 +376,7 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
     throw new Error("FIGHTER NAME CANNOT BE EMPTY!");
   }
   const docId = nameTrimmed.toLowerCase();
-  const cleanAvatar = playerData.avatar || playerData.avartar || playerData.imageURL || "";
+  const cleanAvatar = playerData.avatar || playerData.imageURL || "";
   
   const firestoreData = {
     name: nameTrimmed,
@@ -362,7 +395,6 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
     ...firestoreData,
     id,
     avatar: cleanAvatar,
-    avartar: cleanAvatar,
     imageURL: cleanAvatar
   };
 
@@ -406,4 +438,189 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
     localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(list));
   }
   return newPlayer;
+}
+
+// Fetch rank configuration rules
+export async function fetchRankConfig(): Promise<RankConfig> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "rankSystem");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const config: RankConfig = {
+          minMatches: Number(data.minMatches) ?? DEFAULT_RANK_CONFIG.minMatches,
+          highTierWinrate: Number(data.highTierWinrate) ?? DEFAULT_RANK_CONFIG.highTierWinrate,
+          lowTierWinrate: Number(data.lowTierWinrate) ?? DEFAULT_RANK_CONFIG.lowTierWinrate,
+          tiers: {
+            high: data.tiers?.high || DEFAULT_RANK_CONFIG.tiers.high,
+            normal: data.tiers?.normal || DEFAULT_RANK_CONFIG.tiers.normal,
+            low: data.tiers?.low || DEFAULT_RANK_CONFIG.tiers.low,
+          }
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
+        }
+        return config;
+      } else {
+        console.log("Rank config missing on Firestore. Seeding default config...");
+        await setDoc(configRef, DEFAULT_RANK_CONFIG);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(DEFAULT_RANK_CONFIG));
+        }
+        return DEFAULT_RANK_CONFIG;
+      }
+    } catch (e) {
+      console.error("Error fetching rank config from Firestore, switching to LocalStorage:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_CONFIG_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored) as RankConfig;
+      } catch {
+        // Ignore parsing errors
+      }
+    }
+    localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(DEFAULT_RANK_CONFIG));
+  }
+  return DEFAULT_RANK_CONFIG;
+}
+
+// Save custom rank configuration rules
+export async function saveRankConfig(config: RankConfig): Promise<boolean> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "rankSystem");
+      await setDoc(configRef, config);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
+      }
+      await recalculateRanks(config);
+      return true;
+    } catch (e) {
+      console.error("Error saving rank config to Firestore, saving to LocalStorage instead:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
+    await recalculateRanks(config);
+    return true;
+  }
+  return false;
+}
+
+// Recalculate ranks and update all players in the database
+export async function recalculateRanks(passedConfig?: RankConfig): Promise<void> {
+  try {
+    const config = passedConfig || await fetchRankConfig();
+    const players = await fetchPlayers();
+    const matches = await fetchMatches();
+
+    const getTierPriority = (rankName: string, cfg: RankConfig): number => {
+      if (rankName === cfg.tiers.high) return 3;
+      if (rankName === cfg.tiers.normal) return 2;
+      if (rankName === cfg.tiers.low) return 1;
+      if (rankName.includes("Mythic")) return 3;
+      if (rankName === "Legend") return 2;
+      if (rankName === "Epic") return 1;
+      return 2;
+    };
+
+    const statsMap: Record<string, { wins: number; matches: number }> = {};
+    matches.forEach((match) => {
+      if (!match.winner) return;
+
+      const teamAPlayers = match.teamA || [];
+      const teamBPlayers = match.teamB || [];
+
+      const winningTeam = match.winner === "teamA" ? teamAPlayers : teamBPlayers;
+      const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
+
+      winningTeam.forEach((playerName) => {
+        const key = playerName.toLowerCase();
+        if (!statsMap[key]) statsMap[key] = { wins: 0, matches: 0 };
+        statsMap[key].wins += 1;
+        statsMap[key].matches += 1;
+      });
+
+      losingTeam.forEach((playerName) => {
+        const key = playerName.toLowerCase();
+        if (!statsMap[key]) statsMap[key] = { wins: 0, matches: 0 };
+        statsMap[key].matches += 1;
+      });
+    });
+
+    const updatedPlayers = await Promise.all(
+      players.map(async (player) => {
+        const key = player.name.toLowerCase();
+        const pStats = statsMap[key] || { wins: 0, matches: 0 };
+
+        const totalMatches = pStats.matches;
+        const winrate = totalMatches > 0 ? Math.round((pStats.wins / totalMatches) * 100) : 0;
+
+        let newRank = config.tiers.normal;
+        if (totalMatches >= config.minMatches) {
+          if (winrate >= config.highTierWinrate) {
+            newRank = config.tiers.high;
+          } else if (winrate <= config.lowTierWinrate) {
+            newRank = config.tiers.low;
+          }
+        }
+
+        const newRankPriority = getTierPriority(newRank, config);
+        const oldHighestRank = player.highest_rank || "Legend";
+        const oldHighestPriority = getTierPriority(oldHighestRank, config);
+
+        let newHighestRank = oldHighestRank;
+        if (newRankPriority > oldHighestPriority) {
+          newHighestRank = newRank;
+        }
+
+        const hasChanged = 
+          player.total_match_played !== totalMatches ||
+          player.winrate !== winrate ||
+          player.current_rank !== newRank ||
+          player.highest_rank !== newHighestRank;
+
+        if (hasChanged) {
+          const updatedFields = {
+            total_match_played: totalMatches,
+            winrate: winrate,
+            current_rank: newRank,
+            highest_rank: newHighestRank
+          };
+
+          const updatedPlayer: DbPlayer = {
+            ...player,
+            ...updatedFields
+          };
+
+          if (db && !player.id.startsWith("local_")) {
+            try {
+              const playerDocRef = doc(db, "players", player.id);
+              await updateDoc(playerDocRef, updatedFields);
+            } catch (e) {
+              console.error(`Error updating Firestore stats for player ${player.name}:`, e);
+            }
+          }
+
+          return updatedPlayer;
+        }
+
+        return player;
+      })
+    );
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(updatedPlayers));
+    }
+  } catch (err) {
+    console.error("Error in recalculateRanks:", err);
+  }
 }

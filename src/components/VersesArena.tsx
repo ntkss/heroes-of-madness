@@ -1,97 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { playLockName, playExplosion, speakAnnounce, playBeep } from "@/utils/audio";
 import { SQUAD_NAMES, Player } from "@/constants/players";
+import { DbPlayer, RankConfig } from "@/utils/firebase";
+import PlayerCard from "./PlayerCard";
 
-const ROLES = ["EXP LANE", "JUNGLE", "MID", "GOLD LANE", "ROAMING"];
-
-// ─── Deterministic Cosmetics Builder ─────────────────────────────────────────
-const getCosmetics = (name: string, role: string) => {
-  if (!name || name === "???" || name === "DRAFTING") {
-    return {
-      flag: "🏳️",
-      skinTier: null,
-      skinName: "",
-      heroName: "HERO DRAFT"
-    };
-  }
-
-  // Simple deterministic hash based on name characters
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  hash = Math.abs(hash);
-
-  const flags = ["🇺🇸", "🇵🇭", "🇸🇬", "🇮🇩", "🇲🇾", "🇹🇭", "🇻🇳", "🇯🇵", "🇰🇷", "🇧🇷", "🇨🇦"];
-  const flag = flags[hash % flags.length];
-
-  // Skin tiers & names
-  const tierChance = hash % 10;
-  let skinTier: string | null = null;
-  let skinName = "";
-
-  const skins = [
-    { tier: "LEGEND", name: "Obsidian Blade" },
-    { tier: "EPIC", name: "Soul Revelation" },
-    { tier: "LIMITED", name: "Honor" },
-    { tier: "SPECIAL", name: "Zombie Bambino" },
-    { tier: "ELITE", name: "King of Muay Thai" },
-    { tier: "STARLIGHT", name: "Street Blow" },
-    { tier: "COLLECTOR", name: "Doom Duelist" },
-    { tier: "LIGHTBORN", name: "Defender" }
-  ];
-
-  // 60% chance to have a skin tier badge
-  if (tierChance > 3) {
-    const skinObj = skins[hash % skins.length];
-    skinTier = skinObj.tier;
-    skinName = skinObj.name;
-  }
-
-  // Pick a random cool MLBB hero name
-  const heroes = [
-    "Angela", "Karina", "Lesley", "Cyclops", "Miya",
-    "Gusion", "Chou", "Lancelot", "Cecilion", "Tigreal",
-    "Balmond", "Bruno", "Layla", "Fanny", "Saber",
-    "Hayabusa", "Zilong", "Eudora", "Nana", "Rafaela",
-    "Franco", "Akai", "Alice", "Clint", "Alucard"
-  ];
-  const heroName = heroes[hash % heroes.length];
-
-  return { flag, skinTier, skinName, heroName };
-};
-
-// ─── Skin Tier Badge component ──────────────────────────────────────────────
-function SkinTierBadge({ tier }: { tier: string | null }) {
-  if (!tier) return null;
-
-  let bgGradient = "from-slate-600 to-slate-800 border-slate-400 text-white";
-
-  if (tier === "LEGEND") {
-    bgGradient = "from-red-600 via-yellow-500 to-red-600 border-yellow-400 text-yellow-100 animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.8)]";
-  } else if (tier === "EPIC" || tier === "COLLECTOR") {
-    bgGradient = "from-purple-800 to-indigo-900 border-purple-400 text-yellow-300 shadow-[0_0_6px_rgba(168,85,247,0.5)]";
-  } else if (tier === "LIMITED") {
-    bgGradient = "from-cyan-700 to-blue-800 border-cyan-400 text-teal-100 shadow-[0_0_6px_rgba(6,182,212,0.5)]";
-  } else if (tier === "SPECIAL") {
-    bgGradient = "from-teal-700 to-emerald-800 border-teal-400 text-yellow-200";
-  } else if (tier === "ELITE") {
-    bgGradient = "from-emerald-600 to-green-700 border-green-300 text-white";
-  } else if (tier === "STARLIGHT") {
-    bgGradient = "from-pink-600 to-fuchsia-800 border-pink-400 text-white";
-  } else if (tier === "LIGHTBORN") {
-    bgGradient = "from-amber-600 to-yellow-700 border-yellow-300 text-white";
-  }
-
-  return (
-    <div className={`absolute top-1 left-1/2 transform -translate-x-1/2 z-20 px-1 py-0.5 border text-[5.5px] font-pixel uppercase tracking-wider leading-none rounded-sm bg-gradient-to-r ${bgGradient}`}>
-      {tier}
-    </div>
-  );
-}
+const ROLES = ["EXP", "JUNGLE", "MID", "GOLD", "ROAMING"];
 
 interface VersesArenaProps {
   teamA: string[];
@@ -99,177 +14,8 @@ interface VersesArenaProps {
   winner: "teamA" | "teamB" | null;
   isGenerating: boolean;
   triggerScreenShake: () => void;
-  squad: Player[];
-}
-
-// ─── Player Card ───────────────────────────────────────────────────────────────
-interface PlayerCardProps {
-  name: string;
-  role: string;
-  slotIndex: number;
-  locked: boolean;
-  team: "A" | "B";
-  imageURL?: string;
-  isWinner: boolean;
-  isLoser: boolean;
-  percentage: number;
-}
-
-function PlayerCard({ name, role, slotIndex, locked, team, imageURL, isWinner, isLoser, percentage }: PlayerCardProps) {
-  const isBlue = team === "A";
-  const rolling = !locked;
-
-  // Use fallback Dicebear pixel-art avatar if no imageURL is provided to prevent ugly empty avatars
-  const avatarSeed = name.toLowerCase();
-  const finalImageURL = name !== "???" && name !== "DRAFTING"
-    ? (imageURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${avatarSeed}&backgroundColor=1a1a2e`)
-    : null;
-
-  const cosmetics = getCosmetics(name, role);
-
-  return (
-    <div
-      className={`
-        relative flex flex-col overflow-hidden border-2
-        transition-all duration-300 origin-bottom transform -skew-x-[6deg]
-        ${rolling ? "scale-105 z-10" : "scale-100"}
-        ${isLoser ? "opacity-35 grayscale" : "opacity-100"}
-        ${rolling
-          ? "border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.7)] animate-pulse"
-          : isBlue
-            ? "border-[#c5a059] shadow-[0_0_8px_rgba(0,191,255,0.2)]"
-            : "border-[#b85b5b] shadow-[0_0_8px_rgba(239,68,68,0.2)]"
-        }
-      `}
-      style={{
-        flex: "1 1 0",
-        minWidth: 0,
-        aspectRatio: "1/2.2",
-        maxHeight: "300px",
-        minHeight: "130px",
-        background: isBlue
-          ? "linear-gradient(to bottom, #071324 0%, #0d1e36 50%, #0b1522 100%)"
-          : "linear-gradient(to bottom, #1d050a 0%, #2e0911 50%, #1c050a 100%)",
-      }}
-    >
-      {/* Glow highlight on drafting slot */}
-      {rolling && (
-        <div className="absolute inset-0 bg-yellow-400/5 animate-pulse z-0 pointer-events-none" />
-      )}
-
-      {/* Unskewed Content Wrapper */}
-      <div className="w-full h-full transform skew-x-[6deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none">
-
-        {/* Country Flag (Top Left) */}
-        {/* {name !== "???" && name !== "DRAFTING" && (
-          <div className="absolute top-0.5 left-0.5 z-20 w-4.5 h-4.5 rounded-full overflow-hidden bg-slate-900 border border-white/20 flex items-center justify-center shadow-md text-[8.5px]">
-            {cosmetics.flag}
-          </div>
-        )} */}
-
-        {/* Skin Tier Banner (Top Center) */}
-        {name !== "???" && name !== "DRAFTING" && (
-          <SkinTierBadge tier={cosmetics.skinTier} />
-        )}
-
-        {/* Slot level indicator (Top Right) */}
-        {/* <div className="absolute top-0.5 right-0.5 z-20 w-4.5 h-4.5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center font-pixel text-[6px] text-slate-300 shadow-md">
-          {isBlue ? "L12" : "S17"}
-        </div> */}
-
-        {/* Background Portrait Image (Unskewed and stretched slightly to cover bounds) */}
-        <div className="absolute inset-0 w-[140%] -left-[20%] h-full pointer-events-none z-0">
-          {finalImageURL ? (
-            <Image
-              src={finalImageURL}
-              alt={name}
-              fill
-              className="object-cover object-top opacity-85"
-              unoptimized
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60">
-              <span className="text-slate-600 font-pixel text-[6px] animate-pulse">DRAFT</span>
-            </div>
-          )}
-        </div>
-
-        {/* Ambient Dark Gradient Bottom Overlay to make text legible */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-3/5 pointer-events-none z-10"
-          style={{
-            background: isBlue
-              ? "linear-gradient(to top, rgba(3, 8, 20, 0.98) 0%, rgba(3, 8, 20, 0.8) 55%, rgba(3, 8, 20, 0.1) 85%, transparent 100%)"
-              : "linear-gradient(to top, rgba(20, 3, 5, 0.98) 0%, rgba(20, 3, 5, 0.8) 55%, rgba(20, 3, 5, 0.1) 85%, transparent 100%)",
-          }}
-        />
-
-        {/* Winner Badge Banner */}
-        {isWinner && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
-            <span className="text-yellow-400 font-action text-[12px] sm:text-base font-black rotate-[-15deg] glow-yellow tracking-wider select-none border border-yellow-400/80 px-1.5 py-0.5 bg-black/80 shadow-[0_0_10px_rgba(250,204,21,0.5)]">
-              WIN
-            </span>
-          </div>
-        )}
-
-        {/* Bottom Hero & Player detail card */}
-        <div className="mt-auto w-full relative z-20 flex flex-col pt-2">
-
-          {/* Skin Name */}
-          {/* {cosmetics.skinName && (
-            <span className={`text-[6px] sm:text-[7px] font-pixel tracking-wider text-center block truncate leading-tight uppercase ${cosmetics.skinTier === "LEGEND" ? "text-red-400 glow-red" :
-              cosmetics.skinTier === "EPIC" ? "text-purple-400 glow-purple" :
-                cosmetics.skinTier === "LIMITED" ? "text-cyan-400 glow-blue" :
-                  "text-emerald-400"
-              }`}>
-              {cosmetics.skinName}
-            </span>
-          )} */}
-
-          {/* Hero Name (Medium font) */}
-          {/* <span className="font-action text-[9px] sm:text-[10px] md:text-[11px] font-bold text-slate-300 text-center block truncate leading-none mt-0.5 tracking-wide drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
-            {cosmetics.heroName}
-          </span> */}
-
-          {/* Player drafted Name (Large font, full-width focus) */}
-          <span className="font-action text-sm sm:text-base md:text-lg lg:text-4xl font-black text-white text-center block truncate mt-0.5 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-            {name}
-          </span>
-
-          {/* Player Role / Lane */}
-          {role && (
-            <span className="font-pixel text-sm sm:text-base italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
-              {role}
-            </span>
-          )}
-
-          {/* Loading Stats Bottom row (Stretched full-width) */}
-          <div className="flex flex-col w-full mt-1.5 p-1 bg-black/60 rounded border border-white/5 shadow-inner">
-            <div className="flex justify-between items-center w-full leading-none mb-1">
-              <span className="font-mono text-[8px] sm:text-[9.5px] font-bold text-white pl-0.5 leading-none">
-                {percentage}%
-              </span>
-              <span className="text-[6.5px] sm:text-[7.5px] text-slate-400 font-pixel uppercase tracking-tighter leading-none">
-                LOADING
-              </span>
-            </div>
-            <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-150 ${isBlue
-                  ? 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]'
-                  : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
-                  }`}
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  );
+  squad: DbPlayer[];
+  rankConfig: RankConfig;
 }
 
 // ─── Team Row ──────────────────────────────────────────────────────────────────
@@ -280,16 +26,31 @@ interface TeamRowProps {
   locked: boolean[];
   lockedOffset: number;
   winner: "teamA" | "teamB" | null;
-  squad: Player[];
+  squad: DbPlayer[];
   percentages: number[];
+  rankConfig: RankConfig;
 }
 
-function TeamRow({ label, side, display, locked, lockedOffset, winner, squad, percentages }: TeamRowProps) {
+function TeamRow({ label, side, display, locked, lockedOffset, winner, squad, percentages, rankConfig }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
   const isLoser = winner !== null && !isWinner;
 
   const getPlayer = (name: string) => squad.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+  const getPlayerRankClass = (player: DbPlayer | undefined) => {
+    if (!player || !rankConfig) return null;
+    if (player.current_rank === rankConfig.tiers.high) return "high";
+    if (player.current_rank === rankConfig.tiers.normal) return "normal";
+    if (player.current_rank === rankConfig.tiers.low) return "low";
+    
+    // Legacy string fallbacks
+    if (player.current_rank.includes("Mythic")) return "high";
+    if (player.current_rank === "Legend") return "normal";
+    if (player.current_rank === "Epic") return "low";
+    
+    return "normal";
+  };
 
   return (
     <div className="relative flex flex-col gap-1 w-full shrink-0">
@@ -318,6 +79,7 @@ function TeamRow({ label, side, display, locked, lockedOffset, winner, squad, pe
         }`}>
         {display.map((name, idx) => {
           const player = getPlayer(name);
+          const rankClass = getPlayerRankClass(player);
           return (
             <PlayerCard
               key={idx}
@@ -330,6 +92,8 @@ function TeamRow({ label, side, display, locked, lockedOffset, winner, squad, pe
               isWinner={isWinner}
               isLoser={isLoser}
               percentage={percentages[idx + lockedOffset]}
+              currentRank={player?.current_rank}
+              rankClass={rankClass}
             />
           );
         })}
@@ -346,6 +110,7 @@ export default function VersesArena({
   isGenerating,
   triggerScreenShake,
   squad,
+  rankConfig,
 }: VersesArenaProps) {
   const [dispA, setDispA] = useState<string[]>(Array(5).fill("???"));
   const [dispB, setDispB] = useState<string[]>(Array(5).fill("???"));
@@ -521,6 +286,7 @@ export default function VersesArena({
         winner={winner}
         squad={squad}
         percentages={percentages}
+        rankConfig={rankConfig}
       />
 
       {/* VS Banner Separator & Loading screen tips */}
@@ -558,6 +324,7 @@ export default function VersesArena({
         winner={winner}
         squad={squad}
         percentages={percentages}
+        rankConfig={rankConfig}
       />
     </div>
   );

@@ -231,7 +231,6 @@ export default function PlayerInput({
               name: trimmedName,
               alias: (data.alias || "").trim() || trimmedName.toLowerCase(),
               avatar: data.avatar,
-              avartar: data.avatar,
               imageURL: data.avatar,
               winrate: 0,
               current_rank: "Epic",

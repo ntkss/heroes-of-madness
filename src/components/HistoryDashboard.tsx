@@ -139,10 +139,16 @@ export default function HistoryDashboard({
         else if (rankName === "Epic") rankColorClass = "text-green-400 font-bold";
       }
     }
+
+    const isThai = /[\u0E00-\u0E7F]/.test(rankName);
+    const fontClass = isThai 
+      ? "font-thai text-[10px] tracking-wide" 
+      : "font-pixel text-[6.5px] uppercase tracking-wider";
+
     return (
       <span className="text-[8.5px] text-slate-500 uppercase font-pixel tracking-tighter truncate mt-1.5 leading-none">
         {dbPlayer.alias} • <span className="text-neon-blue font-bold font-tech">{dbPlayer.role}</span> •{" "}
-        <span className={rankColorClass}>{rankName}</span>
+        <span className={`${rankColorClass} ${fontClass}`}>{rankName}</span>
       </span>
     );
   };
@@ -351,7 +357,15 @@ export default function HistoryDashboard({
                       />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-action text-2xl md:text-3xl font-black tracking-wide text-white truncate block leading-none">
+                      <span 
+                        className={`
+                          text-white truncate block leading-none
+                          ${/[\u0E00-\u0E7F]/.test(stats.name)
+                            ? 'font-thai text-lg md:text-xl font-bold mt-1'
+                            : 'font-action text-2xl md:text-3xl font-black tracking-wide'
+                          }
+                        `}
+                      >
                         {stats.name}
                       </span>
                       {renderRankInfo(stats.dbPlayer)}

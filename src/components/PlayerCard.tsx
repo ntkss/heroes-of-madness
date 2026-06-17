@@ -83,8 +83,13 @@ function RankBadge({ rank, rankClass }: { rank: string | null; rankClass: "high"
     }
   }
 
+  const isThai = /[\u0E00-\u0E7F]/.test(rank);
+  const fontClass = isThai 
+    ? "font-thai text-xs tracking-wide" 
+    : "font-pixel text-xs uppercase tracking-wider";
+
   return (
-    <div className={`absolute top-1 left-1/2 transform -translate-x-1/2 z-20 px-1.5 py-0.5 border text-xs font-pixel uppercase tracking-wider leading-none rounded-sm bg-gradient-to-r ${bgGradient}`}>
+    <div className={`absolute top-1 left-1/2 transform -translate-x-1/2 z-20 px-1.5 py-0.5 border leading-none rounded-sm bg-gradient-to-r ${fontClass} ${bgGradient}`}>
       {rank}
     </div>
   );
@@ -171,7 +176,7 @@ export default function PlayerCard({
       )}
 
       {/* Unskewed Content Wrapper */}
-      <div className="w-full h-full transform skew-x-[6deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none">
+      <div className="w-full h-full transform skew-x-[9deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none">
 
         {/* Rank Banner (Top Center) */}
         {name !== "???" && name !== "DRAFTING" && (
@@ -218,13 +223,21 @@ export default function PlayerCard({
         <div className="mt-auto w-full relative z-20 flex flex-col pt-2">
 
           {/* Player drafted Name (Large font, full-width focus) */}
-          <span className="font-action text-sm sm:text-base md:text-lg lg:text-4xl font-black text-white text-center block truncate mt-0.5 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+          <span 
+            className={`
+              text-white text-center block truncate mt-0.5 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]
+              ${/[\u0E00-\u0E7F]/.test(name)
+                ? 'font-thai text-xs sm:text-sm md:text-base lg:text-3xl font-bold'
+                : 'font-action text-xs sm:text-sm md:text-base lg:text-3xl font-black'
+              }
+            `}
+          >
             {name}
           </span>
 
           {/* Player Role / Lane */}
           {role && (
-            <span className="font-pixel text-sm sm:text-base italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+            <span className="font-pixel text-[5.5px] sm:text-[6.5px] md:text-[7.5px] lg:text-[8.5px] italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
               {role}
             </span>
           )}

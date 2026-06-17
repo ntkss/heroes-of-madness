@@ -60,13 +60,13 @@ export default function PlayerInput({
   const handleQuickFill = () => {
     playCoin();
     // Find players not yet selected
-    const unselected = availablePlayers.filter(p => !names.includes(p.name));
+    const unselected = availablePlayers.filter((p) => !names.includes(p.name));
     // Shuffle unselected
     const shuffled = [...unselected].sort(() => Math.random() - 0.5);
     // Take what is needed to reach 10
     const needed = 10 - names.length;
     if (needed <= 0) return;
-    const toAdd = shuffled.slice(0, needed).map(p => p.name);
+    const toAdd = shuffled.slice(0, needed).map((p) => p.name);
     onChange([...names, ...toAdd]);
   };
 
@@ -90,7 +90,9 @@ export default function PlayerInput({
         </h2>
         <span
           className={`font-pixel text-[10px] px-2.5 py-0.5 border-2 transition-all duration-300 ${
-            isReady ? "border-neon-blue text-neon-blue glow-blue" : "border-neon-red text-neon-red glow-red"
+            isReady
+              ? "border-neon-blue text-neon-blue glow-blue"
+              : "border-neon-red text-neon-red glow-red"
           }`}
         >
           DRAFT: {currentCount}/10
@@ -107,7 +109,9 @@ export default function PlayerInput({
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-black/40 border-2 border-slate-800 p-3 h-auto min-h-[170px]">
             {Array.from({ length: 10 }).map((_, index) => {
               const selectedName = names[index];
-              const playerObj = availablePlayers.find((p) => p.name === selectedName);
+              const playerObj = availablePlayers.find(
+                (p) => p.name === selectedName,
+              );
 
               return selectedName ? (
                 <div
@@ -135,7 +139,9 @@ export default function PlayerInput({
                   </span>
                   {/* Remove Hover overlay */}
                   <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    <span className="font-pixel text-[8px] text-neon-red tracking-tight">REMOVE</span>
+                    <span className="font-pixel text-[8px] text-neon-red tracking-tight">
+                      REMOVE
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -143,8 +149,12 @@ export default function PlayerInput({
                   key={index}
                   className="bg-black/20 border border-dashed border-slate-800 flex flex-col items-center justify-center p-2 text-center text-slate-600 select-none"
                 >
-                  <span className="font-pixel text-[14px] leading-none mb-1">+</span>
-                  <span className="font-pixel text-[6.5px] uppercase tracking-tighter">VACANT</span>
+                  <span className="font-pixel text-[14px] leading-none mb-1">
+                    +
+                  </span>
+                  <span className="font-pixel text-[6.5px] uppercase tracking-tighter">
+                    VACANT
+                  </span>
                 </div>
               );
             })}
@@ -154,7 +164,8 @@ export default function PlayerInput({
         {/* Right Side: Quick Fill, Clear, Add new, Fight */}
         <div className="lg:w-80 flex flex-col justify-between gap-4">
           <p className="text-[10.5px] text-[#a0a0c0] uppercase tracking-wider leading-relaxed font-mono">
-            SELECT 10 PLAYERS FROM THE DATABASE BELOW. IF YOU DRAFT FEWER THAN 10, RANDOM BOTS WILL FILL THE VOID.
+            SELECT 10 PLAYERS FROM THE DATABASE BELOW. IF YOU DRAFT FEWER THAN
+            10, RANDOM BOTS WILL FILL THE VOID.
           </p>
 
           <div className="grid grid-cols-2 gap-2 font-pixel">
@@ -221,7 +232,9 @@ export default function PlayerInput({
 
             // Check uniqueness
             const nameExists = availablePlayers.some(
-              (p) => p.name.toLowerCase() === trimmedName.toLowerCase() || p.id.toLowerCase() === trimmedName.toLowerCase()
+              (p) =>
+                p.name.toLowerCase() === trimmedName.toLowerCase() ||
+                p.id.toLowerCase() === trimmedName.toLowerCase(),
             );
             if (nameExists) {
               throw new Error("FIGHTER NAME ALREADY EXISTS!");

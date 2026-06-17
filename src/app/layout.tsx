@@ -28,7 +28,8 @@ const pattaya = Pattaya({
 
 export const metadata: Metadata = {
   title: "HEROES OF MADNESS - MLBB Random Team Arena",
-  description: "Street Fighter styled Random Team Generator for Mobile Legends: Bang Bang, featuring dynamic synthesizers, slot rolling, and database history.",
+  description:
+    "Street Fighter styled Random Team Generator for Mobile Legends: Bang Bang, featuring dynamic synthesizers, slot rolling, and database history.",
 };
 
 export default function RootLayout({

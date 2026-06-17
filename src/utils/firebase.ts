@@ -1,19 +1,19 @@
 import { initializeApp, getApps } from "firebase/app";
 import { SQUAD } from "@/constants/players";
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
+import {
+  getFirestore,
+  collection,
+  addDoc,
   setDoc,
   getDoc,
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  orderBy, 
-  query, 
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  orderBy,
+  query,
   limit,
-  Firestore
+  Firestore,
 } from "firebase/firestore";
 
 export interface Match {
@@ -56,8 +56,8 @@ export const DEFAULT_RANK_CONFIG: RankConfig = {
   tiers: {
     high: "คนเก่ง",
     normal: "คนปกติ",
-    low: "คนกาก"
-  }
+    low: "คนกาก",
+  },
 };
 
 const LOCAL_CONFIG_KEY = "mlbb_generator_rank_config";
@@ -66,17 +66,21 @@ const isDev = process.env.NODE_ENV === "development";
 
 // Check if all essential Firebase variables are defined in the environment
 // In development, always use LocalStorage to avoid polluting production data
-export const isFirebaseConfigured = !isDev && !!(
-  process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-  process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-  process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
-  process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
-  process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-);
+export const isFirebaseConfigured =
+  !isDev &&
+  !!(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
+    process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  );
 
 if (isDev) {
-  console.log("🛠️ Development mode — using LocalStorage only (Firebase disabled).");
+  console.log(
+    "🛠️ Development mode — using LocalStorage only (Firebase disabled).",
+  );
 } else {
   console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
     apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -85,7 +89,7 @@ if (isDev) {
     storageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    isFirebaseConfigured
+    isFirebaseConfigured,
   });
 }
 
@@ -101,16 +105,22 @@ if (isFirebaseConfigured) {
       messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     };
-    
+
     // Prevent double-initialization in Next.js Hot Module Replacement (HMR)
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const app =
+      getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
     console.log("🔥 Firebase initialized successfully!");
   } catch (error) {
-    console.error("❌ Firebase initialization error, falling back to LocalStorage:", error);
+    console.error(
+      "❌ Firebase initialization error, falling back to LocalStorage:",
+      error,
+    );
   }
 } else if (!isDev) {
-  console.log("💾 Firebase environment variables missing. Operating in offline LocalStorage mode.");
+  console.log(
+    "💾 Firebase environment variables missing. Operating in offline LocalStorage mode.",
+  );
 }
 
 const LOCAL_STORAGE_KEY = "mlbb_generator_matches";
@@ -124,7 +134,7 @@ export async function fetchMatches(): Promise<Match[]> {
       const matchesCol = collection(db, "matches");
       const q = query(matchesCol, orderBy("createdAt", "desc"), limit(50));
       const querySnapshot = await getDocs(q);
-      
+
       const list: Match[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -133,12 +143,15 @@ export async function fetchMatches(): Promise<Match[]> {
           createdAt: data.createdAt || Date.now(),
           teamA: data.teamA || [],
           teamB: data.teamB || [],
-          winner: data.winner !== undefined ? data.winner : null
+          winner: data.winner !== undefined ? data.winner : null,
         });
       });
       return list;
     } catch (e) {
-      console.error("Error fetching from Firestore, switching to LocalStorage:", e);
+      console.error(
+        "Error fetching from Firestore, switching to LocalStorage:",
+        e,
+      );
     }
   }
 
@@ -159,7 +172,9 @@ export async function fetchMatches(): Promise<Match[]> {
 export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
   const newMatch: Match = {
     ...matchData,
-    id: db ? "" : `local_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`
+    id: db
+      ? ""
+      : `local_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`,
   };
 
   if (db) {
@@ -169,7 +184,10 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       newMatch.id = docRef.id;
       return newMatch;
     } catch (e) {
-      console.error("Error writing to Firestore, saving to LocalStorage instead:", e);
+      console.error(
+        "Error writing to Firestore, saving to LocalStorage instead:",
+        e,
+      );
     }
   }
 
@@ -184,7 +202,10 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
 }
 
 // Mark match winner
-export async function updateMatchWinner(matchId: string, winner: "teamA" | "teamB" | null): Promise<boolean> {
+export async function updateMatchWinner(
+  matchId: string,
+  winner: "teamA" | "teamB" | null,
+): Promise<boolean> {
   let success = false;
   if (db && !matchId.startsWith("local_")) {
     try {
@@ -192,7 +213,10 @@ export async function updateMatchWinner(matchId: string, winner: "teamA" | "team
       await updateDoc(docRef, { winner });
       success = true;
     } catch (e) {
-      console.error("Error updating Firestore match, updating LocalStorage instead:", e);
+      console.error(
+        "Error updating Firestore match, updating LocalStorage instead:",
+        e,
+      );
     }
   }
 
@@ -201,7 +225,7 @@ export async function updateMatchWinner(matchId: string, winner: "teamA" | "team
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (stored) {
       const list = JSON.parse(stored) as Match[];
-      const idx = list.findIndex(m => m.id === matchId);
+      const idx = list.findIndex((m) => m.id === matchId);
       if (idx !== -1) {
         list[idx].winner = winner;
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
@@ -225,7 +249,10 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
       await deleteDoc(docRef);
       success = true;
     } catch (e) {
-      console.error("Error deleting from Firestore, deleting from LocalStorage instead:", e);
+      console.error(
+        "Error deleting from Firestore, deleting from LocalStorage instead:",
+        e,
+      );
     }
   }
 
@@ -235,7 +262,7 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
     if (stored) {
       let list = JSON.parse(stored) as Match[];
       const originalLen = list.length;
-      list = list.filter(m => m.id !== matchId);
+      list = list.filter((m) => m.id !== matchId);
       if (list.length < originalLen) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
         success = true;
@@ -253,14 +280,14 @@ const LOCAL_PLAYERS_KEY = "mlbb_generator_players";
 
 // Fetch players (loaded from Firestore, falls back to LocalStorage, seeds with SQUAD if empty)
 export async function fetchPlayers(): Promise<DbPlayer[]> {
-  let list: DbPlayer[] = [];
-  
+  const list: DbPlayer[] = [];
+
   if (db) {
     try {
       const playersCol = collection(db, "players");
       const q = query(playersCol, orderBy("name", "asc"));
       const querySnapshot = await getDocs(q);
-      
+
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
 
@@ -276,21 +303,25 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           highest_rank: data.highest_rank || "Epic",
           total_match_played: Number(data.total_match_played) || 0,
           role: data.role || "ALL-ROUNDER",
-          createdAt: data.createdAt || Date.now()
+          createdAt: data.createdAt || Date.now(),
         });
       });
-      
+
       if (list.length > 0) {
         if (typeof window !== "undefined") {
           localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(list));
         }
         return list;
       }
-      
-      console.log("Firestore players collection is empty. Seeding initial squad to Firestore...");
-      
+
+      console.log(
+        "Firestore players collection is empty. Seeding initial squad to Firestore...",
+      );
+
       const seedList: DbPlayer[] = SQUAD.map((p) => {
-        const avatarVal = p.imageURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${p.id}&backgroundColor=1a1a2e`;
+        const avatarVal =
+          p.imageURL ||
+          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${p.id}&backgroundColor=1a1a2e`;
         return {
           id: p.id,
           name: p.name,
@@ -302,7 +333,7 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           highest_rank: "Legend",
           total_match_played: 0,
           role: "ALL-ROUNDER",
-          createdAt: Date.now()
+          createdAt: Date.now(),
         };
       });
 
@@ -317,16 +348,19 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           highest_rank: player.highest_rank,
           total_match_played: player.total_match_played,
           role: player.role,
-          createdAt: player.createdAt
+          createdAt: player.createdAt,
         });
       }
-      
+
       if (typeof window !== "undefined") {
         localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(seedList));
       }
       return seedList;
     } catch (e) {
-      console.error("Error fetching/seeding players on Firestore, switching to LocalStorage:", e);
+      console.error(
+        "Error fetching/seeding players on Firestore, switching to LocalStorage:",
+        e,
+      );
     }
   }
 
@@ -343,10 +377,12 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
         // Ignore parsing errors and re-initialize
       }
     }
-    
+
     // Seed initial squad players
     const seedList: DbPlayer[] = SQUAD.map((p) => {
-      const avatarVal = p.imageURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${p.id}&backgroundColor=1a1a2e`;
+      const avatarVal =
+        p.imageURL ||
+        `https://api.dicebear.com/9.x/pixel-art/svg?seed=${p.id}&backgroundColor=1a1a2e`;
       return {
         id: p.id,
         name: p.name,
@@ -358,26 +394,28 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
         highest_rank: "Legend",
         total_match_played: 0,
         role: "ALL-ROUNDER",
-        createdAt: Date.now()
+        createdAt: Date.now(),
       };
     });
 
     localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(seedList));
     return seedList;
   }
-  
+
   return [];
 }
 
 // Save a new player to database
-export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPlayer> {
+export async function savePlayer(
+  playerData: Omit<DbPlayer, "id">,
+): Promise<DbPlayer> {
   const nameTrimmed = (playerData.name || "").trim();
   if (!nameTrimmed) {
     throw new Error("FIGHTER NAME CANNOT BE EMPTY!");
   }
   const docId = nameTrimmed.toLowerCase();
   const cleanAvatar = playerData.avatar || playerData.imageURL || "";
-  
+
   const firestoreData = {
     name: nameTrimmed,
     alias: playerData.alias || docId,
@@ -387,7 +425,7 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
     highest_rank: playerData.highest_rank,
     total_match_played: Number(playerData.total_match_played) || 0,
     role: playerData.role || "ALL-ROUNDER",
-    createdAt: Date.now()
+    createdAt: Date.now(),
   };
 
   const id = docId;
@@ -395,7 +433,7 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
     ...firestoreData,
     id,
     avatar: cleanAvatar,
-    imageURL: cleanAvatar
+    imageURL: cleanAvatar,
   };
 
   if (db) {
@@ -405,24 +443,29 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
       if (docSnap.exists()) {
         throw new Error("FIGHTER NAME ALREADY EXISTS!");
       }
-      
+
       await setDoc(docRef, firestoreData);
-      
+
       // Update local storage too to keep in sync
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
         const list = stored ? (JSON.parse(stored) as DbPlayer[]) : [];
-        const filteredList = list.filter(p => p.id !== docId && p.name.toLowerCase() !== docId);
+        const filteredList = list.filter(
+          (p) => p.id !== docId && p.name.toLowerCase() !== docId,
+        );
         filteredList.push(newPlayer);
         localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filteredList));
       }
-      
+
       return newPlayer;
-    } catch (e: any) {
-      if (e?.message === "FIGHTER NAME ALREADY EXISTS!") {
+    } catch (e) {
+      if (e instanceof Error && e.message === "FIGHTER NAME ALREADY EXISTS!") {
         throw e;
       }
-      console.error("Error writing player to Firestore, saving to LocalStorage instead:", e);
+      console.error(
+        "Error writing player to Firestore, saving to LocalStorage instead:",
+        e,
+      );
     }
   }
 
@@ -430,7 +473,9 @@ export async function savePlayer(playerData: Omit<DbPlayer, "id">): Promise<DbPl
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
     const list = stored ? (JSON.parse(stored) as DbPlayer[]) : [];
-    const nameExists = list.some(p => p.name.toLowerCase() === docId || p.id === docId);
+    const nameExists = list.some(
+      (p) => p.name.toLowerCase() === docId || p.id === docId,
+    );
     if (nameExists) {
       throw new Error("FIGHTER NAME ALREADY EXISTS!");
     }
@@ -450,28 +495,38 @@ export async function fetchRankConfig(): Promise<RankConfig> {
         const data = docSnap.data();
         const config: RankConfig = {
           minMatches: Number(data.minMatches) ?? DEFAULT_RANK_CONFIG.minMatches,
-          highTierWinrate: Number(data.highTierWinrate) ?? DEFAULT_RANK_CONFIG.highTierWinrate,
-          lowTierWinrate: Number(data.lowTierWinrate) ?? DEFAULT_RANK_CONFIG.lowTierWinrate,
+          highTierWinrate:
+            Number(data.highTierWinrate) ?? DEFAULT_RANK_CONFIG.highTierWinrate,
+          lowTierWinrate:
+            Number(data.lowTierWinrate) ?? DEFAULT_RANK_CONFIG.lowTierWinrate,
           tiers: {
             high: data.tiers?.high || DEFAULT_RANK_CONFIG.tiers.high,
             normal: data.tiers?.normal || DEFAULT_RANK_CONFIG.tiers.normal,
             low: data.tiers?.low || DEFAULT_RANK_CONFIG.tiers.low,
-          }
+          },
         };
         if (typeof window !== "undefined") {
           localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
         }
         return config;
       } else {
-        console.log("Rank config missing on Firestore. Seeding default config...");
+        console.log(
+          "Rank config missing on Firestore. Seeding default config...",
+        );
         await setDoc(configRef, DEFAULT_RANK_CONFIG);
         if (typeof window !== "undefined") {
-          localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(DEFAULT_RANK_CONFIG));
+          localStorage.setItem(
+            LOCAL_CONFIG_KEY,
+            JSON.stringify(DEFAULT_RANK_CONFIG),
+          );
         }
         return DEFAULT_RANK_CONFIG;
       }
     } catch (e) {
-      console.error("Error fetching rank config from Firestore, switching to LocalStorage:", e);
+      console.error(
+        "Error fetching rank config from Firestore, switching to LocalStorage:",
+        e,
+      );
     }
   }
 
@@ -502,7 +557,10 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
       await recalculateRanks(config);
       return true;
     } catch (e) {
-      console.error("Error saving rank config to Firestore, saving to LocalStorage instead:", e);
+      console.error(
+        "Error saving rank config to Firestore, saving to LocalStorage instead:",
+        e,
+      );
     }
   }
 
@@ -516,9 +574,11 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
 }
 
 // Recalculate ranks and update all players in the database
-export async function recalculateRanks(passedConfig?: RankConfig): Promise<void> {
+export async function recalculateRanks(
+  passedConfig?: RankConfig,
+): Promise<void> {
   try {
-    const config = passedConfig || await fetchRankConfig();
+    const config = passedConfig || (await fetchRankConfig());
     const players = await fetchPlayers();
     const matches = await fetchMatches();
 
@@ -539,7 +599,8 @@ export async function recalculateRanks(passedConfig?: RankConfig): Promise<void>
       const teamAPlayers = match.teamA || [];
       const teamBPlayers = match.teamB || [];
 
-      const winningTeam = match.winner === "teamA" ? teamAPlayers : teamBPlayers;
+      const winningTeam =
+        match.winner === "teamA" ? teamAPlayers : teamBPlayers;
       const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
 
       winningTeam.forEach((playerName) => {
@@ -562,7 +623,8 @@ export async function recalculateRanks(passedConfig?: RankConfig): Promise<void>
         const pStats = statsMap[key] || { wins: 0, matches: 0 };
 
         const totalMatches = pStats.matches;
-        const winrate = totalMatches > 0 ? Math.round((pStats.wins / totalMatches) * 100) : 0;
+        const winrate =
+          totalMatches > 0 ? Math.round((pStats.wins / totalMatches) * 100) : 0;
 
         let newRank = config.tiers.normal;
         if (totalMatches >= config.minMatches) {
@@ -582,7 +644,7 @@ export async function recalculateRanks(passedConfig?: RankConfig): Promise<void>
           newHighestRank = newRank;
         }
 
-        const hasChanged = 
+        const hasChanged =
           player.total_match_played !== totalMatches ||
           player.winrate !== winrate ||
           player.current_rank !== newRank ||
@@ -593,12 +655,12 @@ export async function recalculateRanks(passedConfig?: RankConfig): Promise<void>
             total_match_played: totalMatches,
             winrate: winrate,
             current_rank: newRank,
-            highest_rank: newHighestRank
+            highest_rank: newHighestRank,
           };
 
           const updatedPlayer: DbPlayer = {
             ...player,
-            ...updatedFields
+            ...updatedFields,
           };
 
           if (db && !player.id.startsWith("local_")) {
@@ -606,7 +668,10 @@ export async function recalculateRanks(passedConfig?: RankConfig): Promise<void>
               const playerDocRef = doc(db, "players", player.id);
               await updateDoc(playerDocRef, updatedFields);
             } catch (e) {
-              console.error(`Error updating Firestore stats for player ${player.name}:`, e);
+              console.error(
+                `Error updating Firestore stats for player ${player.name}:`,
+                e,
+              );
             }
           }
 
@@ -614,7 +679,7 @@ export async function recalculateRanks(passedConfig?: RankConfig): Promise<void>
         }
 
         return player;
-      })
+      }),
     );
 
     if (typeof window !== "undefined") {

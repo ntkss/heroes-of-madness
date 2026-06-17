@@ -5,7 +5,10 @@ let audioCtx: AudioContext | null = null;
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
     if (AudioContextClass) {
       audioCtx = new AudioContextClass();
     }
@@ -17,7 +20,12 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-export function playBeep(freq = 600, duration = 0.08, type: OscillatorType = "sine", volume = 0.1) {
+export function playBeep(
+  freq = 600,
+  duration = 0.08,
+  type: OscillatorType = "sine",
+  volume = 0.1,
+) {
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -44,7 +52,7 @@ export function playCoin() {
   if (!ctx) return;
 
   const t = ctx.currentTime;
-  
+
   // Note 1
   const osc1 = ctx.createOscillator();
   const gain1 = ctx.createGain();
@@ -54,7 +62,7 @@ export function playCoin() {
   gain1.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
   osc1.connect(gain1);
   gain1.connect(ctx.destination);
-  
+
   osc1.start(t);
   osc1.stop(t + 0.08);
 
@@ -158,25 +166,28 @@ export function playWin() {
 
   const t = ctx.currentTime;
   const notes = [
-    { freq: 523.25, start: 0, duration: 0.1 },   // C5
+    { freq: 523.25, start: 0, duration: 0.1 }, // C5
     { freq: 659.25, start: 0.1, duration: 0.1 }, // E5
     { freq: 783.99, start: 0.2, duration: 0.1 }, // G5
-    { freq: 1046.50, start: 0.3, duration: 0.3 } // C6
+    { freq: 1046.5, start: 0.3, duration: 0.3 }, // C6
   ];
 
   notes.forEach((note) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
+
     osc.type = "triangle";
     osc.frequency.setValueAtTime(note.freq, t + note.start);
-    
+
     gain.gain.setValueAtTime(0.12, t + note.start);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + note.start + note.duration);
-    
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      t + note.start + note.duration,
+    );
+
     osc.connect(gain);
     gain.connect(ctx.destination);
-    
+
     osc.start(t + note.start);
     osc.stop(t + note.start + note.duration);
   });
@@ -190,21 +201,27 @@ export function speakAnnounce(text: string) {
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  
+
   // Find a suitable english voice (preferably male / deep or robotic)
   const voices = window.speechSynthesis.getVoices();
-  const targetVoice = voices.find(v => 
-    v.lang.startsWith("en") && 
-    (v.name.toLowerCase().includes("google") || v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("male"))
-  ) || voices.find(v => v.lang.startsWith("en")) || voices[0];
-  
+  const targetVoice =
+    voices.find(
+      (v) =>
+        v.lang.startsWith("en") &&
+        (v.name.toLowerCase().includes("google") ||
+          v.name.toLowerCase().includes("premium") ||
+          v.name.toLowerCase().includes("male")),
+    ) ||
+    voices.find((v) => v.lang.startsWith("en")) ||
+    voices[0];
+
   if (targetVoice) {
     utterance.voice = targetVoice;
   }
 
   // Adjust parameters to sound more retro/arcade-announcer like
   utterance.pitch = 0.85; // Deep energetic voice
-  utterance.rate = 1.15;  // Rapid/high adrenaline rate
+  utterance.rate = 1.15; // Rapid/high adrenaline rate
   utterance.volume = 0.8;
 
   window.speechSynthesis.speak(utterance);

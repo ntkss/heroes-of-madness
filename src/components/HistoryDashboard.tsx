@@ -20,7 +20,9 @@ export default function HistoryDashboard({
   availablePlayers,
   rankConfig,
 }: HistoryDashboardProps) {
-  const [activeTab, setActiveTab] = React.useState<"history" | "stats">("history");
+  const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
+    "history",
+  );
 
   const formatDate = (timestamp: number) => {
     const d = new Date(timestamp);
@@ -29,7 +31,7 @@ export default function HistoryDashboard({
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false
+      hour12: false,
     });
   };
 
@@ -45,7 +47,10 @@ export default function HistoryDashboard({
 
   // Dynamically compute player statistics from player documents (single source of truth) and matches logs (for unregistered players)
   const playerStats = React.useMemo(() => {
-    const statsMap: Record<string, { wins: number; losses: number; matches: number; dbPlayer?: DbPlayer }> = {};
+    const statsMap: Record<
+      string,
+      { wins: number; losses: number; matches: number; dbPlayer?: DbPlayer }
+    > = {};
 
     // 1. Initialize stats map with database stats for all available players
     availablePlayers.forEach((player) => {
@@ -58,7 +63,7 @@ export default function HistoryDashboard({
         wins: dbWins,
         losses: dbLosses,
         matches: dbMatches,
-        dbPlayer: player
+        dbPlayer: player,
       };
     });
 
@@ -69,7 +74,8 @@ export default function HistoryDashboard({
       const teamAPlayers = match.teamA || [];
       const teamBPlayers = match.teamB || [];
 
-      const winningTeam = match.winner === "teamA" ? teamAPlayers : teamBPlayers;
+      const winningTeam =
+        match.winner === "teamA" ? teamAPlayers : teamBPlayers;
       const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
 
       winningTeam.forEach((playerName) => {
@@ -97,15 +103,17 @@ export default function HistoryDashboard({
 
     const statsList = Object.entries(statsMap).map(([key, data]) => {
       const winrate = data.matches > 0 ? (data.wins / data.matches) * 100 : 0;
-      const name = data.dbPlayer ? data.dbPlayer.name : (key.charAt(0).toUpperCase() + key.slice(1));
-      
+      const name = data.dbPlayer
+        ? data.dbPlayer.name
+        : key.charAt(0).toUpperCase() + key.slice(1);
+
       return {
         name,
         matches: data.matches,
         wins: data.wins,
         losses: data.losses,
         winrate,
-        dbPlayer: data.dbPlayer
+        dbPlayer: data.dbPlayer,
       };
     });
 
@@ -134,21 +142,27 @@ export default function HistoryDashboard({
         rankColorClass = "text-green-400 font-bold";
       } else {
         // Fallback checks
-        if (rankName.includes("Mythic")) rankColorClass = "text-purple-400 font-bold";
-        else if (rankName === "Legend") rankColorClass = "text-orange-400 font-bold";
-        else if (rankName === "Epic") rankColorClass = "text-green-400 font-bold";
+        if (rankName.includes("Mythic"))
+          rankColorClass = "text-purple-400 font-bold";
+        else if (rankName === "Legend")
+          rankColorClass = "text-orange-400 font-bold";
+        else if (rankName === "Epic")
+          rankColorClass = "text-green-400 font-bold";
       }
     }
 
     const isThai = /[\u0E00-\u0E7F]/.test(rankName);
-    const fontClass = isThai 
-      ? "font-thai text-[10px] tracking-wide" 
+    const fontClass = isThai
+      ? "font-thai text-[10px] tracking-wide"
       : "font-pixel text-[6.5px] uppercase tracking-wider";
 
     return (
       <span className="text-[8.5px] text-slate-500 uppercase font-pixel tracking-tighter truncate mt-1.5 leading-none">
-        {dbPlayer.alias} • <span className="text-neon-blue font-bold font-tech">{dbPlayer.role}</span> •{" "}
-        <span className={`${rankColorClass} ${fontClass}`}>{rankName}</span>
+        {dbPlayer.alias} •{" "}
+        <span className="text-neon-blue font-bold font-tech">
+          {dbPlayer.role}
+        </span>{" "}
+        • <span className={`${rankColorClass} ${fontClass}`}>{rankName}</span>
       </span>
     );
   };
@@ -178,10 +192,11 @@ export default function HistoryDashboard({
             playBeep(330, 0.1, "sawtooth");
             setActiveTab("history");
           }}
-          className={`flex-1 py-3 border-b-4 text-center cursor-pointer transition-all duration-200 uppercase tracking-wider ${activeTab === "history"
-            ? "border-neon-yellow text-neon-yellow bg-neon-yellow/5 glow-yellow font-bold"
-            : "border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700"
-            }`}
+          className={`flex-1 py-3 border-b-4 text-center cursor-pointer transition-all duration-200 uppercase tracking-wider ${
+            activeTab === "history"
+              ? "border-neon-yellow text-neon-yellow bg-neon-yellow/5 glow-yellow font-bold"
+              : "border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700"
+          }`}
         >
           📜 MATCH LOGS
         </button>
@@ -190,21 +205,26 @@ export default function HistoryDashboard({
             playBeep(392, 0.1, "sawtooth");
             setActiveTab("stats");
           }}
-          className={`flex-1 py-3 border-b-4 text-center cursor-pointer transition-all duration-200 uppercase tracking-wider ${activeTab === "stats"
-            ? "border-neon-blue text-neon-blue bg-neon-blue/5 glow-blue font-bold"
-            : "border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700"
-            }`}
+          className={`flex-1 py-3 border-b-4 text-center cursor-pointer transition-all duration-200 uppercase tracking-wider ${
+            activeTab === "stats"
+              ? "border-neon-blue text-neon-blue bg-neon-blue/5 glow-blue font-bold"
+              : "border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700"
+          }`}
         >
           🏆 FIGHTER WINRATES
         </button>
       </div>
 
       {/* Tab Contents: MATCH HISTORY */}
-      {activeTab === "history" && (
-        matches.length === 0 ? (
+      {activeTab === "history" &&
+        (matches.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 bg-black/40">
-            <span className="font-pixel text-[10px] text-neon-red uppercase tracking-widest mb-2 glow-red">NO RECORDS FOUND</span>
-            <span className="font-pixel text-[8px] text-slate-500 uppercase">ARENA VACANT. START DRAFT TO INITIALIZE LOGS.</span>
+            <span className="font-pixel text-[10px] text-neon-red uppercase tracking-widest mb-2 glow-red">
+              NO RECORDS FOUND
+            </span>
+            <span className="font-pixel text-[8px] text-slate-500 uppercase">
+              ARENA VACANT. START DRAFT TO INITIALIZE LOGS.
+            </span>
           </div>
         ) : (
           <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2">
@@ -229,14 +249,18 @@ export default function HistoryDashboard({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 border-t border-slate-800/60 pt-2.5">
                     {/* Blue */}
                     <div className="flex flex-col">
-                      <span className="font-pixel text-[8px] text-neon-blue uppercase mb-1">BLUE TEAM</span>
+                      <span className="font-pixel text-[8px] text-neon-blue uppercase mb-1">
+                        BLUE TEAM
+                      </span>
                       <span className="text-xs text-slate-100 font-mono tracking-tight truncate">
                         {match.teamA.join(" • ") || "EMPTY"}
                       </span>
                     </div>
                     {/* Red */}
                     <div className="flex flex-col">
-                      <span className="font-pixel text-[8px] text-neon-red uppercase mb-1">RED TEAM</span>
+                      <span className="font-pixel text-[8px] text-neon-red uppercase mb-1">
+                        RED TEAM
+                      </span>
                       <span className="text-xs text-slate-100 font-mono tracking-tight truncate">
                         {match.teamB.join(" • ") || "EMPTY"}
                       </span>
@@ -246,23 +270,27 @@ export default function HistoryDashboard({
 
                 {/* Action column */}
                 <div className="flex flex-row md:flex-col items-center justify-between md:justify-center border-t md:border-t-0 md:border-l border-slate-800/80 pt-4 md:pt-0 md:pl-4 gap-3 min-w-[140px]">
-
                   {/* Winner tag */}
                   {match.winner ? (
                     <div className="flex flex-col items-center select-none">
-                      <span className="font-pixel text-[8px] text-slate-500 uppercase mb-1">WINNER</span>
+                      <span className="font-pixel text-[8px] text-slate-500 uppercase mb-1">
+                        WINNER
+                      </span>
                       <span
-                        className={`font-action text-2xl font-bold tracking-widest px-3 py-0.5 border-2 uppercase leading-none ${match.winner === "teamA"
-                          ? "border-neon-blue text-neon-blue glow-blue bg-neon-blue/10"
-                          : "border-neon-red text-neon-red glow-red bg-neon-red/10"
-                          }`}
+                        className={`font-action text-2xl font-bold tracking-widest px-3 py-0.5 border-2 uppercase leading-none ${
+                          match.winner === "teamA"
+                            ? "border-neon-blue text-neon-blue glow-blue bg-neon-blue/10"
+                            : "border-neon-red text-neon-red glow-red bg-neon-red/10"
+                        }`}
                       >
                         {match.winner === "teamA" ? "BLUE TEAM" : "RED TEAM"}
                       </span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center w-full">
-                      <span className="font-pixel text-[8px] text-neon-yellow uppercase mb-1.5 animate-pulse glow-yellow">PENDING OUTCOME</span>
+                      <span className="font-pixel text-[8px] text-neon-yellow uppercase mb-1.5 animate-pulse glow-yellow">
+                        PENDING OUTCOME
+                      </span>
                       <div className="flex gap-2 w-full font-pixel mt-1">
                         <button
                           onClick={() => handleWinnerChange(match.id, "teamA")}
@@ -286,25 +314,30 @@ export default function HistoryDashboard({
                     className="font-pixel text-[8px] text-slate-500 hover:text-neon-red border border-transparent hover:border-neon-red bg-transparent p-1.5 mt-0 md:mt-2 transition-all cursor-pointer uppercase flex items-center gap-1 select-none"
                     title="Purge record"
                   >
-                    <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                    <svg
+                      className="w-2.5 h-2.5 fill-current"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9m2 2h2v1h-2V5m-3 3h2v10H8V8m4 0h2v10h-2V8m4 0h2v10h-2V8z" />
                     </svg>
                     PURGE
                   </button>
                 </div>
-
               </div>
             ))}
           </div>
-        )
-      )}
+        ))}
 
       {/* Tab Contents: FIGHTER WINRATES */}
-      {activeTab === "stats" && (
-        playerStats.length === 0 ? (
+      {activeTab === "stats" &&
+        (playerStats.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 bg-black/40">
-            <span className="font-pixel text-[10px] text-neon-red uppercase tracking-widest mb-2 glow-red">NO FIGHTER STATS</span>
-            <span className="font-pixel text-[8px] text-slate-500 uppercase">CHOOSE WINNERS IN THE HISTORY LOG TO GENERATE LEADERBOARD DATA!</span>
+            <span className="font-pixel text-[10px] text-neon-red uppercase tracking-widest mb-2 glow-red">
+              NO FIGHTER STATS
+            </span>
+            <span className="font-pixel text-[8px] text-slate-500 uppercase">
+              CHOOSE WINNERS IN THE HISTORY LOG TO GENERATE LEADERBOARD DATA!
+            </span>
           </div>
         ) : (
           <div className="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-2">
@@ -319,7 +352,14 @@ export default function HistoryDashboard({
 
             {/* Leaderboard Cards */}
             {playerStats.map((stats, index) => {
-              const rankLabel = index === 0 ? "1ST" : index === 1 ? "2ND" : index === 2 ? "3RD" : `${index + 1}TH`;
+              const rankLabel =
+                index === 0
+                  ? "1ST"
+                  : index === 1
+                    ? "2ND"
+                    : index === 2
+                      ? "3RD"
+                      : `${index + 1}TH`;
               const rankColor =
                 index === 0
                   ? "text-[#ffd200] glow-yellow border-[#ffd200]/40 bg-[#ffd200]/5"
@@ -332,12 +372,17 @@ export default function HistoryDashboard({
               return (
                 <div
                   key={stats.name}
-                  className={`grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-center px-4 py-3 border-2 ${index === 0 ? "border-[#ffd200]/30 hover:border-[#ffd200]/60 bg-[#ffd200]/5" : "border-slate-800 hover:border-slate-700 bg-black/40"
-                    } transition-all duration-200 relative`}
+                  className={`grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-center px-4 py-3 border-2 ${
+                    index === 0
+                      ? "border-[#ffd200]/30 hover:border-[#ffd200]/60 bg-[#ffd200]/5"
+                      : "border-slate-800 hover:border-slate-700 bg-black/40"
+                  } transition-all duration-200 relative`}
                 >
                   {/* Rank Badge */}
                   <div className="col-span-2 flex items-center gap-2">
-                    <span className={`font-pixel text-[9px] px-2 py-0.5 border ${rankColor} uppercase font-bold`}>
+                    <span
+                      className={`font-pixel text-[9px] px-2 py-0.5 border ${rankColor} uppercase font-bold`}
+                    >
                       {rankLabel}
                     </span>
                   </div>
@@ -357,12 +402,13 @@ export default function HistoryDashboard({
                       />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span 
+                      <span
                         className={`
                           text-white truncate block leading-none
-                          ${/[\u0E00-\u0E7F]/.test(stats.name)
-                            ? 'font-thai text-lg md:text-xl font-bold mt-1'
-                            : 'font-action text-2xl md:text-3xl font-black tracking-wide'
+                          ${
+                            /[\u0E00-\u0E7F]/.test(stats.name)
+                              ? "font-thai text-lg md:text-xl font-bold mt-1"
+                              : "font-action text-2xl md:text-3xl font-black tracking-wide"
                           }
                         `}
                       >
@@ -374,13 +420,17 @@ export default function HistoryDashboard({
 
                   {/* Matches Count */}
                   <div className="col-span-2 text-left md:text-center font-tech text-sm text-slate-300">
-                    <span className="inline-block md:hidden text-[9px] font-pixel text-slate-500 mr-2 uppercase">MATCHES:</span>
+                    <span className="inline-block md:hidden text-[9px] font-pixel text-slate-500 mr-2 uppercase">
+                      MATCHES:
+                    </span>
                     {stats.matches} M
                   </div>
 
                   {/* W/L Record */}
                   <div className="col-span-2 text-left md:text-center font-tech text-sm">
-                    <span className="inline-block md:hidden text-[9px] font-pixel text-slate-500 mr-2 uppercase">RECORD:</span>
+                    <span className="inline-block md:hidden text-[9px] font-pixel text-slate-500 mr-2 uppercase">
+                      RECORD:
+                    </span>
                     <span className="text-[#00D2FF]">{stats.wins}W</span>
                     <span className="text-slate-600 mx-1">/</span>
                     <span className="text-[#FF2A5F]">{stats.losses}L</span>
@@ -388,7 +438,9 @@ export default function HistoryDashboard({
 
                   {/* Interactive Win Rate & Progress Bar */}
                   <div className="col-span-2 text-left md:text-right flex md:flex-col items-start md:items-end justify-between md:justify-center gap-2">
-                    <span className="inline-block md:hidden text-[9px] font-pixel text-slate-500 uppercase">WIN RATE:</span>
+                    <span className="inline-block md:hidden text-[9px] font-pixel text-slate-500 uppercase">
+                      WIN RATE:
+                    </span>
                     <div className="flex flex-col items-start md:items-end w-full md:w-auto">
                       <span className="font-tech text-sm font-bold text-neon-yellow glow-yellow">
                         {stats.winrate.toFixed(1)}%
@@ -402,14 +454,11 @@ export default function HistoryDashboard({
                       </div>
                     </div>
                   </div>
-
                 </div>
               );
             })}
           </div>
-        )
-      )}
-
+        ))}
     </div>
   );
 }

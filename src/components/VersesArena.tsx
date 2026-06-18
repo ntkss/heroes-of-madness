@@ -174,10 +174,6 @@ export default function VersesArena({
   };
 
   useEffect(() => {
-    return clearAllTimers;
-  }, []);
-
-  useEffect(() => {
     if (isGenerating) {
       clearAllTimers();
 
@@ -211,11 +207,13 @@ export default function VersesArena({
       const activeDispA = Array(5).fill("???");
       const activeDispB = Array(5).fill("???");
 
+      const rollPool = teamA.length || teamB.length ? [...teamA, ...teamB] : SQUAD_NAMES;
+
       const startRoll = (teamIndex: number, slotIndex: number) => {
         const intervalId = setInterval(
           () => {
-            const randIndex = Math.floor(Math.random() * SQUAD_NAMES.length);
-            const randomName = SQUAD_NAMES[randIndex];
+            const randIndex = Math.floor(Math.random() * rollPool.length);
+            const randomName = rollPool[randIndex];
             if (teamIndex === 0) {
               activeDispA[slotIndex] = randomName;
               setDispA([...activeDispA]);
@@ -238,8 +236,8 @@ export default function VersesArena({
         const delay = 400 + i * 450;
 
         const timerId = setTimeout(() => {
-          clearInterval(intervalsRef.current[i]);
-          clearInterval(intervalsRef.current[i + 5]);
+          clearInterval(intervalsRef.current[2 * i]);
+          clearInterval(intervalsRef.current[2 * i + 1]);
 
           setDispA((prev) => {
             const next = [...prev];
@@ -299,6 +297,7 @@ export default function VersesArena({
         pctIntervalRef.current = null;
       }
     }
+    return clearAllTimers;
   }, [isGenerating, teamA, teamB, triggerScreenShake]);
 
   return (

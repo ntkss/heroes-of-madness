@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
@@ -74,10 +74,10 @@ export default function Home() {
     return saved;
   };
 
-  const triggerScreenShake = () => {
+  const triggerScreenShake = useCallback(() => {
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 450);
-  };
+  }, []);
 
   const handleGenerate = async () => {
     if (isGenerating) return;

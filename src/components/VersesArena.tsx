@@ -210,7 +210,8 @@ export default function VersesArena({
       const activeDispA = Array(5).fill("???");
       const activeDispB = Array(5).fill("???");
 
-      const rollPool = teamA.length || teamB.length ? [...teamA, ...teamB] : SQUAD_NAMES;
+      const rollPool =
+        teamA.length || teamB.length ? [...teamA, ...teamB] : SQUAD_NAMES;
 
       const startRoll = (teamIndex: number, slotIndex: number) => {
         const intervalId = setInterval(

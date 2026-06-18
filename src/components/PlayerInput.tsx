@@ -164,7 +164,8 @@ export default function PlayerInput({
         {/* Right Side: Quick Fill, Clear, Add new, Fight */}
         <div className="lg:w-80 flex flex-col justify-between gap-4">
           <p className="text-[10.5px] text-[#a0a0c0] uppercase tracking-wider leading-relaxed font-mono">
-            SELECT 10 PLAYERS FROM THE DATABASE BELOW. USE QUICK FILL TO LET RANDOM BOTS FILL THE VOID.
+            SELECT 10 PLAYERS FROM THE DATABASE BELOW. USE QUICK FILL TO LET
+            RANDOM BOTS FILL THE VOID.
           </p>
 
           <div className="grid grid-cols-2 gap-2 font-pixel">

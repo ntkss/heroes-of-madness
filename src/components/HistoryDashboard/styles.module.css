@@ -1,0 +1,324 @@
+@reference "../../app/globals.css";
+
+.container {
+  @apply flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-6 shadow-2xl relative overflow-hidden mt-8 transition-all duration-300;
+}
+
+.rivet {
+  @apply absolute w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70;
+}
+
+.rivetTopLeft {
+  @apply top-2 left-2;
+}
+
+.rivetTopRight {
+  @apply top-2 right-2;
+}
+
+.rivetBottomLeft {
+  @apply bottom-2 left-2;
+}
+
+.rivetBottomRight {
+  @apply bottom-2 right-2;
+}
+
+.header {
+  @apply flex items-center justify-between border-b-4 border-slate-700 pb-3.5 mb-4;
+}
+
+.title {
+  @apply text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.recordsCount {
+  @apply font-pixel text-[10px] text-[#a0a0c0];
+}
+
+.tabBar {
+  @apply flex border-b-2 border-slate-800 mb-6 font-pixel text-[9px] gap-2;
+}
+
+.tabButton {
+  @apply flex-1 py-3 border-b-4 text-center cursor-pointer transition-all duration-200 uppercase tracking-wider;
+}
+
+.tabButtonActiveHistory {
+  @apply border-neon-yellow text-neon-yellow bg-neon-yellow/5 font-bold;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.tabButtonInactive {
+  @apply border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700;
+}
+
+.tabButtonActiveStats {
+  @apply border-neon-blue text-neon-blue bg-neon-blue/5 font-bold;
+  text-shadow:
+    0 0 10px var(--color-neon-blue),
+    0 0 20px rgba(0, 210, 255, 0.4);
+}
+
+.emptyStateContainer {
+  @apply flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 bg-black/40;
+}
+
+.emptyStateTitle {
+  @apply font-pixel text-[10px] text-neon-red uppercase tracking-widest mb-2;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.emptyStateSubtitle {
+  @apply font-pixel text-[8px] text-slate-500 uppercase;
+}
+
+.historyList {
+  @apply flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2;
+}
+
+.matchCard {
+  @apply bg-black/60 border-2 border-slate-800 p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hover:border-slate-500 transition-colors relative;
+}
+
+.matchDetails {
+  @apply flex flex-col flex-grow gap-2;
+}
+
+.matchDetailsHeader {
+  @apply flex items-center justify-between md:justify-start gap-4;
+}
+
+.matchDetailsHeaderTag {
+  @apply font-pixel text-[8px] text-neon-yellow bg-neon-yellow/10 px-2 py-0.5 border border-neon-yellow/20;
+}
+
+.matchDetailsHeaderDate {
+  @apply text-[10px] text-slate-500 font-mono tracking-tighter;
+}
+
+.rosterGrid {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 border-t border-slate-800/60 pt-2.5;
+}
+
+.rosterCol {
+  @apply flex flex-col;
+}
+
+.rosterLabelBlue {
+  @apply font-pixel text-[8px] text-neon-blue uppercase mb-1;
+}
+
+.rosterLabelRed {
+  @apply font-pixel text-[8px] text-neon-red uppercase mb-1;
+}
+
+.rosterText {
+  @apply text-xs text-slate-100 font-mono tracking-tight truncate;
+}
+
+.matchActionsCol {
+  @apply flex flex-row md:flex-col items-center justify-between md:justify-center border-t md:border-t-0 md:border-l border-slate-800/80 pt-4 md:pt-0 md:pl-4 gap-3 min-w-[140px];
+}
+
+.winnerWrapper {
+  @apply flex flex-col items-center select-none;
+}
+
+.winnerLabel {
+  @apply font-pixel text-[8px] text-slate-500 uppercase mb-1;
+}
+
+.winnerTag {
+  @apply font-action text-2xl font-bold tracking-widest px-3 py-0.5 border-2 uppercase leading-none;
+}
+
+.winnerTagBlue {
+  @apply border-neon-blue text-neon-blue bg-neon-blue/10;
+  text-shadow:
+    0 0 10px var(--color-neon-blue),
+    0 0 20px rgba(0, 210, 255, 0.4);
+}
+
+.winnerTagRed {
+  @apply border-neon-red text-neon-red bg-neon-red/10;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.pendingWrapper {
+  @apply flex flex-col items-center w-full;
+}
+
+.pendingLabel {
+  @apply font-pixel text-[8px] text-neon-yellow uppercase mb-1.5 animate-pulse;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.pendingBtnGrid {
+  @apply flex gap-2 w-full font-pixel mt-1;
+}
+
+.pendingBtnBlue {
+  @apply flex-grow font-pixel text-[8px] text-cyan-400 bg-cyan-950/20 border border-cyan-500/30 py-1.5 px-2 hover:bg-cyan-400 hover:text-black transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.15)] rounded-sm;
+}
+
+.pendingBtnRed {
+  @apply flex-grow font-pixel text-[8px] text-rose-500 bg-rose-950/20 border border-rose-500/30 py-1.5 px-2 hover:bg-rose-500 hover:text-white transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(244,63,94,0.15)] rounded-sm;
+}
+
+.deleteBtn {
+  @apply font-pixel text-[8px] text-slate-500 hover:text-neon-red border border-transparent hover:border-neon-red bg-transparent p-1.5 mt-0 md:mt-2 transition-all cursor-pointer uppercase flex items-center gap-1 select-none;
+}
+
+.deleteIcon {
+  @apply w-2.5 h-2.5 fill-current;
+}
+
+.leaderboardList {
+  @apply flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-2;
+}
+
+.leaderboardHeader {
+  @apply hidden md:grid grid-cols-12 gap-4 px-4 py-2 border-b border-slate-800 text-[9px] font-pixel text-slate-500 uppercase tracking-wider;
+}
+
+.leaderboardCol2 {
+  @apply col-span-2;
+}
+
+.leaderboardCol4 {
+  @apply col-span-4;
+}
+
+.leaderboardCol2Center {
+  @apply col-span-2 text-center;
+}
+
+.leaderboardCol2Right {
+  @apply col-span-2 text-right;
+}
+
+.leaderboardCard {
+  @apply grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-center px-4 py-3 border-2 transition-all duration-200 relative;
+}
+
+.leaderboardCardWinner {
+  @apply border-[#ffd200]/30 hover:border-[#ffd200]/60 bg-[#ffd200]/5;
+}
+
+.leaderboardCardNormal {
+  @apply border-slate-800 hover:border-slate-700 bg-black/40;
+}
+
+.rankBadge {
+  @apply font-pixel text-[9px] px-2 py-0.5 border uppercase font-bold;
+}
+
+.rankBadgeGold {
+  @apply text-[#ffd200] border-[#ffd200]/40 bg-[#ffd200]/5;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.rankBadgeSilver {
+  @apply text-[#c0c0c0] border-[#c0c0c0]/40 bg-[#c0c0c0]/5;
+}
+
+.rankBadgeBronze {
+  @apply text-[#cd7f32] border-[#cd7f32]/40 bg-[#cd7f32]/5;
+}
+
+.rankBadgeNormal {
+  @apply text-slate-400 border-slate-800 bg-slate-900/20;
+}
+
+.fighterInfo {
+  @apply flex items-center gap-3;
+}
+
+.fighterAvatarContainer {
+  @apply w-10 h-10 relative overflow-hidden rounded-sm border border-slate-700 shrink-0 bg-slate-900;
+}
+
+.fighterTextContainer {
+  @apply flex flex-col min-w-0;
+}
+
+.fighterName {
+  @apply text-white truncate block leading-none;
+}
+
+.fighterNameThai {
+  @apply font-thai text-lg md:text-xl font-bold mt-1;
+}
+
+.fighterNameEnglish {
+  @apply font-action text-2xl md:text-3xl font-black tracking-wide;
+}
+
+.statColMatches {
+  @apply col-span-2 text-left md:text-center font-tech text-sm text-slate-300;
+}
+
+.mobileLabel {
+  @apply inline-block md:hidden text-[9px] font-pixel text-slate-500 mr-2 uppercase;
+}
+
+.statColRecord {
+  @apply col-span-2 text-left md:text-center font-tech text-sm;
+}
+
+.winsText {
+  @apply text-[#00D2FF];
+}
+
+.lossesText {
+  @apply text-[#FF2A5F];
+}
+
+.dividerText {
+  @apply text-slate-600 mx-1;
+}
+
+.statColWinrate {
+  @apply col-span-2 text-left md:text-right flex md:flex-col items-start md:items-end justify-between md:justify-center gap-2;
+}
+
+.winrateWrapper {
+  @apply flex flex-col items-start md:items-end w-full md:w-auto;
+}
+
+.winrateValue {
+  @apply font-tech text-sm font-bold text-neon-yellow;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.progressBarOuter {
+  @apply w-24 h-1.5 bg-slate-900 border border-slate-700 mt-1 overflow-hidden relative rounded-none;
+}
+
+.progressBarInner {
+  @apply h-full bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-yellow;
+}
+
+.rankInfoContainer {
+  @apply text-[8.5px] text-slate-500 uppercase font-pixel tracking-tighter truncate mt-1.5 leading-none;
+}
+
+.roleText {
+  @apply text-neon-blue font-bold font-tech;
+}

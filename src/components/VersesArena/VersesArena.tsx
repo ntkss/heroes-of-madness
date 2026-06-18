@@ -9,7 +9,8 @@ import {
 } from "@/utils/audio";
 import { SQUAD_NAMES } from "@/constants/players";
 import { DbPlayer, RankConfig } from "@/utils/firebase";
-import PlayerCard from "./PlayerCard";
+import PlayerCard from "@/components/PlayerCard";
+import styles from "./styles.module.css";
 
 const ROLES = ["EXP", "JUNGLE", "MID", "GOLD", "ROAMING"];
 
@@ -71,23 +72,23 @@ function TeamRow({
   };
 
   return (
-    <div className="relative flex flex-col gap-1 w-full shrink-0">
+    <div className={styles.teamRow}>
       {/* Team lane role markers */}
       <div
-        className={`flex items-center justify-between mb-0.5 px-1 max-w-5xl w-full mx-auto ${isBlue ? "lg:pl-[8%]" : "lg:pr-[8%]"}`}
+        className={`${styles.teamRowHeader} ${
+          isBlue ? styles.teamRowHeaderBlue : styles.teamRowHeaderRed
+        }`}
       >
         <span
-          className={`font-pixel text-[7.5px] md:text-[8.5px] uppercase tracking-widest ${
-            isBlue ? "text-cyan-400 glow-blue" : "text-rose-500 glow-red"
+          className={`${styles.teamLabel} ${
+            isBlue ? styles.teamLabelBlue : styles.teamLabelRed
           }`}
         >
           {label}
         </span>
         <span
-          className={`font-pixel text-[6.5px] px-1 py-0.2 border ${
-            isBlue
-              ? "border-cyan-500/20 text-cyan-400/60 bg-cyan-950/20"
-              : "border-rose-500/20 text-rose-400/60 bg-rose-950/20"
+          className={`${styles.teamBadge} ${
+            isBlue ? styles.teamBadgeBlue : styles.teamBadgeRed
           }`}
         >
           TEAM {side}
@@ -96,10 +97,8 @@ function TeamRow({
 
       {/* 5 slanted cards - staggered left (Blue) or right (Red) on large screens, centered on mobile */}
       <div
-        className={`flex gap-1 md:gap-1.5 w-full max-w-5xl mx-auto ${
-          isBlue
-            ? "justify-center lg:justify-start lg:pl-[8%]"
-            : "justify-center lg:justify-end lg:pr-[8%]"
+        className={`${styles.cardsRow} ${
+          isBlue ? styles.cardsRowBlue : styles.cardsRowRed
         }`}
       >
         {finalNames.map((name, idx) => {
@@ -305,19 +304,11 @@ export default function VersesArena({
   }, [isGenerating, teamA, teamB, triggerScreenShake]);
 
   return (
-    <div
-      className="flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 lg:aspect-[16/9] min-h-[380px] lg:min-h-[70vh]"
-      style={{
-        background:
-          "linear-gradient(180deg, #0f172a 0%, #090d16 50%, #030712 100%)",
-        backgroundImage:
-          "radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%)",
-      }}
-    >
+    <div className={styles.arenaBackground}>
       {/* Dynamic ambient color nodes */}
-      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-rose-500/10 to-transparent pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-yellow-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className={styles.ambientBlue} />
+      <div className={styles.ambientRed} />
+      <div className={styles.ambientYellow} />
 
       {/* Team A (Top Row) */}
       <TeamRow
@@ -333,29 +324,21 @@ export default function VersesArena({
         rankConfig={rankConfig}
       />
 
-      {/* VS Banner Separator & Loading screen tips */}
-      <div className="flex flex-col items-center justify-center my-0.5 select-none relative z-10 w-full shrink-0">
-        {/* Loading Tip */}
-        <div className="text-[8.5px] sm:text-[9.5px] text-slate-400 font-sans tracking-wide mb-1.5 text-center max-w-xl px-4 italic opacity-95">
-          {currentTip}
-        </div>
-
+      {/* VS Banner Separator */}
+      <div className={styles.vsContainer}>
         {/* VS emblem and dividing lines */}
-        <div className="flex items-center gap-4 w-full">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-yellow-500/40" />
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-full border border-yellow-500/30 bg-slate-950/90 shadow-[0_0_8px_rgba(234,179,8,0.2)]">
+        <div className={styles.vsWrapper}>
+          <div className={styles.vsLineBlue} />
+          <div className={styles.vsCircle}>
             <span
-              className={`font-action font-black italic text-base tracking-tighter transition-all duration-150 ${
-                isGenerating
-                  ? "text-yellow-400 glow-yellow scale-110 animate-pulse"
-                  : "text-yellow-500 glow-yellow"
+              className={`${styles.vsText} ${
+                isGenerating ? styles.vsTextGenerating : styles.vsTextNormal
               }`}
-              style={{ textShadow: "0 0 6px rgba(234, 179, 8, 0.6)" }}
             >
               VS
             </span>
           </div>
-          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-rose-500/30 to-yellow-500/40" />
+          <div className={styles.vsLineRed} />
         </div>
       </div>
 
@@ -372,6 +355,9 @@ export default function VersesArena({
         percentages={percentages}
         rankConfig={rankConfig}
       />
+
+      {/* Loading screen tips at the bottom */}
+      <div className={styles.tipsText}>{currentTip}</div>
     </div>
   );
 }

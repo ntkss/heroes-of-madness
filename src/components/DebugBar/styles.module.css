@@ -1,0 +1,150 @@
+@reference "../../app/globals.css";
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animateScaleUp {
+  animation: scaleUp 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.wrapper {
+  @apply fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2 font-tech select-none;
+}
+
+.panel {
+  @apply w-80 bg-slate-950/95 backdrop-blur-md border-2 border-neon-blue shadow-[0_0_25px_rgba(0,210,255,0.35)] relative overflow-hidden flex flex-col p-4;
+}
+
+.scanlines {
+  @apply absolute inset-0 opacity-5 pointer-events-none;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 210, 255, 0.06),
+    rgba(0, 210, 255, 0.06) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
+.header {
+  @apply flex items-center justify-between border-b border-slate-800 pb-2 mb-3;
+}
+
+.indicatorContainer {
+  @apply flex items-center gap-2;
+}
+
+.statusDotActive {
+  @apply w-2.5 h-2.5 rounded-full bg-neon-blue animate-pulse;
+  box-shadow: 0 0 8px var(--color-neon-blue);
+}
+
+.title {
+  @apply font-pixel text-[10px] text-neon-yellow tracking-widest uppercase;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.closeBtn {
+  @apply text-neon-red hover:text-white font-pixel text-[10px] cursor-pointer transition-colors;
+}
+
+.detailsList {
+  @apply flex flex-col gap-2.5 text-[11px] text-[#a0a0c0];
+}
+
+.detailRow {
+  @apply flex justify-between border-b border-slate-900 pb-1.5;
+}
+
+.detailLabel {
+  @apply uppercase text-slate-500 font-bold;
+}
+
+.detailValue {
+  @apply text-white font-bold;
+}
+
+.detailValueHighlight {
+  @apply text-neon-blue font-bold;
+}
+
+.detailValueDbOnline {
+  @apply text-neon-yellow font-bold animate-pulse;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.detailValueDbOffline {
+  @apply text-neon-red font-bold;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.detailValueNetOnline {
+  @apply text-green-400 font-bold;
+}
+
+.detailValueTime {
+  @apply text-neon-yellow font-pixel text-[9px];
+}
+
+.detailValueEnv {
+  @apply text-neon-blue capitalize;
+}
+
+.actionsContainer {
+  @apply mt-4 flex flex-col gap-2;
+}
+
+.purgeBtn {
+  @apply w-full border border-neon-red/50 bg-neon-red/10 text-neon-red hover:bg-neon-red/20 hover:border-neon-red py-1.5 px-3 font-pixel text-[8px] tracking-wider transition-all duration-200 cursor-pointer text-center uppercase;
+}
+
+.toggleBtn {
+  @apply flex items-center gap-2.5 bg-slate-950/90 hover:bg-slate-900 border-2 py-1.5 px-3 rounded-none shadow-[0_0_12px_rgba(0,0,0,0.5)] transition-all duration-300 cursor-pointer;
+}
+
+.toggleBtnActive {
+  @apply border-neon-yellow text-neon-yellow;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.toggleBtnInactive {
+  @apply border-neon-blue text-neon-blue hover:border-neon-yellow hover:text-neon-yellow;
+}
+
+.toggleBtnInactive:hover {
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.statusDotYellow {
+  @apply inline-block w-1.5 h-1.5 rounded-full bg-neon-yellow animate-pulse;
+}
+
+.statusDotRed {
+  @apply inline-block w-1.5 h-1.5 rounded-full bg-neon-red;
+}
+
+.btnLabel {
+  @apply font-pixel text-[9px] tracking-wider flex items-center gap-1.5;
+}
+
+.btnSublabel {
+  @apply font-pixel text-[7px] text-slate-400;
+}

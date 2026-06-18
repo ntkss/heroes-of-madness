@@ -1,0 +1,86 @@
+@reference "../../app/globals.css";
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animateScaleUp {
+  animation: scaleUp 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.form {
+  @apply bg-black/60 border-2 border-neon-yellow/30 p-4 mb-5 flex flex-col gap-3;
+}
+
+.header {
+  @apply font-pixel text-[10px] text-neon-yellow uppercase tracking-widest border-b border-slate-800 pb-1.5 mb-1 flex justify-between items-center;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.closeBtn {
+  @apply text-neon-red hover:text-white font-pixel text-[8px] cursor-pointer;
+}
+
+.inputsGrid {
+  @apply grid grid-cols-1 sm:grid-cols-3 gap-3 font-tech text-xs;
+}
+
+.inputGroup {
+  @apply flex flex-col gap-1;
+}
+
+.label {
+  @apply text-slate-400 font-pixel text-[7.5px] uppercase;
+}
+
+.inputField {
+  @apply bg-slate-900 border border-slate-700 p-2 text-white focus:border-neon-yellow focus:outline-none;
+}
+
+.avatarRow {
+  @apply flex items-center gap-2;
+}
+
+.avatarPreviewContainer {
+  @apply relative w-10 h-10 border border-neon-yellow bg-slate-950 flex-shrink-0 overflow-hidden;
+}
+
+.avatarImg {
+  @apply w-full h-full object-cover;
+}
+
+.removeBtn {
+  @apply absolute inset-0 bg-black/85 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-150 text-[7px] font-pixel text-neon-red cursor-pointer;
+}
+
+.vacantPlaceholder {
+  @apply w-10 h-10 border border-dashed border-slate-700 bg-slate-950/40 flex items-center justify-center flex-shrink-0 text-slate-600 font-pixel text-[12px] select-none;
+}
+
+.uploadBtnLabel {
+  @apply flex-1 flex items-center justify-center bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-500 p-2 text-[9px] font-pixel text-slate-300 hover:text-white cursor-pointer transition-colors text-center select-none uppercase h-full min-h-[34px];
+}
+
+.uploadInputHidden {
+  @apply hidden;
+}
+
+.errorBox {
+  @apply text-[8.5px] font-pixel text-neon-red uppercase;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.submitBtn {
+  @apply self-end mt-2 font-pixel text-[9px] text-black bg-neon-yellow border-2 border-white px-4 py-2 hover:bg-white transition-colors cursor-pointer uppercase font-bold disabled:opacity-50;
+}

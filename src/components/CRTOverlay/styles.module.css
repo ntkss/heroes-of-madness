@@ -1,0 +1,106 @@
+@reference "../../app/globals.css";
+
+.crtScreen {
+  @apply relative overflow-hidden min-h-screen flex flex-col transition-all duration-500;
+}
+
+.crtScreenOn {
+  @apply scale-100 opacity-100;
+}
+
+.crtScreenOff {
+  @apply scale-95 opacity-0 bg-black;
+}
+
+.contentContainer {
+  @apply relative z-10 flex flex-col flex-1;
+}
+
+.vignette {
+  @apply pointer-events-none absolute inset-0 z-50 shadow-[inset_0_0_100px_rgba(0,0,0,0.6)];
+  background: radial-gradient(
+    circle,
+    transparent 70%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+.crtScreen::before {
+  @apply block absolute inset-0 z-[99] pointer-events-none;
+  content: " ";
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size:
+    100% 4px,
+    6px 100%;
+}
+
+.crtScanlines {
+  @apply absolute inset-0 z-[98] opacity-15 pointer-events-none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.3)
+  );
+  background-size: 100% 8px;
+  animation: scanlineScroll 6s linear infinite;
+}
+
+@keyframes scanlineScroll {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 100%;
+  }
+}
+
+.crtFlicker {
+  animation: crtFlicker 0.15s infinite;
+}
+
+@keyframes crtFlicker {
+  0% {
+    opacity: 0.995;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.995;
+  }
+}
+
+.shakeScreen {
+  animation: shake 0.4s ease-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-4px, -6px);
+  }
+  30% {
+    transform: translate(6px, 4px);
+  }
+  50% {
+    transform: translate(-6px, 6px);
+  }
+  70% {
+    transform: translate(4px, -4px);
+  }
+  90% {
+    transform: translate(-2px, 2px);
+  }
+}

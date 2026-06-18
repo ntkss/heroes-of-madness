@@ -1,0 +1,72 @@
+@reference "../../app/globals.css";
+
+.container {
+  @apply border-t border-slate-800 pt-4 flex flex-col;
+}
+
+.header {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3;
+}
+
+.title {
+  @apply font-pixel text-[9px] text-neon-yellow uppercase;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.searchInput {
+  @apply w-full sm:w-60 bg-slate-950/80 border border-slate-700 p-1.5 px-3 text-[10px] text-white font-mono placeholder-slate-600 focus:border-neon-blue focus:outline-none transition-all duration-200;
+}
+
+.noFighters {
+  @apply text-center py-6 border border-dashed border-slate-800 text-[8.5px] font-pixel text-slate-500 uppercase;
+}
+
+.grid {
+  @apply flex flex-wrap gap-2 max-h-[200px] overflow-y-auto pr-1;
+}
+
+.fighterBtn {
+  @apply flex items-center gap-2.5 p-1.5 px-3 border transition-all duration-200 cursor-pointer font-tech text-xs select-none;
+}
+
+.fighterBtnSelected {
+  @apply border-neon-blue bg-neon-blue/10 text-white shadow-[0_0_8px_rgba(0,210,255,0.3)] font-bold scale-[1.02];
+}
+
+.fighterBtnUnselected {
+  @apply border-slate-800 bg-slate-950/60 text-[#a0a0c0] hover:border-slate-600 hover:text-white;
+}
+
+.avatarContainer {
+  @apply w-5 h-5 relative overflow-hidden rounded-sm border border-slate-700;
+}
+
+.info {
+  @apply flex flex-col items-start leading-none gap-0.5;
+}
+
+.name {
+  @apply tracking-wide;
+}
+
+.thaiName {
+  @apply font-thai text-[13px] font-bold;
+}
+
+.englishName {
+  @apply font-bold;
+}
+
+.subInfo {
+  @apply text-[7.5px] uppercase text-slate-500;
+}
+
+.thaiRank {
+  @apply font-thai text-[8.5px];
+}
+
+.wrBadge {
+  @apply text-[7.5px] font-mono bg-black/40 px-1 border border-slate-800/80 text-neon-yellow;
+}

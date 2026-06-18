@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { isFirebaseConfigured } from "@/utils/firebase";
-import pkg from "../../package.json";
+import pkg from "../../../package.json";
+import styles from "./styles.module.css";
 
 export default function DebugBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -114,146 +115,117 @@ export default function DebugBar() {
       : `v${pkg.version || "0.1.0"}`;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2 font-tech select-none">
+    <div className={styles.wrapper}>
       {/* Expanded Diagnostics Panel */}
       {isOpen && (
-        <div className="w-80 bg-slate-950/95 backdrop-blur-md border-2 border-neon-blue shadow-[0_0_25px_rgba(0,210,255,0.35)] relative overflow-hidden flex flex-col p-4 animate-scaleUp">
+        <div className={`${styles.panel} ${styles.animateScaleUp}`}>
           {/* Cyber scanlines overlay on details */}
-          <div className="absolute inset-0 stripes-blue opacity-5 pointer-events-none" />
+          <div className={styles.scanlines} />
 
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-neon-blue animate-pulse shadow-[0_0_8px_var(--color-neon-blue)]" />
-              <span className="font-pixel text-[10px] text-neon-yellow glow-yellow tracking-widest uppercase">
-                CABINET SYSTEM LOGS
-              </span>
+          <div className={styles.header}>
+            <div className={styles.indicatorContainer}>
+              <span className={styles.statusDotActive} />
+              <span className={styles.title}>CABINET SYSTEM LOGS</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-neon-red hover:text-white font-pixel text-[10px] cursor-pointer transition-colors"
+              className={styles.closeBtn}
             >
               [X]
             </button>
           </div>
 
           {/* Details list */}
-          <div className="flex flex-col gap-2.5 text-[11px] text-[#a0a0c0]">
+          <div className={styles.detailsList}>
             {/* Version Block */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                SYSTEM BUILD
-              </span>
-              <span className="text-white font-bold">{buildVersion}</span>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>SYSTEM BUILD</span>
+              <span className={styles.detailValue}>{buildVersion}</span>
             </div>
 
             {/* Engine Frameworks */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                ENGINES
-              </span>
-              <span className="text-neon-blue font-bold">
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>ENGINES</span>
+              <span className={styles.detailValueHighlight}>
                 Next {nextVersion} / React {reactVersion}
               </span>
             </div>
 
             {/* DB Status */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                DATABASE
-              </span>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>DATABASE</span>
               {isFirebaseConfigured ? (
-                <span className="text-neon-yellow glow-yellow font-bold animate-pulse">
+                <span className={styles.detailValueDbOnline}>
                   ONLINE (FIRESTORE)
                 </span>
               ) : (
-                <span className="text-neon-red glow-red font-bold">
+                <span className={styles.detailValueDbOffline}>
                   OFFLINE (LOCAL)
                 </span>
               )}
             </div>
 
             {/* Network status */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                NET CONNECTION
-              </span>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>NET CONNECTION</span>
               {isOnline ? (
-                <span className="text-green-400 font-bold">ONLINE</span>
+                <span className={styles.detailValueNetOnline}>ONLINE</span>
               ) : (
-                <span className="text-neon-red glow-red font-bold animate-pulse">
-                  OFFLINE
-                </span>
+                <span className={styles.detailValueDbOffline}>OFFLINE</span>
               )}
             </div>
 
             {/* OS & Browser */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                CLIENT PLATFORM
-              </span>
-              <span className="text-white">
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>CLIENT PLATFORM</span>
+              <span className={styles.detailValue}>
                 {clientInfo.os} ({clientInfo.browser})
               </span>
             </div>
 
             {/* Viewport */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                VIEWPORT SIZE
-              </span>
-              <span className="text-white">
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>VIEWPORT SIZE</span>
+              <span className={styles.detailValue}>
                 {viewport.width} x {viewport.height}
               </span>
             </div>
 
             {/* Resolution */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                SCREEN RESOLUTION
-              </span>
-              <span className="text-white">
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>SCREEN RESOLUTION</span>
+              <span className={styles.detailValue}>
                 {screenRes.width} x {screenRes.height}
               </span>
             </div>
 
             {/* System Hardware */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                HW SPEC
-              </span>
-              <span className="text-white">
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>HW SPEC</span>
+              <span className={styles.detailValue}>
                 {hardware.cores} / {hardware.memory}
               </span>
             </div>
 
             {/* Local time */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                CABINET TIME
-              </span>
-              <span className="text-neon-yellow font-pixel text-[9px]">
-                {localTime}
-              </span>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>CABINET TIME</span>
+              <span className={styles.detailValueTime}>{localTime}</span>
             </div>
 
             {/* Mode */}
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="uppercase text-slate-500 font-bold">
-                EXECUTION ENV
-              </span>
-              <span className="text-neon-blue capitalize">
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>EXECUTION ENV</span>
+              <span className={styles.detailValueEnv}>
                 {process.env.NODE_ENV}
               </span>
             </div>
           </div>
 
           {/* Dev Utils Actions */}
-          <div className="mt-4 flex flex-col gap-2">
-            <button
-              onClick={handleClearHistory}
-              className="w-full border border-neon-red/50 bg-neon-red/10 text-neon-red hover:bg-neon-red/20 hover:border-neon-red py-1.5 px-3 font-pixel text-[8px] tracking-wider transition-all duration-200 cursor-pointer text-center uppercase"
-            >
+          <div className={styles.actionsContainer}>
+            <button onClick={handleClearHistory} className={styles.purgeBtn}>
               PURGE LOCAL RECORDS
             </button>
           </div>
@@ -263,23 +235,21 @@ export default function DebugBar() {
       {/* Main Debug Pill Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2.5 bg-slate-950/90 hover:bg-slate-900 border-2 py-1.5 px-3 rounded-none shadow-[0_0_12px_rgba(0,0,0,0.5)] transition-all duration-300 cursor-pointer ${
-          isOpen
-            ? "border-neon-yellow text-neon-yellow glow-yellow"
-            : "border-neon-blue text-neon-blue hover:border-neon-yellow hover:text-neon-yellow hover:glow-yellow"
+        className={`${styles.toggleBtn} ${
+          isOpen ? styles.toggleBtnActive : styles.toggleBtnInactive
         }`}
       >
-        <span className="font-pixel text-[9px] tracking-wider flex items-center gap-1.5">
+        <span className={styles.btnLabel}>
           <span
-            className={`inline-block w-1.5 h-1.5 rounded-full ${
+            className={
               isFirebaseConfigured
-                ? "bg-neon-yellow animate-pulse"
-                : "bg-neon-red"
-            }`}
+                ? styles.statusDotYellow
+                : styles.statusDotRed
+            }
           />
           SYSTEM MONITOR {buildVersion}
         </span>
-        <span className="font-pixel text-[7px] text-slate-400">
+        <span className={styles.btnSublabel}>
           {isOpen ? "▼ CLOSE" : "▲ INFO"}
         </span>
       </button>

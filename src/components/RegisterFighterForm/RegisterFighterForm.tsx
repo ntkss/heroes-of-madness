@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import styles from "./styles.module.css";
 
 interface RegisterFighterFormProps {
   onSubmit: (data: {
@@ -142,85 +143,73 @@ export default function RegisterFighterForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-black/60 border-2 border-neon-yellow/30 p-4 mb-5 flex flex-col gap-3 animate-scaleUp"
+      className={`${styles.form} ${styles.animateScaleUp}`}
     >
-      <div className="font-pixel text-[10px] text-neon-yellow uppercase tracking-widest border-b border-slate-800 pb-1.5 mb-1 glow-yellow flex justify-between items-center">
+      <div className={styles.header}>
         <span>NEW FIGHTER REGISTRATION</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-neon-red hover:text-white font-pixel text-[8px] cursor-pointer"
-        >
+        <button type="button" onClick={onClose} className={styles.closeBtn}>
           ✕ CLOSE
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-tech text-xs">
+      <div className={styles.inputsGrid}>
         {/* Fighter Name */}
-        <div className="flex flex-col gap-1">
-          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
-            NAME (REQ)
-          </label>
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>NAME (REQ)</label>
           <input
             type="text"
             placeholder="e.g. Nutty"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="bg-slate-900 border border-slate-700 p-2 text-white focus:border-neon-yellow focus:outline-none"
+            className={styles.inputField}
             disabled={loading}
           />
         </div>
 
         {/* Alias */}
-        <div className="flex flex-col gap-1">
-          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
-            ALIAS
-          </label>
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>ALIAS</label>
           <input
             type="text"
             placeholder="e.g. nutty"
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
-            className="bg-slate-900 border border-slate-700 p-2 text-white focus:border-neon-yellow focus:outline-none"
+            className={styles.inputField}
             disabled={loading}
           />
         </div>
 
         {/* Portrait Photo */}
-        <div className="flex flex-col gap-1">
-          <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
-            PORTRAIT PHOTO
-          </label>
-          <div className="flex items-center gap-2">
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>PORTRAIT PHOTO</label>
+          <div className={styles.avatarRow}>
             {avatarPreview ? (
-              <div className="relative w-10 h-10 border border-neon-yellow bg-slate-950 flex-shrink-0 overflow-hidden">
+              <div className={styles.avatarPreviewContainer}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarPreview}
                   alt="Avatar Preview"
-                  className="w-full h-full object-cover"
+                  className={styles.avatarImg}
                 />
                 <button
                   type="button"
                   onClick={handleClearImage}
-                  className="absolute inset-0 bg-black/85 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-150 text-[7px] font-pixel text-neon-red cursor-pointer"
+                  className={styles.removeBtn}
                   disabled={loading}
                 >
                   REMOVE
                 </button>
               </div>
             ) : (
-              <div className="w-10 h-10 border border-dashed border-slate-700 bg-slate-950/40 flex items-center justify-center flex-shrink-0 text-slate-600 font-pixel text-[12px] select-none">
-                ?
-              </div>
+              <div className={styles.vacantPlaceholder}>?</div>
             )}
-            <label className="flex-1 flex items-center justify-center bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-500 p-2 text-[9px] font-pixel text-slate-300 hover:text-white cursor-pointer transition-colors text-center select-none uppercase h-full min-h-[34px]">
+            <label className={styles.uploadBtnLabel}>
               {avatarPreview ? "CHANGE" : "UPLOAD"}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="hidden"
+                className={styles.uploadInputHidden}
                 disabled={loading}
               />
             </label>
@@ -228,17 +217,9 @@ export default function RegisterFighterForm({
         </div>
       </div>
 
-      {error && (
-        <div className="text-[8.5px] font-pixel text-neon-red glow-red uppercase">
-          ⚠️ {error}
-        </div>
-      )}
+      {error && <div className={styles.errorBox}>⚠️ {error}</div>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="self-end mt-2 font-pixel text-[9px] text-black bg-neon-yellow border-2 border-white px-4 py-2 hover:bg-white transition-colors cursor-pointer uppercase font-bold disabled:opacity-50"
-      >
+      <button type="submit" disabled={loading} className={styles.submitBtn}>
         {loading ? "SAVING..." : "SUBMIT FIGHTER"}
       </button>
     </form>

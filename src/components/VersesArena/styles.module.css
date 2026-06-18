@@ -1,0 +1,121 @@
+@reference "../../app/globals.css";
+
+.arenaBackground {
+  @apply flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 lg:aspect-[16/9] min-h-[380px] lg:min-h-[70vh];
+  background: linear-gradient(180deg, #0f172a 0%, #090d16 50%, #030712 100%);
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    #1e293b 0%,
+    #020617 100%
+  );
+}
+
+.ambientBlue {
+  @apply absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none;
+}
+
+.ambientRed {
+  @apply absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-rose-500/10 to-transparent pointer-events-none;
+}
+
+.ambientYellow {
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-yellow-500/5 rounded-full blur-[120px] pointer-events-none;
+}
+
+.vsContainer {
+  @apply flex flex-col items-center justify-center my-1 select-none relative z-10 w-full shrink-0;
+}
+
+.vsWrapper {
+  @apply flex items-center gap-4 w-full;
+}
+
+.vsLineBlue {
+  @apply flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-yellow-500/40;
+}
+
+.vsLineRed {
+  @apply flex-1 h-px bg-gradient-to-l from-transparent via-rose-500/30 to-yellow-500/40;
+}
+
+.vsCircle {
+  @apply relative flex items-center justify-center w-8 h-8 rounded-full border border-yellow-500/30 bg-slate-950/90;
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.2);
+}
+
+.vsText {
+  @apply font-action font-black italic text-base tracking-tighter transition-all duration-150;
+  text-shadow: 0 0 6px rgba(234, 179, 8, 0.6);
+}
+
+.vsTextGenerating {
+  @apply text-yellow-400 scale-110 animate-pulse;
+}
+
+.vsTextNormal {
+  @apply text-yellow-500;
+}
+
+.tipsText {
+  @apply text-[8.5px] sm:text-[9.5px] text-slate-400 font-sans tracking-wide mt-1 text-center max-w-xl px-4 italic opacity-95 mx-auto z-10 shrink-0;
+}
+
+.teamRow {
+  @apply relative flex flex-col gap-1 w-full shrink-0;
+}
+
+.teamRowHeader {
+  @apply flex items-center justify-between mb-0.5 px-1 max-w-5xl w-full mx-auto;
+}
+
+.teamRowHeaderBlue {
+  @apply lg:pl-[8%];
+}
+
+.teamRowHeaderRed {
+  @apply lg:pr-[8%];
+}
+
+.teamLabel {
+  @apply font-pixel text-[7.5px] md:text-[8.5px] uppercase tracking-widest;
+}
+
+.teamLabelBlue {
+  @apply text-cyan-400;
+  text-shadow:
+    0 0 10px var(--color-neon-blue),
+    0 0 20px rgba(0, 210, 255, 0.4);
+}
+
+.teamLabelRed {
+  @apply text-rose-500;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.teamBadge {
+  @apply font-pixel text-[6.5px] px-1 border;
+  padding-top: 0.8px;
+  padding-bottom: 0.8px;
+}
+
+.teamBadgeBlue {
+  @apply border-cyan-500/20 text-cyan-400/60 bg-cyan-950/20;
+}
+
+.teamBadgeRed {
+  @apply border-rose-500/20 text-rose-400/60 bg-rose-950/20;
+}
+
+.cardsRow {
+  @apply flex gap-1 md:gap-1.5 w-full max-w-5xl mx-auto;
+}
+
+.cardsRowBlue {
+  @apply justify-center lg:justify-start lg:pl-[8%];
+}
+
+.cardsRowRed {
+  @apply justify-center lg:justify-end lg:pr-[8%];
+}

@@ -1,0 +1,207 @@
+@reference "../../app/globals.css";
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  to {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+.animateFadeIn {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.playerCard {
+  @apply flex-1 min-w-0;
+  aspect-ratio: 1/2.2;
+  max-height: 300px;
+  min-height: 130px;
+}
+
+.cardBlue {
+  @apply bg-gradient-to-b from-[#071324] via-[#0d1e36] to-[#0b1522];
+}
+
+.cardRed {
+  @apply bg-gradient-to-b from-[#1d050a] via-[#2e0911] to-[#1c050a];
+}
+
+.overlayBlue {
+  background: linear-gradient(
+    to top,
+    rgba(3, 8, 20, 0.98) 0%,
+    rgba(3, 8, 20, 0.8) 55%,
+    rgba(3, 8, 20, 0.1) 85%,
+    transparent 100%
+  );
+}
+
+.overlayRed {
+  background: linear-gradient(
+    to top,
+    rgba(20, 3, 5, 0.98) 0%,
+    rgba(20, 3, 5, 0.8) 55%,
+    rgba(20, 3, 5, 0.1) 85%,
+    transparent 100%
+  );
+}
+
+.rankBadge {
+  @apply absolute top-1 left-1/2 transform -translate-x-1/2 z-20 px-1.5 py-0.5 border leading-none rounded-sm bg-gradient-to-r;
+}
+
+.draftGlow {
+  @apply absolute inset-0 bg-yellow-400/5 animate-pulse z-0 pointer-events-none;
+}
+
+.contentWrapper {
+  @apply w-full h-full transform skew-x-[9deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none;
+}
+
+.portraitContainer {
+  @apply absolute inset-0 w-[140%] -left-[20%] h-full pointer-events-none z-0;
+}
+
+.draftSlot {
+  @apply absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 border border-yellow-500/20;
+}
+
+.draftQuestion {
+  @apply text-yellow-500/40 font-action text-7xl font-black animate-pulse select-none;
+  text-shadow: 0 0 10px rgba(234, 179, 8, 0.4);
+}
+
+.vacantSlot {
+  @apply absolute inset-0 flex items-center justify-center bg-slate-900/60;
+}
+
+.vacantText {
+  @apply text-slate-600 font-pixel text-[6px] animate-pulse;
+}
+
+.ambientOverlay {
+  @apply absolute inset-x-0 bottom-0 h-3/5 pointer-events-none z-10;
+}
+
+.winnerBanner {
+  @apply absolute inset-0 flex items-center justify-center bg-black/60 z-20;
+}
+
+.winnerBadge {
+  @apply text-yellow-400 font-action text-[12px] sm:text-base font-black rotate-[-15deg] tracking-wider select-none border border-yellow-400/80 px-1.5 py-0.5 bg-black/80;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.detailsContainer {
+  @apply mt-auto w-full relative z-20 flex flex-col pt-2;
+}
+
+.playerName {
+  @apply text-white text-center block truncate mt-0.5 tracking-tighter;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95));
+}
+
+.playerNameThai {
+  @apply font-thai text-xs sm:text-sm md:text-base lg:text-3xl font-bold;
+}
+
+.playerNameEnglish {
+  @apply font-action text-xs sm:text-sm md:text-base lg:text-3xl font-black;
+}
+
+.playerRole {
+  @apply font-pixel text-[5.5px] sm:text-[6.5px] md:text-[7.5px] lg:text-[8.5px] italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase;
+  filter: drop-shadow(0 1.5px 3px rgba(0, 0, 0, 0.9));
+}
+
+.statsBox {
+  @apply flex flex-col w-full mt-1.5 p-1 bg-black/60 rounded border border-white/5;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.statsHeader {
+  @apply flex justify-between items-center w-full leading-none mb-1;
+}
+
+.percentageText {
+  @apply font-mono text-[8px] sm:text-[9.5px] font-bold text-white pl-0.5 leading-none;
+}
+
+.loadingLabel {
+  @apply text-[6.5px] sm:text-[7.5px] text-slate-400 font-pixel uppercase tracking-tighter leading-none;
+}
+
+.progressBarOuter {
+  @apply w-full h-1 bg-slate-950 rounded-full overflow-hidden;
+}
+
+.progressBarInner {
+  @apply h-full transition-all duration-150;
+}
+
+.progressBarInnerBlue {
+  @apply bg-cyan-400;
+  box-shadow: 0 0 6px rgba(34, 211, 238, 0.8);
+}
+
+.progressBarInnerRed {
+  @apply bg-rose-500;
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.8);
+}
+
+.rankBadgeHigh {
+  @apply from-purple-600 via-indigo-700 to-purple-800 border-purple-400 text-yellow-200;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.5);
+}
+
+.rankBadgeNormalTier {
+  @apply from-amber-600 via-orange-600 to-amber-700 border-orange-400 text-amber-100;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.5);
+}
+
+.rankBadgeLow {
+  @apply from-emerald-600 to-teal-700 border-emerald-400 text-emerald-100;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.rankBadgeDefault {
+  @apply from-slate-600 to-slate-800 border-slate-400 text-slate-100;
+}
+
+.playerCardBorder {
+  @apply relative flex flex-col overflow-hidden border-2 transition-all duration-300 origin-bottom transform -skew-x-[9deg];
+}
+
+.cardRolling {
+  @apply scale-105 z-10 border-yellow-400 animate-pulse;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.7);
+}
+
+.cardNormalState {
+  @apply scale-100;
+}
+
+.cardBlueBorder {
+  @apply border-[#c5a059];
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.2);
+}
+
+.cardRedBorder {
+  @apply border-[#b85b5b];
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+.cardLoser {
+  @apply opacity-35 grayscale;
+}
+
+.cardWinner {
+  @apply opacity-100;
+}

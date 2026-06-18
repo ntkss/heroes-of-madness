@@ -164,8 +164,7 @@ export default function PlayerInput({
         {/* Right Side: Quick Fill, Clear, Add new, Fight */}
         <div className="lg:w-80 flex flex-col justify-between gap-4">
           <p className="text-[10.5px] text-[#a0a0c0] uppercase tracking-wider leading-relaxed font-mono">
-            SELECT 10 PLAYERS FROM THE DATABASE BELOW. IF YOU DRAFT FEWER THAN
-            10, RANDOM BOTS WILL FILL THE VOID.
+            SELECT 10 PLAYERS FROM THE DATABASE BELOW. USE QUICK FILL TO LET RANDOM BOTS FILL THE VOID.
           </p>
 
           <div className="grid grid-cols-2 gap-2 font-pixel">
@@ -206,15 +205,19 @@ export default function PlayerInput({
                 playBeep(880, 0.15, "sawtooth");
                 onGenerate();
               }}
-              disabled={isGenerating}
-              className="font-pixel text-xs text-black bg-neon-yellow border-4 border-white py-3 cursor-pointer shadow-[0_0_0_4px_#121214,0_5px_0_#121214,0_6px_12px_rgba(255,210,0,0.25)] hover:bg-white hover:shadow-[0_0_0_4px_#121214,0_5px_0_#121214,0_6px_15px_rgba(255,255,255,0.35)] active:translate-y-0.5 active:shadow-[0_0_0_4px_#121214,0_0_0_#121214] transition-all transform -translate-y-0.5 uppercase font-bold tracking-wide w-full select-none"
+              disabled={isGenerating || !isReady}
+              className={`font-pixel text-xs py-3 w-full select-none uppercase font-bold tracking-wide transition-all transform border-4 ${
+                isGenerating || !isReady
+                  ? "bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed shadow-none"
+                  : "text-black bg-neon-yellow border-white cursor-pointer shadow-[0_0_0_4px_#121214,0_5px_0_#121214,0_6px_12px_rgba(255,210,0,0.25)] hover:bg-white hover:shadow-[0_0_0_4px_#121214,0_5px_0_#121214,0_6px_15px_rgba(255,255,255,0.35)] active:translate-y-0.5 active:shadow-[0_0_0_4px_#121214,0_0_0_#121214] -translate-y-0.5"
+              }`}
             >
               {isGenerating ? "DRAFTING..." : "FIGHT! RANDOMIZE"}
             </button>
 
-            {!isReady && currentCount > 0 && (
+            {!isReady && (
               <div className="text-[8.5px] text-neon-red font-pixel text-center uppercase mt-1 animate-pulse">
-                ⚠️ SHORT DRAFT ({currentCount}/10). BOTS JOIN!
+                ⚠️ DRAFT INCOMPLETE ({currentCount}/10). SELECT 10 PLAYERS!
               </div>
             )}
           </div>

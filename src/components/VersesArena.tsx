@@ -27,7 +27,8 @@ interface VersesArenaProps {
 interface TeamRowProps {
   label: string;
   side: "A" | "B";
-  display: string[];
+  finalNames: string[];
+  displayNames: string[];
   locked: boolean[];
   lockedOffset: number;
   winner: "teamA" | "teamB" | null;
@@ -39,7 +40,8 @@ interface TeamRowProps {
 function TeamRow({
   label,
   side,
-  display,
+  finalNames,
+  displayNames,
   locked,
   lockedOffset,
   winner,
@@ -100,13 +102,14 @@ function TeamRow({
             : "justify-center lg:justify-end lg:pr-[8%]"
         }`}
       >
-        {display.map((name, idx) => {
+        {finalNames.map((name, idx) => {
           const player = getPlayer(name);
           const rankClass = getPlayerRankClass(player);
           return (
             <PlayerCard
               key={idx}
               name={name}
+              displayName={displayNames[idx]}
               role={ROLES[idx]}
               locked={locked[idx + lockedOffset]}
               team={side}
@@ -319,7 +322,8 @@ export default function VersesArena({
       <TeamRow
         label="TEAM BLUE DRAGON"
         side="A"
-        display={dispA}
+        finalNames={teamA.length >= 5 ? teamA : Array(5).fill("DRAFTING")}
+        displayNames={dispA}
         locked={lockedSlots}
         lockedOffset={0}
         winner={winner}
@@ -358,7 +362,8 @@ export default function VersesArena({
       <TeamRow
         label="TEAM RED TIGER"
         side="B"
-        display={dispB}
+        finalNames={teamB.length >= 5 ? teamB : Array(5).fill("DRAFTING")}
+        displayNames={dispB}
         locked={lockedSlots}
         lockedOffset={5}
         winner={winner}

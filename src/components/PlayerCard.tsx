@@ -56,6 +56,7 @@ function RankBadge({
 // ─── Player Card ───────────────────────────────────────────────────────────────
 export interface PlayerCardProps {
   name: string;
+  displayName?: string;
   role: string;
   locked: boolean;
   team: "A" | "B";
@@ -69,6 +70,7 @@ export interface PlayerCardProps {
 
 export default function PlayerCard({
   name,
+  displayName,
   role,
   locked,
   team,
@@ -141,20 +143,26 @@ export default function PlayerCard({
       {/* Unskewed Content Wrapper */}
       <div className="w-full h-full transform skew-x-[9deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none">
         {/* Rank Banner (Top Center) */}
-        {name !== "???" && name !== "DRAFTING" && (
+        {locked && name !== "???" && name !== "DRAFTING" && (
           <RankBadge rank={finalRank} rankClass={rankClass || null} />
         )}
 
         {/* Background Portrait Image */}
         <div className="absolute inset-0 w-[140%] -left-[20%] h-full pointer-events-none z-0">
-          {finalImageURL ? (
+          {locked && name !== "???" && name !== "DRAFTING" && finalImageURL ? (
             <Image
               src={finalImageURL}
               alt={name}
               fill
-              className="object-cover object-center opacity-85"
+              className="object-cover object-center opacity-85 animate-fade-in"
               unoptimized
             />
+          ) : !locked ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 border border-yellow-500/20">
+              <span className="text-yellow-500/40 font-action text-7xl font-black animate-pulse select-none drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">
+                ?
+              </span>
+            </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60">
               <span className="text-slate-600 font-pixel text-[6px] animate-pulse">
@@ -190,13 +198,13 @@ export default function PlayerCard({
             className={`
               text-white text-center block truncate mt-0.5 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]
               ${
-                /[\u0E00-\u0E7F]/.test(name)
+                /[\u0E00-\u0E7F]/.test(displayName || name)
                   ? "font-thai text-xs sm:text-sm md:text-base lg:text-3xl font-bold"
                   : "font-action text-xs sm:text-sm md:text-base lg:text-3xl font-black"
               }
             `}
           >
-            {name}
+            {displayName || name}
           </span>
 
           {/* Player Role / Lane */}

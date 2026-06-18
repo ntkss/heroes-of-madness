@@ -27,7 +27,8 @@ interface VersesArenaProps {
 interface TeamRowProps {
   label: string;
   side: "A" | "B";
-  display: string[];
+  finalNames: string[];
+  displayNames: string[];
   locked: boolean[];
   lockedOffset: number;
   winner: "teamA" | "teamB" | null;
@@ -39,7 +40,8 @@ interface TeamRowProps {
 function TeamRow({
   label,
   side,
-  display,
+  finalNames,
+  displayNames,
   locked,
   lockedOffset,
   winner,
@@ -100,13 +102,14 @@ function TeamRow({
             : "justify-center lg:justify-end lg:pr-[8%]"
         }`}
       >
-        {display.map((name, idx) => {
+        {finalNames.map((name, idx) => {
           const player = getPlayer(name);
           const rankClass = getPlayerRankClass(player);
           return (
             <PlayerCard
               key={idx}
               name={name}
+              displayName={displayNames[idx]}
               role={ROLES[idx]}
               locked={locked[idx + lockedOffset]}
               team={side}
@@ -174,10 +177,6 @@ export default function VersesArena({
   };
 
   useEffect(() => {
-    return clearAllTimers;
-  }, []);
-
-  useEffect(() => {
     if (isGenerating) {
       clearAllTimers();
 
@@ -211,11 +210,14 @@ export default function VersesArena({
       const activeDispA = Array(5).fill("???");
       const activeDispB = Array(5).fill("???");
 
+      const rollPool =
+        teamA.length || teamB.length ? [...teamA, ...teamB] : SQUAD_NAMES;
+
       const startRoll = (teamIndex: number, slotIndex: number) => {
         const intervalId = setInterval(
           () => {
-            const randIndex = Math.floor(Math.random() * SQUAD_NAMES.length);
-            const randomName = SQUAD_NAMES[randIndex];
+            const randIndex = Math.floor(Math.random() * rollPool.length);
+            const randomName = rollPool[randIndex];
             if (teamIndex === 0) {
               activeDispA[slotIndex] = randomName;
               setDispA([...activeDispA]);
@@ -238,8 +240,8 @@ export default function VersesArena({
         const delay = 400 + i * 450;
 
         const timerId = setTimeout(() => {
-          clearInterval(intervalsRef.current[i]);
-          clearInterval(intervalsRef.current[i + 5]);
+          clearInterval(intervalsRef.current[2 * i]);
+          clearInterval(intervalsRef.current[2 * i + 1]);
 
           setDispA((prev) => {
             const next = [...prev];
@@ -299,6 +301,7 @@ export default function VersesArena({
         pctIntervalRef.current = null;
       }
     }
+    return clearAllTimers;
   }, [isGenerating, teamA, teamB, triggerScreenShake]);
 
   return (
@@ -320,7 +323,8 @@ export default function VersesArena({
       <TeamRow
         label="TEAM BLUE DRAGON"
         side="A"
-        display={dispA}
+        finalNames={teamA.length >= 5 ? teamA : Array(5).fill("DRAFTING")}
+        displayNames={dispA}
         locked={lockedSlots}
         lockedOffset={0}
         winner={winner}
@@ -359,7 +363,8 @@ export default function VersesArena({
       <TeamRow
         label="TEAM RED TIGER"
         side="B"
-        display={dispB}
+        finalNames={teamB.length >= 5 ? teamB : Array(5).fill("DRAFTING")}
+        displayNames={dispB}
         locked={lockedSlots}
         lockedOffset={5}
         winner={winner}

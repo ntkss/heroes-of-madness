@@ -138,6 +138,7 @@ export default function PlayerCard({
               fill
               className={`object-cover object-center opacity-85 ${styles.animateFadeIn}`}
               unoptimized
+              crossOrigin="anonymous"
             />
           ) : !locked ? (
             <div className={styles.draftSlot}>

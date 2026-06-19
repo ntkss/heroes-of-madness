@@ -9,6 +9,7 @@ import { playBeep, playWin } from "@/utils/audio";
 interface HistoryDashboardProps {
   matches: Match[];
   onDeleteMatch: (id: string) => void;
+  onDeleteAllMatches: () => void;
   onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
@@ -17,6 +18,7 @@ interface HistoryDashboardProps {
 export default function HistoryDashboard({
   matches,
   onDeleteMatch,
+  onDeleteAllMatches,
   onUpdateWinner,
   availablePlayers,
   rankConfig,
@@ -24,6 +26,16 @@ export default function HistoryDashboard({
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
     "history",
   );
+  const handlePurgeAllClick = () => {
+    playBeep(220, 0.1, "sawtooth");
+    const confirmDelete = window.confirm(
+      "⚠️ DANGER! ARE YOU SURE YOU WANT TO PURGE ALL MATCH LOGS FROM THE CABINET DATABASE?\nTHIS ACTION CANNOT BE UNDONE!"
+    );
+    if (confirmDelete) {
+      playBeep(100, 0.3, "sawtooth");
+      onDeleteAllMatches();
+    }
+  };
 
   const formatDate = (timestamp: number) => {
     const d = new Date(timestamp);
@@ -177,7 +189,18 @@ export default function HistoryDashboard({
       {/* Header */}
       <div className={styles.header}>
         <h2 className={styles.title}>ARENA LOGBOOK</h2>
-        <span className={styles.recordsCount}>RECORDS: {matches.length}</span>
+        <div className={styles.headerControls}>
+          <span className={styles.recordsCount}>RECORDS: {matches.length}</span>
+          {matches.length > 0 && activeTab === "history" && (
+            <button
+              onClick={handlePurgeAllClick}
+              className={styles.purgeAllBtn}
+              title="Purge all match logs"
+            >
+              PURGE ALL
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Arcade Tab Selectors */}

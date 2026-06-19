@@ -276,6 +276,40 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
   return success;
 }
 
+// Delete all matches from history
+export async function deleteAllMatches(): Promise<boolean> {
+  let success = false;
+  if (db) {
+    try {
+      const matchesCol = collection(db, "matches");
+      const querySnapshot = await getDocs(matchesCol);
+      const deletePromises: Promise<void>[] = [];
+      querySnapshot.forEach((docSnap) => {
+        deletePromises.push(deleteDoc(doc(db!, "matches", docSnap.id)));
+      });
+      await Promise.all(deletePromises);
+      success = true;
+    } catch (e) {
+      console.error(
+        "Error deleting all matches from Firestore, falling back to LocalStorage:",
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    success = true;
+  }
+
+  if (success) {
+    await recalculateRanks();
+  }
+  return success;
+}
+
+
 const LOCAL_PLAYERS_KEY = "mlbb_generator_players";
 
 // Fetch players (loaded from Firestore, falls back to LocalStorage, seeds with SQUAD if empty)

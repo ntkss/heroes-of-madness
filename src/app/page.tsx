@@ -22,6 +22,7 @@ import {
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
+import { toBlob } from "html-to-image";
 
 export default function Home() {
   const [names, setNames] = useState<string[]>([]);
@@ -34,6 +35,11 @@ export default function Home() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "info" | "error";
+  } | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [audioInitialized, setAudioInitialized] = useState(false);
   const [availablePlayers, setAvailablePlayers] = useState<DbPlayer[]>([]);
@@ -78,6 +84,99 @@ export default function Home() {
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 450);
   }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const playCameraClick = () => {
+    playBeep(880, 0.05, "sine", 0.15);
+    setTimeout(() => {
+      playBeep(1200, 0.08, "sine", 0.15);
+    }, 55);
+  };
+
+  const handleShareResult = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isSharing || !arenaRef.current) return;
+
+    setIsSharing(true);
+    setToast({ message: "INITIALIZING CAPTURE...", type: "info" });
+    playCameraClick();
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    try {
+      const blob = await toBlob(arenaRef.current, {
+        filter: (node) => {
+          if (node.classList?.contains("exclude-from-capture")) {
+            return false;
+          }
+          return true;
+        },
+        cacheBust: true,
+        backgroundColor: "#030712",
+      });
+
+      if (!blob) {
+        throw new Error("Failed to capture image blob.");
+      }
+
+      let copiedToClipboard = false;
+
+      try {
+        if (navigator.clipboard && window.ClipboardItem) {
+          const item = new ClipboardItem({ [blob.type]: blob });
+          await navigator.clipboard.write([item]);
+          setToast({ message: "MATCHUP COPIED TO CLIPBOARD!", type: "success" });
+          playCoin();
+          copiedToClipboard = true;
+        }
+      } catch (clipboardError) {
+        console.warn("Clipboard API copy failed, trying Web Share fallback:", clipboardError);
+      }
+
+      if (!copiedToClipboard && navigator.share) {
+        try {
+          const file = new File([blob], "heroes-of-madness-matchup.png", { type: "image/png" });
+          await navigator.share({
+            files: [file],
+            title: "Heroes of Madness Matchup",
+            text: "Check out our randomized teams!",
+          });
+          setToast({ message: "MATCHUP SHARED SUCCESSFULLY!", type: "success" });
+          playCoin();
+          copiedToClipboard = true;
+        } catch (shareError) {
+          console.warn("Web Share API failed/dismissed:", shareError);
+        }
+      }
+
+      if (!copiedToClipboard) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `heroes-of-madness-matchup-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setToast({ message: "IMAGE SAVED AS PNG FILE!", type: "success" });
+        playCoin();
+      }
+    } catch (error) {
+      console.error("Screenshot capture failed:", error);
+      setToast({ message: "CAPTURE ERROR. TRY AGAIN!", type: "error" });
+      playBeep(220, 0.35, "sawtooth", 0.15);
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (isGenerating) return;
@@ -265,16 +364,40 @@ export default function Home() {
             <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] rounded-md transition-all duration-300">
               {/* Cabinet Frame Header */}
               <div className="bg-[#161622] border-b-4 border-slate-700/80 px-6 py-2 flex items-center justify-between">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <div className="w-2.5 h-2.5 rounded-full bg-neon-red animate-pulse" />
                   <div className="w-2.5 h-2.5 rounded-full bg-neon-blue animate-pulse" />
                   <div className="w-2.5 h-2.5 rounded-full bg-neon-yellow animate-pulse" />
+                  <span className="font-pixel text-[9px] text-[#a0a0c0] uppercase tracking-widest ml-2">
+                    {isGenerating
+                      ? "DRAFT GENERATOR ACTIVE"
+                      : "VERSUS ARENA STANDARD"}
+                  </span>
                 </div>
-                <span className="font-pixel text-[9px] text-[#a0a0c0] uppercase tracking-widest">
-                  {isGenerating
-                    ? "DRAFT GENERATOR ACTIVE"
-                    : "VERSUS ARENA STANDARD"}
-                </span>
+
+                {/* Share Result Button (Excluded from Screenshot) */}
+                {showArena && !isGenerating && (
+                  <button
+                    onClick={handleShareResult}
+                    disabled={isSharing}
+                    className="exclude-from-capture px-3 py-1 bg-emerald-950/40 border border-emerald-500/50 hover:border-emerald-400 text-emerald-400 hover:text-emerald-300 font-pixel text-[8px] tracking-wider uppercase transition-all duration-150 cursor-pointer flex items-center gap-1.5 hover:bg-emerald-950/80 disabled:opacity-50 disabled:cursor-not-allowed glow-emerald z-30"
+                    title="Copy or share generated matchup image"
+                  >
+                    {isSharing ? (
+                      <>
+                        <span className="inline-block w-1.5 h-1.5 bg-emerald-400 animate-ping rounded-full" />
+                        CAPTURING...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                          <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" />
+                        </svg>
+                        SHARE RESULT
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Arena Grid */}
@@ -311,6 +434,32 @@ export default function Home() {
 
         {/* Floating Debug Bar Overlay */}
         <DebugBar />
+
+        {/* Retro Share Toast Notification */}
+        {toast && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
+            <div
+              className={`border-4 px-6 py-3 font-pixel text-[9px] tracking-widest uppercase flex items-center gap-3 shadow-2xl select-none min-w-[280px] justify-center ${
+                toast.type === "success"
+                  ? "bg-emerald-950/90 border-emerald-500 text-emerald-400 glow-emerald"
+                  : toast.type === "error"
+                    ? "bg-rose-950/90 border-rose-500 text-rose-400 glow-rose"
+                    : "bg-slate-900/95 border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(255,210,0,0.3)]"
+              }`}
+            >
+              {toast.type === "success" && (
+                <span className="text-sm font-bold">✓</span>
+              )}
+              {toast.type === "error" && (
+                <span className="text-sm font-bold">!</span>
+              )}
+              {toast.type === "info" && (
+                <span className="inline-block w-2 h-2 rounded-full bg-neon-yellow animate-ping" />
+              )}
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
       </div>
     </CRTOverlay>
   );

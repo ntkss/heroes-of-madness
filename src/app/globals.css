@@ -71,3 +71,16 @@ body {
     transparent 20px
   );
 }
+
+.glow-emerald {
+  box-shadow:
+    0 0 12px rgba(16, 185, 129, 0.45),
+    inset 0 0 6px rgba(16, 185, 129, 0.2);
+}
+
+.glow-rose {
+  box-shadow:
+    0 0 12px rgba(244, 63, 94, 0.45),
+    inset 0 0 6px rgba(244, 63, 94, 0.2);
+}
+

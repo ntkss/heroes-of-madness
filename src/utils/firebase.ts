@@ -723,3 +723,223 @@ export async function recalculateRanks(
     console.error("Error in recalculateRanks:", err);
   }
 }
+
+// Delete player from database
+export async function deletePlayer(playerId: string): Promise<boolean> {
+  let success = false;
+  const playerIdLower = playerId.toLowerCase();
+
+  if (db && !playerIdLower.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "players", playerIdLower);
+      await deleteDoc(docRef);
+      success = true;
+    } catch (e) {
+      console.error("Error deleting player from Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback/Sync
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as DbPlayer[];
+        const filtered = list.filter((p) => p.id !== playerIdLower);
+        localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filtered));
+        if (!db) success = true;
+      } catch (e) {
+        console.error("Error updating LocalStorage in deletePlayer:", e);
+      }
+    }
+  }
+
+  return success;
+}
+
+// Update player display name and avatar
+export async function updatePlayer(
+  oldPlayerId: string,
+  updatedFields: { name: string; avatar: string },
+): Promise<DbPlayer> {
+  const newName = (updatedFields.name || "").trim();
+  if (!newName) {
+    throw new Error("FIGHTER NAME CANNOT BE EMPTY!");
+  }
+  if (newName.length > 16) {
+    throw new Error("NAME TOO LONG (MAX 16 CHARS)!");
+  }
+
+  const newPlayerId = newName.toLowerCase();
+  const oldPlayerIdLower = oldPlayerId.toLowerCase();
+
+  // Load current player list to check for duplicates and get old player data
+  const players = await fetchPlayers();
+  const oldPlayer = players.find((p) => p.id === oldPlayerIdLower);
+  if (!oldPlayer) {
+    throw new Error("FIGHTER NOT FOUND!");
+  }
+
+  // Check if name already exists for ANOTHER player
+  const nameExists = players.some(
+    (p) => p.id !== oldPlayerIdLower && p.name.toLowerCase() === newPlayerId,
+  );
+  if (nameExists) {
+    throw new Error("FIGHTER NAME ALREADY EXISTS!");
+  }
+
+  const cleanAvatar = updatedFields.avatar || "";
+
+  // If ID changes, we must delete old doc and set new doc in Firestore
+  const isIdChanging = newPlayerId !== oldPlayerIdLower;
+
+  const newPlayer: DbPlayer = {
+    ...oldPlayer,
+    name: newName,
+    alias: isIdChanging ? newPlayerId : oldPlayer.alias,
+    avatar: cleanAvatar,
+    imageURL: cleanAvatar,
+  };
+
+  if (db && !oldPlayerIdLower.startsWith("local_")) {
+    try {
+      if (isIdChanging) {
+        // Create new document with new ID
+        const newDocRef = doc(db, "players", newPlayerId);
+        await setDoc(newDocRef, {
+          name: newPlayer.name,
+          alias: newPlayer.alias,
+          avatar: newPlayer.avatar,
+          winrate: newPlayer.winrate,
+          current_rank: newPlayer.current_rank,
+          highest_rank: newPlayer.highest_rank,
+          total_match_played: newPlayer.total_match_played,
+          role: newPlayer.role || "ALL-ROUNDER",
+          createdAt: oldPlayer.createdAt || Date.now(),
+        });
+
+        // Delete old document
+        const oldDocRef = doc(db, "players", oldPlayerIdLower);
+        await deleteDoc(oldDocRef);
+      } else {
+        // Update existing document
+        const docRef = doc(db, "players", oldPlayerIdLower);
+        await updateDoc(docRef, {
+          name: newName,
+          avatar: cleanAvatar,
+        });
+      }
+    } catch (e) {
+      console.error("Error updating player in Firestore:", e);
+      throw new Error("FAILED TO UPDATE FIRESTORE DOCUMENT!");
+    }
+  }
+
+  // LocalStorage Update
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as DbPlayer[];
+        const filtered = list.filter((p) => p.id !== oldPlayerIdLower);
+        filtered.push(newPlayer);
+        localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filtered));
+      } catch (e) {
+        console.error("Error updating LocalStorage in updatePlayer:", e);
+      }
+    }
+  }
+
+  // Update matches if display name changed
+  if (oldPlayer.name !== newName) {
+    await updatePlayerNameInMatches(oldPlayer.name, newName);
+  }
+
+  return newPlayer;
+}
+
+// Helper to update player name in all match histories to preserve stats consistency
+export async function updatePlayerNameInMatches(
+  oldName: string,
+  newName: string,
+): Promise<void> {
+  // Update in Firestore
+  if (db) {
+    try {
+      const matchesCol = collection(db, "matches");
+      const querySnapshot = await getDocs(matchesCol);
+      for (const docSnap of querySnapshot.docs) {
+        const data = docSnap.data();
+        let changed = false;
+        const teamA = (data.teamA || []) as string[];
+        const teamB = (data.teamB || []) as string[];
+
+        const newTeamA = teamA.map((name) => {
+          if (name.toLowerCase() === oldName.toLowerCase()) {
+            changed = true;
+            return newName;
+          }
+          return name;
+        });
+
+        const newTeamB = teamB.map((name) => {
+          if (name.toLowerCase() === oldName.toLowerCase()) {
+            changed = true;
+            return newName;
+          }
+          return name;
+        });
+
+        if (changed) {
+          await updateDoc(doc(db, "matches", docSnap.id), {
+            teamA: newTeamA,
+            teamB: newTeamB,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error updating player name in Firestore matches:", e);
+    }
+  }
+
+  // Update in LocalStorage
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      try {
+        const matches = JSON.parse(stored) as Match[];
+        let changed = false;
+        const updatedMatches = matches.map((match) => {
+          let matchChanged = false;
+          const newTeamA = (match.teamA || []).map((name) => {
+            if (name.toLowerCase() === oldName.toLowerCase()) {
+              matchChanged = true;
+              return newName;
+            }
+            return name;
+          });
+          const newTeamB = (match.teamB || []).map((name) => {
+            if (name.toLowerCase() === oldName.toLowerCase()) {
+              matchChanged = true;
+              return newName;
+            }
+            return name;
+          });
+          if (matchChanged) {
+            changed = true;
+            return { ...match, teamA: newTeamA, teamB: newTeamB };
+          }
+          return match;
+        });
+        if (changed) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedMatches));
+        }
+      } catch (e) {
+        console.error("Error updating player name in LocalStorage matches:", e);
+      }
+    }
+  }
+
+  // Recalculate ranks to reflect the update in match stats
+  await recalculateRanks();
+}

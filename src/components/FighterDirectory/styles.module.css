@@ -24,23 +24,35 @@
 }
 
 .grid {
-  @apply flex flex-wrap gap-2 max-h-[200px] overflow-y-auto pr-1;
+  @apply flex flex-wrap gap-2 max-h-[240px] overflow-y-auto pr-1;
 }
 
-.fighterBtn {
-  @apply flex items-center gap-2.5 p-1.5 px-3 border transition-all duration-200 cursor-pointer font-tech text-xs select-none;
+.fighterCard {
+  @apply flex items-center justify-between border transition-all duration-200 font-tech text-xs select-none bg-slate-950/60 overflow-hidden;
 }
 
-.fighterBtnSelected {
-  @apply border-neon-blue bg-neon-blue/10 text-white shadow-[0_0_8px_rgba(0,210,255,0.3)] font-bold scale-[1.02];
+.fighterCardSelected {
+  @apply border-neon-blue bg-neon-blue/5 text-white shadow-[0_0_6px_rgba(0,210,255,0.2)] font-bold scale-[1.01];
 }
 
-.fighterBtnUnselected {
-  @apply border-slate-800 bg-slate-950/60 text-[#a0a0c0] hover:border-slate-600 hover:text-white;
+.fighterCardUnselected {
+  @apply border-slate-800 text-[#a0a0c0] hover:border-slate-700;
+}
+
+.fighterSelectBtn {
+  @apply flex items-center gap-2.5 p-1.5 pl-3 pr-2 flex-grow cursor-pointer text-left focus:outline-none transition-colors duration-150;
+}
+
+.fighterCardSelected .fighterSelectBtn {
+  @apply hover:bg-neon-blue/5;
+}
+
+.fighterCardUnselected .fighterSelectBtn {
+  @apply hover:bg-slate-900/40 hover:text-white;
 }
 
 .avatarContainer {
-  @apply w-5 h-5 relative overflow-hidden rounded-sm border border-slate-700;
+  @apply w-5 h-5 relative overflow-hidden rounded-sm border border-slate-700 flex-shrink-0;
 }
 
 .info {
@@ -68,5 +80,53 @@
 }
 
 .wrBadge {
-  @apply text-[7.5px] font-mono bg-black/40 px-1 border border-slate-800/80 text-neon-yellow;
+  @apply text-[7.5px] font-mono bg-black/40 px-1 border border-slate-800/80 text-neon-yellow ml-1;
+}
+
+.actions {
+  @apply flex items-center gap-0.5 border-l border-slate-800/80 pl-1.5 pr-2.5 h-full self-stretch bg-black/20;
+}
+
+.actionBtn {
+  @apply p-1 text-slate-500 transition-all duration-150 focus:outline-none cursor-pointer hover:scale-110 flex items-center justify-center;
+}
+
+.editBtn {
+  @apply hover:text-neon-blue;
+}
+
+.deleteBtn {
+  @apply hover:text-neon-red;
+}
+
+/* Deletion Confirmation Banner Styles */
+.deleteConfirmOverlay {
+  @apply bg-black/85 border-2 border-neon-red/30 p-4 mb-5 flex flex-col gap-3;
+}
+
+.deleteConfirmBox {
+  @apply flex flex-col gap-2;
+}
+
+.deleteTitle {
+  @apply font-pixel text-[10px] text-neon-red uppercase tracking-widest border-b border-slate-800 pb-1.5 mb-1;
+  text-shadow:
+    0 0 8px var(--color-neon-red),
+    0 0 15px rgba(255, 42, 95, 0.4);
+}
+
+.deleteMsg {
+  @apply font-tech text-xs text-slate-300 uppercase leading-relaxed;
+}
+
+.deleteActions {
+  @apply flex gap-3 self-end mt-2;
+}
+
+.confirmDeleteBtn {
+  @apply font-pixel text-[9px] text-white bg-neon-red border-2 border-white px-4 py-2 hover:bg-white hover:text-black transition-colors cursor-pointer uppercase font-bold disabled:opacity-50;
+}
+
+.cancelDeleteBtn {
+  @apply font-pixel text-[9px] text-slate-300 bg-slate-900 border border-slate-700 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer uppercase;
 }

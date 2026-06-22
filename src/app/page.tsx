@@ -14,6 +14,7 @@ import {
   saveMatch,
   updateMatchWinner,
   deleteMatch,
+  deleteAllMatches,
   fetchPlayers,
   savePlayer,
   RankConfig,
@@ -265,6 +266,17 @@ export default function Home() {
     setAvailablePlayers(updatedPlayers);
   };
 
+  const handleDeleteAllMatches = async () => {
+    await deleteAllMatches();
+
+    const [updatedLogs, updatedPlayers] = await Promise.all([
+      fetchMatches(),
+      fetchPlayers(),
+    ]);
+    setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
+  };
+
   const initAudioFeedback = () => {
     if (audioInitialized) return;
     setAudioInitialized(true);
@@ -418,6 +430,7 @@ export default function Home() {
             <HistoryDashboard
               matches={matches}
               onDeleteMatch={handleDeleteMatch}
+              onDeleteAllMatches={handleDeleteAllMatches}
               onUpdateWinner={handleUpdatePastWinner}
               availablePlayers={availablePlayers}
               rankConfig={rankConfig || DEFAULT_RANK_CONFIG}

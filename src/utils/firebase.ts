@@ -723,10 +723,10 @@ export async function deletePlayer(playerId: string): Promise<boolean> {
   return success;
 }
 
-// Update player display name and avatar
+// Update player display name, alias, and avatar
 export async function updatePlayer(
   oldPlayerId: string,
-  updatedFields: { name: string; avatar: string },
+  updatedFields: { name: string; alias: string; avatar: string },
 ): Promise<DbPlayer> {
   const newName = (updatedFields.name || "").trim();
   if (!newName) {
@@ -737,6 +737,7 @@ export async function updatePlayer(
   }
 
   const newPlayerId = newName.toLowerCase();
+  const newAlias = (updatedFields.alias || "").trim() || newPlayerId;
   const oldPlayerIdLower = oldPlayerId.toLowerCase();
 
   // Load current player list to check for duplicates and get old player data
@@ -762,7 +763,7 @@ export async function updatePlayer(
   const newPlayer: DbPlayer = {
     ...oldPlayer,
     name: newName,
-    alias: isIdChanging ? newPlayerId : oldPlayer.alias,
+    alias: newAlias,
     avatar: cleanAvatar,
     imageURL: cleanAvatar,
   };
@@ -792,6 +793,7 @@ export async function updatePlayer(
         const docRef = doc(db, "players", oldPlayerIdLower);
         await updateDoc(docRef, {
           name: newName,
+          alias: newAlias,
           avatar: cleanAvatar,
         });
       }

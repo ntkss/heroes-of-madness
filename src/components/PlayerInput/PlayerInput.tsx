@@ -19,6 +19,7 @@ interface PlayerInputProps {
   onUpdatePlayer: (
     oldPlayerId: string,
     name: string,
+    alias: string,
     avatar: string,
   ) => Promise<DbPlayer>;
 }

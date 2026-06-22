@@ -15,6 +15,12 @@ interface PlayerInputProps {
   isGenerating: boolean;
   availablePlayers: DbPlayer[];
   onAddPlayer: (player: Omit<DbPlayer, "id">) => Promise<DbPlayer>;
+  onDeletePlayer: (playerId: string) => Promise<void>;
+  onUpdatePlayer: (
+    oldPlayerId: string,
+    name: string,
+    avatar: string,
+  ) => Promise<DbPlayer>;
 }
 
 export default function PlayerInput({
@@ -24,6 +30,8 @@ export default function PlayerInput({
   isGenerating,
   availablePlayers,
   onAddPlayer,
+  onDeletePlayer,
+  onUpdatePlayer,
 }: PlayerInputProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -259,6 +267,8 @@ export default function PlayerInput({
         availablePlayers={availablePlayers}
         names={names}
         onTogglePlayer={handleTogglePlayer}
+        onDeletePlayer={onDeletePlayer}
+        onUpdatePlayer={onUpdatePlayer}
       />
     </div>
   );

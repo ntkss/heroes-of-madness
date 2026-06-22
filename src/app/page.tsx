@@ -14,8 +14,11 @@ import {
   saveMatch,
   updateMatchWinner,
   deleteMatch,
+  deleteAllMatches,
   fetchPlayers,
   savePlayer,
+  deletePlayer,
+  updatePlayer,
   RankConfig,
   fetchRankConfig,
   DEFAULT_RANK_CONFIG,
@@ -78,6 +81,43 @@ export default function Home() {
     const saved = await savePlayer(newPlayer);
     setAvailablePlayers((prev) => [...prev, saved]);
     return saved;
+  };
+
+  const handleDeletePlayer = async (playerId: string) => {
+    const playerObj = availablePlayers.find((p) => p.id === playerId);
+    if (!playerObj) return;
+
+    await deletePlayer(playerId);
+    setAvailablePlayers((prev) => prev.filter((p) => p.id !== playerId));
+    setNames((prev) => prev.filter((name) => name !== playerObj.name));
+
+    // Sync with database/localstorage
+    const updatedPlayers = await fetchPlayers();
+    setAvailablePlayers(updatedPlayers);
+  };
+
+  const handleUpdatePlayer = async (
+    oldPlayerId: string,
+    name: string,
+    avatar: string,
+  ) => {
+    const oldPlayer = availablePlayers.find((p) => p.id === oldPlayerId);
+    if (!oldPlayer) throw new Error("FIGHTER NOT FOUND!");
+
+    const updated = await updatePlayer(oldPlayerId, { name, avatar });
+
+    // Sync names selection
+    if (oldPlayer.name !== name) {
+      setNames((prev) =>
+        prev.map((n) => (n === oldPlayer.name ? name : n)),
+      );
+    }
+
+    // Sync with database/localstorage
+    const updatedPlayers = await fetchPlayers();
+    setAvailablePlayers(updatedPlayers);
+
+    return updated;
   };
 
   const triggerScreenShake = useCallback(() => {
@@ -265,6 +305,17 @@ export default function Home() {
     setAvailablePlayers(updatedPlayers);
   };
 
+  const handleDeleteAllMatches = async () => {
+    await deleteAllMatches();
+
+    const [updatedLogs, updatedPlayers] = await Promise.all([
+      fetchMatches(),
+      fetchPlayers(),
+    ]);
+    setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
+  };
+
   const initAudioFeedback = () => {
     if (audioInitialized) return;
     setAudioInitialized(true);
@@ -349,6 +400,8 @@ export default function Home() {
               isGenerating={isGenerating}
               availablePlayers={availablePlayers}
               onAddPlayer={handleAddPlayer}
+              onDeletePlayer={handleDeletePlayer}
+              onUpdatePlayer={handleUpdatePlayer}
             />
           </section>
 
@@ -418,6 +471,7 @@ export default function Home() {
             <HistoryDashboard
               matches={matches}
               onDeleteMatch={handleDeleteMatch}
+              onDeleteAllMatches={handleDeleteAllMatches}
               onUpdateWinner={handleUpdatePastWinner}
               availablePlayers={availablePlayers}
               rankConfig={rankConfig || DEFAULT_RANK_CONFIG}

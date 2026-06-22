@@ -3,20 +3,33 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { DbPlayer } from "@/utils/firebase";
+import { playBeep, playCoin } from "@/utils/audio";
+import EditFighterForm from "@/components/EditFighterForm";
 import styles from "./styles.module.css";
 
 interface FighterDirectoryProps {
   availablePlayers: DbPlayer[];
   names: string[];
   onTogglePlayer: (player: DbPlayer) => void;
+  onDeletePlayer: (playerId: string) => Promise<void>;
+  onUpdatePlayer: (
+    oldPlayerId: string,
+    name: string,
+    avatar: string,
+  ) => Promise<DbPlayer>;
 }
 
 export default function FighterDirectory({
   availablePlayers,
   names,
   onTogglePlayer,
+  onDeletePlayer,
+  onUpdatePlayer,
 }: FighterDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingPlayer, setEditingPlayer] = useState<DbPlayer | null>(null);
+  const [deletingPlayer, setDeletingPlayer] = useState<DbPlayer | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredPlayers = availablePlayers.filter((player) => {
     const search = searchTerm.toLowerCase();
@@ -26,8 +39,76 @@ export default function FighterDirectory({
     );
   });
 
+  const handleConfirmDelete = async () => {
+    if (!deletingPlayer) return;
+    setIsDeleting(true);
+    try {
+      playBeep(120, 0.35, "sawtooth", 0.15); // alarm warning sound
+      await onDeletePlayer(deletingPlayer.id);
+      setDeletingPlayer(null);
+    } catch (e) {
+      console.error("Delete player failed:", e);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSaveEdit = async (name: string, avatar: string) => {
+    if (!editingPlayer) return;
+    try {
+      await onUpdatePlayer(editingPlayer.id, name, avatar);
+      playCoin(); // retro success chime
+      setEditingPlayer(null);
+    } catch (e) {
+      // Propagation of throw will let EditFighterForm display the error locally
+      throw e;
+    }
+  };
+
   return (
     <div className={styles.container}>
+      {/* Inline Forms and Notifications at the top of the directory container */}
+      
+      {/* Deletion Dialog */}
+      {deletingPlayer && (
+        <div className={styles.deleteConfirmOverlay}>
+          <div className={styles.deleteConfirmBox}>
+            <span className={styles.deleteTitle}>ALERT: DELETE FIGHTER?</span>
+            <p className={styles.deleteMsg}>
+              ARE YOU ABSOLUTELY SURE YOU WANT TO DISCHARGE &quot;{deletingPlayer.name}&quot; FROM THE SYSTEM?
+              THIS WILL PERMANENTLY ERASE THEIR DOSSIER.
+            </p>
+            <div className={styles.deleteActions}>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className={styles.confirmDeleteBtn}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "DELETING..." : "CONFIRM DELETION"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeletingPlayer(null)}
+                className={styles.cancelDeleteBtn}
+                disabled={isDeleting}
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Editing Modal/Form */}
+      {editingPlayer && (
+        <EditFighterForm
+          player={editingPlayer}
+          onSubmit={handleSaveEdit}
+          onClose={() => setEditingPlayer(null)}
+        />
+      )}
+
       <div className={styles.header}>
         <span className={styles.title}>
           FIGHTER DIRECTORY (CLICK TO TOGGLE DRAFT)
@@ -63,50 +144,88 @@ export default function FighterDirectory({
                   : "text-slate-400";
 
             return (
-              <button
+              <div
                 key={player.id}
-                type="button"
-                onClick={() => onTogglePlayer(player)}
-                className={`${styles.fighterBtn} ${
+                className={`${styles.fighterCard} ${
                   isSelected
-                    ? styles.fighterBtnSelected
-                    : styles.fighterBtnUnselected
+                    ? styles.fighterCardSelected
+                    : styles.fighterCardUnselected
                 }`}
               >
-                {/* Small Avatar */}
-                <div className={styles.avatarContainer}>
-                  <Image
-                    src={player.avatar}
-                    alt={player.name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <div className={styles.info}>
-                  <span
-                    className={`${styles.name} ${
-                      isThaiName ? styles.thaiName : styles.englishName
-                    }`}
-                  >
-                    {player.name}
-                  </span>
-                  <span className={styles.subInfo}>
-                    {player.alias} •{" "}
+                {/* Main clickable toggle draft zone */}
+                <button
+                  type="button"
+                  onClick={() => onTogglePlayer(player)}
+                  className={styles.fighterSelectBtn}
+                >
+                  {/* Small Avatar */}
+                  <div className={styles.avatarContainer}>
+                    <Image
+                      src={player.avatar}
+                      alt={player.name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className={styles.info}>
                     <span
-                      className={`${rankColor} ${
-                        isThaiRank ? styles.thaiRank : ""
+                      className={`${styles.name} ${
+                        isThaiName ? styles.thaiName : styles.englishName
                       }`}
                     >
-                      {player.current_rank}
+                      {player.name}
                     </span>
-                  </span>
+                    <span className={styles.subInfo}>
+                      {player.alias} •{" "}
+                      <span
+                        className={`${rankColor} ${
+                          isThaiRank ? styles.thaiRank : ""
+                        }`}
+                      >
+                        {player.current_rank}
+                      </span>
+                    </span>
+                  </div>
+                  {/* WR badge if match played > 0 */}
+                  {player.total_match_played > 0 && (
+                    <span className={styles.wrBadge}>{player.winrate}% WR</span>
+                  )}
+                </button>
+
+                {/* Edit & Delete Action Panel */}
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playBeep(440, 0.08, "triangle");
+                      setEditingPlayer(player);
+                    }}
+                    className={`${styles.actionBtn} ${styles.editBtn}`}
+                    title="Edit Profile"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playBeep(220, 0.15, "sawtooth");
+                      setDeletingPlayer(player);
+                    }}
+                    className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                    title="Delete Profile"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                    </svg>
+                  </button>
                 </div>
-                {/* WR badge if match played > 0 */}
-                {player.total_match_played > 0 && (
-                  <span className={styles.wrBadge}>{player.winrate}% WR</span>
-                )}
-              </button>
+              </div>
             );
           })}
         </div>

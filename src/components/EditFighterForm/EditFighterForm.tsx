@@ -6,7 +6,7 @@ import styles from "./styles.module.css";
 
 interface EditFighterFormProps {
   player: DbPlayer;
-  onSubmit: (name: string, avatar: string) => Promise<void>;
+  onSubmit: (name: string, alias: string, avatar: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -71,6 +71,7 @@ export default function EditFighterForm({
   onClose,
 }: EditFighterFormProps) {
   const [name, setName] = useState("");
+  const [alias, setAlias] = useState("");
   const [avatarBase64, setAvatarBase64] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +80,7 @@ export default function EditFighterForm({
   // Pre-populate fields on initialization or when player changes
   useEffect(() => {
     setName(player.name || "");
+    setAlias(player.alias || "");
     const avatarVal = player.avatar || player.imageURL || "";
     setAvatarBase64(avatarVal);
     setAvatarPreview(avatarVal);
@@ -133,7 +135,7 @@ export default function EditFighterForm({
         finalAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${seed}&backgroundColor=1a1a2e`;
       }
 
-      await onSubmit(trimmedName, finalAvatar);
+      await onSubmit(trimmedName, alias.trim(), finalAvatar);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "FAILED TO UPDATE FIGHTER!";
@@ -164,6 +166,19 @@ export default function EditFighterForm({
             placeholder="e.g. Nutty"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className={styles.inputField}
+            disabled={loading}
+          />
+        </div>
+
+        {/* Alias */}
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>ALIAS</label>
+          <input
+            type="text"
+            placeholder="e.g. nutty"
+            value={alias}
+            onChange={(e) => setAlias(e.target.value)}
             className={styles.inputField}
             disabled={loading}
           />

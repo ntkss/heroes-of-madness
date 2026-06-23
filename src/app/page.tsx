@@ -99,12 +99,13 @@ export default function Home() {
   const handleUpdatePlayer = async (
     oldPlayerId: string,
     name: string,
+    alias: string,
     avatar: string,
   ) => {
     const oldPlayer = availablePlayers.find((p) => p.id === oldPlayerId);
     if (!oldPlayer) throw new Error("FIGHTER NOT FOUND!");
 
-    const updated = await updatePlayer(oldPlayerId, { name, avatar });
+    const updated = await updatePlayer(oldPlayerId, { name, alias, avatar });
 
     // Sync names selection
     if (oldPlayer.name !== name) {

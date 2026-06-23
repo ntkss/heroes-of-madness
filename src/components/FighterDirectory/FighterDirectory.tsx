@@ -15,6 +15,7 @@ interface FighterDirectoryProps {
   onUpdatePlayer: (
     oldPlayerId: string,
     name: string,
+    alias: string,
     avatar: string,
   ) => Promise<DbPlayer>;
 }
@@ -53,10 +54,10 @@ export default function FighterDirectory({
     }
   };
 
-  const handleSaveEdit = async (name: string, avatar: string) => {
+  const handleSaveEdit = async (name: string, alias: string, avatar: string) => {
     if (!editingPlayer) return;
     try {
-      await onUpdatePlayer(editingPlayer.id, name, avatar);
+      await onUpdatePlayer(editingPlayer.id, name, alias, avatar);
       playCoin(); // retro success chime
       setEditingPlayer(null);
     } catch (e) {

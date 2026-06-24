@@ -309,7 +309,6 @@ export async function deleteAllMatches(): Promise<boolean> {
   return success;
 }
 
-
 const LOCAL_PLAYERS_KEY = "mlbb_generator_players";
 
 // Fetch players (loaded from Firestore, falls back to LocalStorage, seeds with SQUAD if empty)
@@ -447,12 +446,28 @@ export async function savePlayer(
   if (!nameTrimmed) {
     throw new Error("FIGHTER NAME CANNOT BE EMPTY!");
   }
-  const docId = nameTrimmed.toLowerCase();
   const cleanAvatar = playerData.avatar || playerData.imageURL || "";
+
+  // Load all players first to check if name exists (case-insensitive)
+  const players = await fetchPlayers();
+  const nameExists = players.some(
+    (p) => p.name.toLowerCase() === nameTrimmed.toLowerCase(),
+  );
+  if (nameExists) {
+    throw new Error("FIGHTER NAME ALREADY EXISTS!");
+  }
+
+  // Generate unique document ID
+  let docId: string;
+  if (db) {
+    docId = doc(collection(db, "players")).id;
+  } else {
+    docId = `local_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  }
 
   const firestoreData = {
     name: nameTrimmed,
-    alias: playerData.alias || docId,
+    alias: playerData.alias || nameTrimmed,
     avatar: cleanAvatar,
     winrate: Number(playerData.winrate) || 0,
     current_rank: playerData.current_rank,
@@ -462,40 +477,29 @@ export async function savePlayer(
     createdAt: Date.now(),
   };
 
-  const id = docId;
   const newPlayer: DbPlayer = {
     ...firestoreData,
-    id,
+    id: docId,
     avatar: cleanAvatar,
     imageURL: cleanAvatar,
   };
 
-  if (db) {
+  if (db && !docId.startsWith("local_")) {
     try {
       const docRef = doc(db, "players", docId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        throw new Error("FIGHTER NAME ALREADY EXISTS!");
-      }
-
       await setDoc(docRef, firestoreData);
 
       // Update local storage too to keep in sync
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
         const list = stored ? (JSON.parse(stored) as DbPlayer[]) : [];
-        const filteredList = list.filter(
-          (p) => p.id !== docId && p.name.toLowerCase() !== docId,
-        );
+        const filteredList = list.filter((p) => p.id !== docId);
         filteredList.push(newPlayer);
         localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filteredList));
       }
 
       return newPlayer;
     } catch (e) {
-      if (e instanceof Error && e.message === "FIGHTER NAME ALREADY EXISTS!") {
-        throw e;
-      }
       console.error(
         "Error writing player to Firestore, saving to LocalStorage instead:",
         e,
@@ -507,12 +511,6 @@ export async function savePlayer(
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
     const list = stored ? (JSON.parse(stored) as DbPlayer[]) : [];
-    const nameExists = list.some(
-      (p) => p.name.toLowerCase() === docId || p.id === docId,
-    );
-    if (nameExists) {
-      throw new Error("FIGHTER NAME ALREADY EXISTS!");
-    }
     list.push(newPlayer);
     localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(list));
   }
@@ -637,15 +635,24 @@ export async function recalculateRanks(
         match.winner === "teamA" ? teamAPlayers : teamBPlayers;
       const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
 
-      winningTeam.forEach((playerName) => {
-        const key = playerName.toLowerCase();
+      const getPlayerKey = (nameOrId: string) => {
+        const found = players.find(
+          (p) =>
+            p.id === nameOrId.toLowerCase() ||
+            p.name.toLowerCase() === nameOrId.toLowerCase(),
+        );
+        return found ? found.id : nameOrId.toLowerCase();
+      };
+
+      winningTeam.forEach((playerNameOrId) => {
+        const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) statsMap[key] = { wins: 0, matches: 0 };
         statsMap[key].wins += 1;
         statsMap[key].matches += 1;
       });
 
-      losingTeam.forEach((playerName) => {
-        const key = playerName.toLowerCase();
+      losingTeam.forEach((playerNameOrId) => {
+        const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) statsMap[key] = { wins: 0, matches: 0 };
         statsMap[key].matches += 1;
       });
@@ -653,7 +660,7 @@ export async function recalculateRanks(
 
     const updatedPlayers = await Promise.all(
       players.map(async (player) => {
-        const key = player.name.toLowerCase();
+        const key = player.id;
         const pStats = statsMap[key] || { wins: 0, matches: 0 };
 
         const totalMatches = pStats.matches;
@@ -770,8 +777,7 @@ export async function updatePlayer(
     throw new Error("NAME TOO LONG (MAX 16 CHARS)!");
   }
 
-  const newPlayerId = newName.toLowerCase();
-  const newAlias = (updatedFields.alias || "").trim() || newPlayerId;
+  const newAlias = (updatedFields.alias || "").trim() || newName;
   const oldPlayerIdLower = oldPlayerId.toLowerCase();
 
   // Load current player list to check for duplicates and get old player data
@@ -781,18 +787,17 @@ export async function updatePlayer(
     throw new Error("FIGHTER NOT FOUND!");
   }
 
-  // Check if name already exists for ANOTHER player
+  // Check if name already exists for ANOTHER player (case-insensitive)
   const nameExists = players.some(
-    (p) => p.id !== oldPlayerIdLower && p.name.toLowerCase() === newPlayerId,
+    (p) =>
+      p.id !== oldPlayerIdLower &&
+      p.name.toLowerCase() === newName.toLowerCase(),
   );
   if (nameExists) {
     throw new Error("FIGHTER NAME ALREADY EXISTS!");
   }
 
   const cleanAvatar = updatedFields.avatar || "";
-
-  // If ID changes, we must delete old doc and set new doc in Firestore
-  const isIdChanging = newPlayerId !== oldPlayerIdLower;
 
   const newPlayer: DbPlayer = {
     ...oldPlayer,
@@ -804,33 +809,13 @@ export async function updatePlayer(
 
   if (db && !oldPlayerIdLower.startsWith("local_")) {
     try {
-      if (isIdChanging) {
-        // Create new document with new ID
-        const newDocRef = doc(db, "players", newPlayerId);
-        await setDoc(newDocRef, {
-          name: newPlayer.name,
-          alias: newPlayer.alias,
-          avatar: newPlayer.avatar,
-          winrate: newPlayer.winrate,
-          current_rank: newPlayer.current_rank,
-          highest_rank: newPlayer.highest_rank,
-          total_match_played: newPlayer.total_match_played,
-          role: newPlayer.role || "ALL-ROUNDER",
-          createdAt: oldPlayer.createdAt || Date.now(),
-        });
-
-        // Delete old document
-        const oldDocRef = doc(db, "players", oldPlayerIdLower);
-        await deleteDoc(oldDocRef);
-      } else {
-        // Update existing document
-        const docRef = doc(db, "players", oldPlayerIdLower);
-        await updateDoc(docRef, {
-          name: newName,
-          alias: newAlias,
-          avatar: cleanAvatar,
-        });
-      }
+      // Always update document in-place
+      const docRef = doc(db, "players", oldPlayerIdLower);
+      await updateDoc(docRef, {
+        name: newName,
+        alias: newAlias,
+        avatar: cleanAvatar,
+      });
     } catch (e) {
       console.error("Error updating player in Firestore:", e);
       throw new Error("FAILED TO UPDATE FIRESTORE DOCUMENT!");
@@ -852,96 +837,5 @@ export async function updatePlayer(
     }
   }
 
-  // Update matches if display name changed
-  if (oldPlayer.name !== newName) {
-    await updatePlayerNameInMatches(oldPlayer.name, newName);
-  }
-
   return newPlayer;
-}
-
-// Helper to update player name in all match histories to preserve stats consistency
-export async function updatePlayerNameInMatches(
-  oldName: string,
-  newName: string,
-): Promise<void> {
-  // Update in Firestore
-  if (db) {
-    try {
-      const matchesCol = collection(db, "matches");
-      const querySnapshot = await getDocs(matchesCol);
-      for (const docSnap of querySnapshot.docs) {
-        const data = docSnap.data();
-        let changed = false;
-        const teamA = (data.teamA || []) as string[];
-        const teamB = (data.teamB || []) as string[];
-
-        const newTeamA = teamA.map((name) => {
-          if (name.toLowerCase() === oldName.toLowerCase()) {
-            changed = true;
-            return newName;
-          }
-          return name;
-        });
-
-        const newTeamB = teamB.map((name) => {
-          if (name.toLowerCase() === oldName.toLowerCase()) {
-            changed = true;
-            return newName;
-          }
-          return name;
-        });
-
-        if (changed) {
-          await updateDoc(doc(db, "matches", docSnap.id), {
-            teamA: newTeamA,
-            teamB: newTeamB,
-          });
-        }
-      }
-    } catch (e) {
-      console.error("Error updating player name in Firestore matches:", e);
-    }
-  }
-
-  // Update in LocalStorage
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) {
-      try {
-        const matches = JSON.parse(stored) as Match[];
-        let changed = false;
-        const updatedMatches = matches.map((match) => {
-          let matchChanged = false;
-          const newTeamA = (match.teamA || []).map((name) => {
-            if (name.toLowerCase() === oldName.toLowerCase()) {
-              matchChanged = true;
-              return newName;
-            }
-            return name;
-          });
-          const newTeamB = (match.teamB || []).map((name) => {
-            if (name.toLowerCase() === oldName.toLowerCase()) {
-              matchChanged = true;
-              return newName;
-            }
-            return name;
-          });
-          if (matchChanged) {
-            changed = true;
-            return { ...match, teamA: newTeamA, teamB: newTeamB };
-          }
-          return match;
-        });
-        if (changed) {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedMatches));
-        }
-      } catch (e) {
-        console.error("Error updating player name in LocalStorage matches:", e);
-      }
-    }
-  }
-
-  // Recalculate ranks to reflect the update in match stats
-  await recalculateRanks();
 }

@@ -107,13 +107,6 @@ export default function Home() {
 
     const updated = await updatePlayer(oldPlayerId, { name, alias, avatar });
 
-    // Sync names selection
-    if (oldPlayer.name !== name) {
-      setNames((prev) =>
-        prev.map((n) => (n === oldPlayer.name ? name : n)),
-      );
-    }
-
     // Sync with database/localstorage
     const updatedPlayers = await fetchPlayers();
     setAvailablePlayers(updatedPlayers);
@@ -174,23 +167,34 @@ export default function Home() {
         if (navigator.clipboard && window.ClipboardItem) {
           const item = new ClipboardItem({ [blob.type]: blob });
           await navigator.clipboard.write([item]);
-          setToast({ message: "MATCHUP COPIED TO CLIPBOARD!", type: "success" });
+          setToast({
+            message: "MATCHUP COPIED TO CLIPBOARD!",
+            type: "success",
+          });
           playCoin();
           copiedToClipboard = true;
         }
       } catch (clipboardError) {
-        console.warn("Clipboard API copy failed, trying Web Share fallback:", clipboardError);
+        console.warn(
+          "Clipboard API copy failed, trying Web Share fallback:",
+          clipboardError,
+        );
       }
 
       if (!copiedToClipboard && navigator.share) {
         try {
-          const file = new File([blob], "heroes-of-madness-matchup.png", { type: "image/png" });
+          const file = new File([blob], "heroes-of-madness-matchup.png", {
+            type: "image/png",
+          });
           await navigator.share({
             files: [file],
             title: "Heroes of Madness Matchup",
             text: "Check out our randomized teams!",
           });
-          setToast({ message: "MATCHUP SHARED SUCCESSFULLY!", type: "success" });
+          setToast({
+            message: "MATCHUP SHARED SUCCESSFULLY!",
+            type: "success",
+          });
           playCoin();
           copiedToClipboard = true;
         } catch (shareError) {
@@ -234,9 +238,12 @@ export default function Home() {
     const draftNames = [...names];
     if (draftNames.length < 10) {
       const needed = 10 - draftNames.length;
+      const selectedDisplayNames = names.map((id) => {
+        const found = availablePlayers.find((p) => p.id === id);
+        return found ? found.name.toLowerCase() : id.toLowerCase();
+      });
       const availableBots = FILL_POOL_NAMES.filter(
-        (p) =>
-          !draftNames.map((n) => n.toLowerCase()).includes(p.toLowerCase()),
+        (p) => !selectedDisplayNames.includes(p.toLowerCase()),
       );
       const shuffledBots = [...availableBots].sort(() => Math.random() - 0.5);
 
@@ -444,7 +451,10 @@ export default function Home() {
                       </>
                     ) : (
                       <>
-                        <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                        <svg
+                          className="w-3 h-3 fill-current"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" />
                         </svg>
                         SHARE RESULT

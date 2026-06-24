@@ -54,7 +54,11 @@ export default function FighterDirectory({
     }
   };
 
-  const handleSaveEdit = async (name: string, alias: string, avatar: string) => {
+  const handleSaveEdit = async (
+    name: string,
+    alias: string,
+    avatar: string,
+  ) => {
     if (!editingPlayer) return;
     try {
       await onUpdatePlayer(editingPlayer.id, name, alias, avatar);
@@ -69,15 +73,16 @@ export default function FighterDirectory({
   return (
     <div className={styles.container}>
       {/* Inline Forms and Notifications at the top of the directory container */}
-      
+
       {/* Deletion Dialog */}
       {deletingPlayer && (
         <div className={styles.deleteConfirmOverlay}>
           <div className={styles.deleteConfirmBox}>
             <span className={styles.deleteTitle}>ALERT: DELETE FIGHTER?</span>
             <p className={styles.deleteMsg}>
-              ARE YOU ABSOLUTELY SURE YOU WANT TO DISCHARGE &quot;{deletingPlayer.name}&quot; FROM THE SYSTEM?
-              THIS WILL PERMANENTLY ERASE THEIR DOSSIER.
+              ARE YOU ABSOLUTELY SURE YOU WANT TO DISCHARGE &quot;
+              {deletingPlayer.name}&quot; FROM THE SYSTEM? THIS WILL PERMANENTLY
+              ERASE THEIR DOSSIER.
             </p>
             <div className={styles.deleteActions}>
               <button
@@ -104,6 +109,7 @@ export default function FighterDirectory({
       {/* Editing Modal/Form */}
       {editingPlayer && (
         <EditFighterForm
+          key={editingPlayer.id}
           player={editingPlayer}
           onSubmit={handleSaveEdit}
           onClose={() => setEditingPlayer(null)}
@@ -132,7 +138,7 @@ export default function FighterDirectory({
       ) : (
         <div className={styles.grid}>
           {filteredPlayers.map((player) => {
-            const isSelected = names.includes(player.name);
+            const isSelected = names.includes(player.id);
             const isThaiName = /[\u0E00-\u0E7F]/.test(player.name);
             const isThaiRank = /[\u0E00-\u0E7F]/.test(player.current_rank);
 
@@ -206,7 +212,10 @@ export default function FighterDirectory({
                     className={`${styles.actionBtn} ${styles.editBtn}`}
                     title="Edit Profile"
                   >
-                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <svg
+                      className="w-3.5 h-3.5 fill-current"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                     </svg>
                   </button>
@@ -221,7 +230,10 @@ export default function FighterDirectory({
                     className={`${styles.actionBtn} ${styles.deleteBtn}`}
                     title="Delete Profile"
                   >
-                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <svg
+                      className="w-3.5 h-3.5 fill-current"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
                     </svg>
                   </button>

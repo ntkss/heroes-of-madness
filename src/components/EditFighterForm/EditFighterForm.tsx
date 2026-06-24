@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { DbPlayer } from "@/utils/firebase";
 import styles from "./styles.module.css";
 
@@ -70,22 +70,13 @@ export default function EditFighterForm({
   onSubmit,
   onClose,
 }: EditFighterFormProps) {
-  const [name, setName] = useState("");
-  const [alias, setAlias] = useState("");
-  const [avatarBase64, setAvatarBase64] = useState("");
-  const [avatarPreview, setAvatarPreview] = useState("");
+  const [name, setName] = useState(player.name || "");
+  const [alias, setAlias] = useState(player.alias || "");
+  const avatarVal = player.avatar || player.imageURL || "";
+  const [avatarBase64, setAvatarBase64] = useState(avatarVal);
+  const [avatarPreview, setAvatarPreview] = useState(avatarVal);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Pre-populate fields on initialization or when player changes
-  useEffect(() => {
-    setName(player.name || "");
-    setAlias(player.alias || "");
-    const avatarVal = player.avatar || player.imageURL || "";
-    setAvatarBase64(avatarVal);
-    setAvatarPreview(avatarVal);
-    setError("");
-  }, [player]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

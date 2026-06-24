@@ -42,24 +42,24 @@ export default function PlayerInput({
   const handleTogglePlayer = (player: DbPlayer) => {
     if (isGenerating) return;
 
-    const exists = names.includes(player.name);
+    const exists = names.includes(player.id);
     if (exists) {
       playBeep(220, 0.1, "sawtooth");
-      onChange(names.filter((n) => n !== player.name));
+      onChange(names.filter((id) => id !== player.id));
     } else {
       if (names.length >= 10) {
         playBeep(120, 0.2, "sawtooth"); // Error beep, draft full
         return;
       }
       playCoin();
-      onChange([...names, player.name]);
+      onChange([...names, player.id]);
     }
   };
 
-  const handleRemoveName = (nameToRemove: string) => {
+  const handleRemoveName = (idToRemove: string) => {
     if (isGenerating) return;
     playBeep(220, 0.1, "sawtooth");
-    onChange(names.filter((n) => n !== nameToRemove));
+    onChange(names.filter((id) => id !== idToRemove));
   };
 
   const handleClear = () => {
@@ -70,13 +70,13 @@ export default function PlayerInput({
   const handleQuickFill = () => {
     playCoin();
     // Find players not yet selected
-    const unselected = availablePlayers.filter((p) => !names.includes(p.name));
+    const unselected = availablePlayers.filter((p) => !names.includes(p.id));
     // Shuffle unselected
     const shuffled = [...unselected].sort(() => Math.random() - 0.5);
     // Take what is needed to reach 10
     const needed = 10 - names.length;
     if (needed <= 0) return;
-    const toAdd = shuffled.slice(0, needed).map((p) => p.name);
+    const toAdd = shuffled.slice(0, needed).map((p) => p.id);
     onChange([...names, ...toAdd]);
   };
 
@@ -114,30 +114,32 @@ export default function PlayerInput({
           </span>
           <div className={styles.slotsGrid}>
             {Array.from({ length: 10 }).map((_, index) => {
-              const selectedName = names[index];
+              const selectedId = names[index];
               const playerObj = availablePlayers.find(
-                (p) => p.name === selectedName,
+                (p) => p.id === selectedId,
               );
 
-              return selectedName ? (
+              return selectedId ? (
                 <div
                   key={index}
-                  onClick={() => handleRemoveName(selectedName)}
+                  onClick={() => handleRemoveName(selectedId)}
                   className={styles.slotSelected}
                 >
                   <div className={styles.slotAvatar}>
                     <Image
                       src={
                         playerObj?.avatar ||
-                        `https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedName.toLowerCase()}&backgroundColor=1a1a2e`
+                        `https://api.dicebear.com/9.x/pixel-art/svg?seed=${(playerObj?.name || selectedId).toLowerCase()}&backgroundColor=1a1a2e`
                       }
-                      alt={selectedName}
+                      alt={playerObj?.name || selectedId}
                       fill
                       className="object-cover"
                       unoptimized
                     />
                   </div>
-                  <span className={styles.slotName}>{selectedName}</span>
+                  <span className={styles.slotName}>
+                    {playerObj?.name || selectedId}
+                  </span>
                   <span className={styles.slotAlias}>
                     {playerObj?.alias || "Fighter"}
                   </span>
@@ -256,7 +258,7 @@ export default function PlayerInput({
 
             // Auto-add new player to draft if there's space
             if (names.length < 10) {
-              onChange([...names, added.name]);
+              onChange([...names, added.id]);
             }
           }}
           onClose={() => setIsAdding(false)}

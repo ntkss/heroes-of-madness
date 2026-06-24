@@ -54,8 +54,12 @@ function TeamRow({
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
   const isLoser = winner !== null && !isWinner;
 
-  const getPlayer = (name: string) =>
-    squad.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  const getPlayer = (idOrName: string) =>
+    squad.find(
+      (p) =>
+        p.id === idOrName.toLowerCase() ||
+        p.name.toLowerCase() === idOrName.toLowerCase(),
+    );
 
   const getPlayerRankClass = (player: DbPlayer | undefined) => {
     if (!player || !rankConfig) return null;
@@ -108,7 +112,7 @@ function TeamRow({
             <PlayerCard
               key={idx}
               name={name}
-              displayName={displayNames[idx]}
+              displayName={player ? player.name : displayNames[idx]}
               role={ROLES[idx]}
               locked={locked[idx + lockedOffset]}
               team={side}
@@ -210,7 +214,16 @@ export default function VersesArena({
       const activeDispB = Array(5).fill("???");
 
       const rollPool =
-        teamA.length || teamB.length ? [...teamA, ...teamB] : SQUAD_NAMES;
+        teamA.length || teamB.length
+          ? [...teamA, ...teamB].map((idOrName) => {
+              const p = squad.find(
+                (x) =>
+                  x.id === idOrName.toLowerCase() ||
+                  x.name.toLowerCase() === idOrName.toLowerCase(),
+              );
+              return p ? p.name : idOrName;
+            })
+          : SQUAD_NAMES;
 
       const startRoll = (teamIndex: number, slotIndex: number) => {
         const intervalId = setInterval(
@@ -301,7 +314,7 @@ export default function VersesArena({
       }
     }
     return clearAllTimers;
-  }, [isGenerating, teamA, teamB, triggerScreenShake]);
+  }, [isGenerating, teamA, teamB, triggerScreenShake, squad]);
 
   return (
     <div className={styles.arenaBackground}>

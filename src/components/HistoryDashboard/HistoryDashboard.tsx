@@ -29,7 +29,7 @@ export default function HistoryDashboard({
   const handlePurgeAllClick = () => {
     playBeep(220, 0.1, "sawtooth");
     const confirmDelete = window.confirm(
-      "⚠️ DANGER! ARE YOU SURE YOU WANT TO PURGE ALL MATCH LOGS FROM THE CABINET DATABASE?\nTHIS ACTION CANNOT BE UNDONE!"
+      "⚠️ DANGER! ARE YOU SURE YOU WANT TO PURGE ALL MATCH LOGS FROM THE CABINET DATABASE?\nTHIS ACTION CANNOT BE UNDONE!",
     );
     if (confirmDelete) {
       playBeep(100, 0.3, "sawtooth");
@@ -58,6 +58,15 @@ export default function HistoryDashboard({
     onUpdateWinner(id, winner);
   };
 
+  const getPlayerDisplayName = (idOrName: string) => {
+    const player = availablePlayers.find(
+      (p) =>
+        p.id === idOrName.toLowerCase() ||
+        p.name.toLowerCase() === idOrName.toLowerCase(),
+    );
+    return player ? player.name : idOrName;
+  };
+
   // Dynamically compute player statistics from player documents (single source of truth) and matches logs (for unregistered players)
   const playerStats = React.useMemo(() => {
     const statsMap: Record<
@@ -72,13 +81,22 @@ export default function HistoryDashboard({
       const dbWins = Math.round((dbWinrate / 100) * dbMatches);
       const dbLosses = dbMatches - dbWins;
 
-      statsMap[player.name.toLowerCase()] = {
+      statsMap[player.id] = {
         wins: dbWins,
         losses: dbLosses,
         matches: dbMatches,
         dbPlayer: player,
       };
     });
+
+    const getPlayerKey = (nameOrId: string) => {
+      const found = availablePlayers.find(
+        (p) =>
+          p.id === nameOrId.toLowerCase() ||
+          p.name.toLowerCase() === nameOrId.toLowerCase(),
+      );
+      return found ? found.id : nameOrId.toLowerCase();
+    };
 
     // 2. Accumulate stats from matches log ONLY for unregistered players/bots (to avoid double-counting)
     matches.forEach((match) => {
@@ -91,8 +109,8 @@ export default function HistoryDashboard({
         match.winner === "teamA" ? teamAPlayers : teamBPlayers;
       const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
 
-      winningTeam.forEach((playerName) => {
-        const key = playerName.toLowerCase();
+      winningTeam.forEach((playerNameOrId) => {
+        const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) {
           statsMap[key] = { wins: 0, losses: 0, matches: 0 };
         }
@@ -102,8 +120,8 @@ export default function HistoryDashboard({
         }
       });
 
-      losingTeam.forEach((playerName) => {
-        const key = playerName.toLowerCase();
+      losingTeam.forEach((playerNameOrId) => {
+        const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) {
           statsMap[key] = { wins: 0, losses: 0, matches: 0 };
         }
@@ -264,14 +282,16 @@ export default function HistoryDashboard({
                     <div className={styles.rosterCol}>
                       <span className={styles.rosterLabelBlue}>BLUE TEAM</span>
                       <span className={styles.rosterText}>
-                        {match.teamA.join(" • ") || "EMPTY"}
+                        {match.teamA.map(getPlayerDisplayName).join(" • ") ||
+                          "EMPTY"}
                       </span>
                     </div>
                     {/* Red */}
                     <div className={styles.rosterCol}>
                       <span className={styles.rosterLabelRed}>RED TEAM</span>
                       <span className={styles.rosterText}>
-                        {match.teamB.join(" • ") || "EMPTY"}
+                        {match.teamB.map(getPlayerDisplayName).join(" • ") ||
+                          "EMPTY"}
                       </span>
                     </div>
                   </div>

@@ -26,7 +26,8 @@ service cloud.firestore {
     // Matches
     match /matches/{matchId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     // Config

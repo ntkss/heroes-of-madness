@@ -22,6 +22,7 @@ interface PlayerInputProps {
     alias: string,
     avatar: string,
   ) => Promise<DbPlayer>;
+  isAdmin?: boolean;
 }
 
 export default function PlayerInput({
@@ -33,6 +34,7 @@ export default function PlayerInput({
   onAddPlayer,
   onDeletePlayer,
   onUpdatePlayer,
+  isAdmin = false,
 }: PlayerInputProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -185,17 +187,19 @@ export default function PlayerInput({
           </div>
 
           <div className={styles.actionsCol}>
-            <button
-              type="button"
-              onClick={toggleAddForm}
-              className={`${styles.toggleFormBtn} ${
-                isAdding
-                  ? styles.toggleFormBtnActive
-                  : styles.toggleFormBtnInactive
-              }`}
-            >
-              {isAdding ? "✕ CLOSE FORM" : "➕ ADD NEW FIGHTER"}
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={toggleAddForm}
+                className={`${styles.toggleFormBtn} ${
+                  isAdding
+                    ? styles.toggleFormBtnActive
+                    : styles.toggleFormBtnInactive
+                }`}
+              >
+                {isAdding ? "✕ CLOSE FORM" : "➕ ADD NEW FIGHTER"}
+              </button>
+            )}
 
             <button
               type="button"
@@ -203,9 +207,9 @@ export default function PlayerInput({
                 playBeep(880, 0.15, "sawtooth");
                 onGenerate();
               }}
-              disabled={isGenerating || !isReady}
+              disabled={isGenerating || !isReady || !isAdmin}
               className={`${styles.randomizeBtn} ${
-                isGenerating || !isReady
+                isGenerating || !isReady || !isAdmin
                   ? styles.randomizeBtnDisabled
                   : styles.randomizeBtnActive
               }`}
@@ -216,6 +220,12 @@ export default function PlayerInput({
             {!isReady && (
               <div className={styles.draftError}>
                 ⚠️ DRAFT INCOMPLETE ({currentCount}/10). SELECT 10 PLAYERS!
+              </div>
+            )}
+
+            {!isAdmin && (
+              <div className={styles.draftError} style={{ color: '#ef4444', borderColor: '#ef4444' }}>
+                ⚠️ SECURE SYSTEM ACTIVE. ADMIN LOG IN REQUIRED TO START DRAFT!
               </div>
             )}
           </div>
@@ -272,6 +282,7 @@ export default function PlayerInput({
         onTogglePlayer={handleTogglePlayer}
         onDeletePlayer={onDeletePlayer}
         onUpdatePlayer={onUpdatePlayer}
+        isAdmin={isAdmin}
       />
     </div>
   );

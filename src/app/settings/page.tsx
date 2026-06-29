@@ -9,10 +9,19 @@ import {
   fetchRankConfig,
   saveRankConfig,
   DEFAULT_RANK_CONFIG,
+  fetchUsers,
+  updateUserRole,
+  DbUser,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
+import { useAuth } from "@/utils/AuthContext";
 
 export default function SettingsPage() {
+  const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
+  const [settingsTab, setSettingsTab] = useState<"ranks" | "users">("ranks");
+  const [users, setUsers] = useState<DbUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
 
   const [highName, setHighName] = useState("");
@@ -27,7 +36,45 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [audioInitialized, setAudioInitialized] = useState(false);
 
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    const fetched = await fetchUsers();
+    setUsers(fetched);
+    setUsersLoading(false);
+  };
+
+  const handleToggleUserRole = async (targetUser: DbUser) => {
+    if (targetUser.uid === currentAdmin?.uid) {
+      alert("SECURITY ALERT: YOU CANNOT DEMOTE YOURSELF!");
+      return;
+    }
+    
+    const newRole = targetUser.role === "admin" ? "user" : "admin";
+    const confirmChange = window.confirm(
+      `Are you sure you want to change ${targetUser.name || targetUser.email}'s role to ${newRole.toUpperCase()}?`
+    );
+    if (!confirmChange) return;
+
+    playCoin();
+    const success = await updateUserRole(targetUser.uid, newRole);
+    if (success) {
+      loadUsers();
+    } else {
+      alert("Failed to update user role.");
+    }
+  };
+
   useEffect(() => {
+    if (isAdmin && settingsTab === "users") {
+      const timer = setTimeout(() => {
+        loadUsers();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isAdmin, settingsTab]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
     const loadConfig = async () => {
       const config = await fetchRankConfig();
       setRankConfig(config);
@@ -39,7 +86,7 @@ export default function SettingsPage() {
       setLowWinrate(config.lowTierWinrate);
     };
     loadConfig();
-  }, []);
+  }, [isAdmin]);
 
   const handleReset = () => {
     playBeep(200, 0.1, "sawtooth");
@@ -129,6 +176,46 @@ export default function SettingsPage() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <CRTOverlay>
+        <div className="flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] font-pixel text-neon-yellow">
+          <span className="text-[10px] uppercase tracking-widest animate-pulse">
+            CONNECTING TO SECURITY CABINET...
+          </span>
+        </div>
+      </CRTOverlay>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <CRTOverlay>
+        <div className="flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] p-6 relative font-pixel">
+          <div className="border-4 border-neon-red bg-slate-950/95 max-w-[500px] p-8 text-center shadow-[0_0_25px_rgba(239,68,68,0.5)] flex flex-col items-center gap-6">
+            <div className="w-16 h-16 rounded-full border-4 border-neon-red flex items-center justify-center text-neon-red text-3xl animate-bounce">
+              ⚠️
+            </div>
+            <h1 className="text-2xl font-bold tracking-tighter text-neon-red uppercase animate-pulse">
+              SECURITY VIOLATION
+            </h1>
+            <div className="h-1 w-full bg-gradient-to-r from-transparent via-neon-red to-transparent" />
+            <p className="text-[10px] text-slate-400 uppercase leading-relaxed tracking-wider">
+              UNAUTHORIZED ACCESS DETECTED. THIS TERMINAL IS RESTRICTED TO ADMINISTRATORS ONLY. YOUR ATTEMPT HAS BEEN LOGGED.
+            </p>
+            <Link
+              href="/"
+              onClick={() => playBeep(250, 0.1, "sawtooth")}
+              className="flex items-center gap-2 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-5 py-2.5 text-[9px] cursor-pointer transition-all duration-200 glow-blue uppercase tracking-widest mt-2"
+            >
+              ✕ RETURN TO ARENA
+            </Link>
+          </div>
+        </div>
+      </CRTOverlay>
+    );
+  }
+
   return (
     <CRTOverlay>
       <div
@@ -158,7 +245,9 @@ export default function SettingsPage() {
         </header>
 
         {/* Settings Control Panel Form Container */}
-        <main className="mx-auto w-full max-w-[650px] p-4 md:p-8 flex-grow flex flex-col justify-center items-center">
+        <main className={`mx-auto w-full p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300 ${
+          settingsTab === "users" ? "max-w-[850px]" : "max-w-[650px]"
+        }`}>
           <div
             className="w-full bg-[#161622]/90 border-4 border-slate-700 p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 rounded-md"
             style={{
@@ -173,13 +262,45 @@ export default function SettingsPage() {
             <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
 
             {/* Cabinet Subheader */}
-            <div className="border-b-4 border-slate-700 pb-3 mb-2 flex items-center justify-between">
+            <div className="border-b-4 border-slate-700 pb-3 mb-1 flex items-center justify-between">
               <h2 className="text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel glow-yellow select-none">
                 ⚙️ CONFIGURATION ENGINE
               </h2>
               <span className="font-pixel text-[8px] text-[#a0a0c0]">
-                STATUS: CONNECTED
+                STATUS: SECURE_CONNECTED
               </span>
+            </div>
+
+            {/* Admin Page Tabs */}
+            <div className="flex border-b border-slate-700/50 pb-2 gap-4 select-none">
+              <button
+                type="button"
+                onClick={() => {
+                  playBeep(330, 0.1, "sawtooth");
+                  setSettingsTab("ranks");
+                }}
+                className={`font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all ${
+                  settingsTab === "ranks"
+                    ? "border-b-2 border-neon-yellow text-neon-yellow glow-yellow"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                ⚙️ RANK RULES
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playBeep(330, 0.1, "sawtooth");
+                  setSettingsTab("users");
+                }}
+                className={`font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all ${
+                  settingsTab === "users"
+                    ? "border-b-2 border-neon-yellow text-neon-yellow glow-yellow"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                👥 USER MANAGEMENT
+              </button>
             </div>
 
             {rankConfig === null ? (
@@ -188,7 +309,7 @@ export default function SettingsPage() {
                   CONNECTING STORAGE...
                 </span>
               </div>
-            ) : (
+            ) : settingsTab === "ranks" ? (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {/* 1. Tiers Labels */}
                 <div className="flex flex-col gap-2">
@@ -347,6 +468,105 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
+            ) : (
+              /* User management UI */
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center select-none">
+                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide">
+                    Registered Cabinet Operators
+                  </span>
+                  <button
+                    onClick={loadUsers}
+                    disabled={usersLoading}
+                    className="font-pixel text-[7.5px] border border-slate-600 hover:border-neon-yellow text-slate-400 hover:text-neon-yellow px-2.5 py-1.5 cursor-pointer bg-slate-950 transition-all uppercase font-bold"
+                  >
+                    {usersLoading ? "LOADING..." : "🔄 REFRESH USERS"}
+                  </button>
+                </div>
+
+                {usersLoading && users.length === 0 ? (
+                  <div className="flex justify-center py-12 select-none">
+                    <span className="font-pixel text-[8.5px] text-neon-yellow uppercase tracking-widest animate-pulse">
+                      SCANNING RETINAL SIGNATURES...
+                    </span>
+                  </div>
+                ) : users.length === 0 ? (
+                  <div className="flex justify-center py-12 select-none">
+                    <span className="font-pixel text-[8.5px] text-slate-500 uppercase tracking-widest">
+                      NO REGISTERED USERS FOUND.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="border border-slate-800 overflow-hidden bg-slate-950 rounded-sm">
+                    <table className="w-full text-left font-sans text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-900 border-b border-slate-800 font-pixel text-[7px] text-[#a0a0c0] uppercase select-none">
+                          <th className="p-3">Fighter</th>
+                          <th className="p-3">Email</th>
+                          <th className="p-3">Role</th>
+                          <th className="p-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((u) => {
+                          const isSelf = u.uid === currentAdmin?.uid;
+                          return (
+                            <tr
+                              key={u.uid}
+                              className="border-b border-slate-900/50 hover:bg-slate-900/20 transition-colors"
+                            >
+                              <td className="p-3 flex items-center gap-2.5">
+                                <div className="w-6 h-6 border border-slate-700 relative overflow-hidden">
+                                  <img
+                                    src={u.photoURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${u.uid}`}
+                                    alt={u.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <span className="font-semibold text-slate-200">
+                                  {u.name} {isSelf && <span className="text-[7px] font-pixel text-neon-yellow ml-1 border border-neon-yellow/30 bg-neon-yellow/5 px-1 py-0.5 select-none">YOU</span>}
+                                </span>
+                              </td>
+                              <td className="p-3 text-slate-400 font-mono text-[10px]">
+                                {u.email}
+                              </td>
+                              <td className="p-3">
+                                <span
+                                  className={`text-[8.5px] font-pixel px-1.5 py-0.5 select-none ${
+                                    u.role === "admin"
+                                      ? "text-neon-yellow border border-neon-yellow/20 bg-neon-yellow/5"
+                                      : "text-neon-blue border border-neon-blue/20 bg-neon-blue/5"
+                                  }`}
+                                >
+                                  {u.role.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right">
+                                {!isSelf ? (
+                                  <button
+                                    onClick={() => handleToggleUserRole(u)}
+                                    className={`font-pixel text-[7px] px-2.5 py-1.5 cursor-pointer transition-all duration-150 uppercase border font-bold ${
+                                      u.role === "admin"
+                                        ? "border-neon-red/30 hover:border-neon-red text-neon-red/70 hover:text-neon-red hover:bg-neon-red/5"
+                                        : "border-neon-yellow/30 hover:border-neon-yellow text-neon-yellow/70 hover:text-neon-yellow hover:bg-neon-yellow/5"
+                                    }`}
+                                  >
+                                    {u.role === "admin" ? "✕ DEMOTE" : "👑 PROMOTE"}
+                                  </button>
+                                ) : (
+                                  <span className="text-[7.5px] font-pixel text-slate-600 uppercase select-none italic mr-1">
+                                    SYS_LOCKED
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </main>

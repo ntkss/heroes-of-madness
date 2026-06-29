@@ -26,8 +26,10 @@ import {
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
 import { toBlob } from "html-to-image";
+import { useAuth } from "@/utils/AuthContext";
 
 export default function Home() {
+  const { user, role, loading, isAdmin, isBootstrapPending, bootstrapAdmin, login, logout } = useAuth();
   const [names, setNames] = useState<string[]>([]);
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
@@ -352,11 +354,77 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end text-[9px] font-pixel text-[#a0a0c0] uppercase text-right">
+            {/* Google Authentication Control */}
+            {loading ? (
+              <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none">
+                LOADING AUTH...
+              </div>
+            ) : user ? (
+              <div className="flex items-center gap-3 border border-slate-700 bg-slate-900/50 p-1 px-2.5 rounded-none">
+                <img
+                  src={user.photoURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}`}
+                  alt={user.displayName || "User"}
+                  className="w-6 h-6 border border-neon-blue rounded-none object-cover"
+                />
+                <div className="flex flex-col items-start leading-none select-none">
+                  <span className="text-[9px] font-mono text-white max-w-[90px] truncate">
+                    {user.displayName || user.email}
+                  </span>
+                  <span className={`text-[7px] font-pixel mt-0.5 ${isAdmin ? 'text-neon-yellow glow-yellow' : 'text-neon-blue glow-blue'}`}>
+                    {isAdmin ? "SYS_ADMIN" : "USER_GUEST"}
+                  </span>
+                </div>
+                
+                {isBootstrapPending && (
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      playCoin();
+                      const confirmClaim = window.confirm("Do you want to initialize this database and claim the primary administrator role?");
+                      if (confirmClaim) {
+                        const success = await bootstrapAdmin();
+                        if (success) {
+                          alert("SUCCESS! You are now the primary System Administrator.");
+                        } else {
+                          alert("Bootstrapping failed. A primary administrator might already exist.");
+                        }
+                      }
+                    }}
+                    className="ml-1 border border-neon-yellow bg-neon-yellow/10 hover:bg-neon-yellow hover:text-black text-neon-yellow text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
+                  >
+                    CLAIM ADMIN
+                  </button>
+                )}
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playBeep(200, 0.1, "sawtooth");
+                    logout();
+                  }}
+                  className="ml-1 border border-slate-600 hover:border-neon-red text-slate-400 hover:text-neon-red text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
+                >
+                  ✕ OUT
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playCoin();
+                  login();
+                }}
+                className="border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-3.5 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none"
+              >
+                🔐 LOGIN GOOGLE
+              </button>
+            )}
+
+            <div className="flex flex-col items-end text-[9px] font-pixel text-[#a0a0c0] uppercase text-right select-none">
               <span className="text-neon-blue glow-blue">
                 CRT SYSTEM CONNECTED
               </span>
-              <span className="text-slate-500 mt-1">DIAGNOSTICS OK</span>
+              <span className="text-slate-500 mt-1">DIAGNOSTOK</span>
             </div>
 
             {/* Announcer Synth Activator */}
@@ -380,7 +448,7 @@ export default function Home() {
             </button>
 
             {/* Rank Config Settings Gear Button */}
-            {rankConfig && (
+            {rankConfig && isAdmin && (
               <Link
                 href="/settings"
                 onClick={() => {
@@ -410,6 +478,7 @@ export default function Home() {
               onAddPlayer={handleAddPlayer}
               onDeletePlayer={handleDeletePlayer}
               onUpdatePlayer={handleUpdatePlayer}
+              isAdmin={isAdmin}
             />
           </section>
 
@@ -486,6 +555,7 @@ export default function Home() {
               onUpdateWinner={handleUpdatePastWinner}
               availablePlayers={availablePlayers}
               rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
+              isAdmin={isAdmin}
             />
           </section>
         </main>

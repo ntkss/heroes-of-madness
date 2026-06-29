@@ -32,6 +32,8 @@ export const metadata: Metadata = {
     "Street Fighter styled Random Team Generator for Mobile Legends: Bang Bang, featuring dynamic synthesizers, slot rolling, and database history.",
 };
 
+import { AuthProvider } from "@/utils/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,7 +44,9 @@ export default function RootLayout({
       lang="en"
       className={`${teko.variable} ${pressStart.variable} ${orbitron.variable} ${pattaya.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

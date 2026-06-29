@@ -1,0 +1,42 @@
+name: CI Code Quality Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality-check:
+    name: Code Quality & Compilation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Check Formatting (Prettier)
+        run: npm run prettier:check
+
+      - name: Run Linter (ESLint)
+        run: npm run lint
+
+      - name: Verify Build
+        run: npm run build
+        env:
+          # Firebase keys are optional during build compiling, but we stub dummy values to prevent crash
+          NEXT_PUBLIC_FIREBASE_API_KEY: "mock-key"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "mock-domain"
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "mock-project"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "mock-bucket"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "mock-sender-id"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "mock-app-id"

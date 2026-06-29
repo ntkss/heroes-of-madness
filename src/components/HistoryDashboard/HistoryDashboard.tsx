@@ -28,6 +28,9 @@ export default function HistoryDashboard({
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
     "history",
   );
+  const [statsSubTab, setStatsSubTab] = React.useState<"season" | "alltime">(
+    "season",
+  );
   const handlePurgeAllClick = () => {
     playBeep(220, 0.1, "sawtooth");
     const confirmDelete = window.confirm(
@@ -73,7 +76,15 @@ export default function HistoryDashboard({
   const playerStats = React.useMemo(() => {
     const statsMap: Record<
       string,
-      { wins: number; losses: number; matches: number; dbPlayer?: DbPlayer }
+      {
+        wins: number;
+        losses: number;
+        matches: number;
+        allTimeWins: number;
+        allTimeMatches: number;
+        allTimeLosses: number;
+        dbPlayer?: DbPlayer;
+      }
     > = {};
 
     // 1. Initialize stats map with database stats for all available players
@@ -83,10 +94,18 @@ export default function HistoryDashboard({
       const dbWins = Math.round((dbWinrate / 100) * dbMatches);
       const dbLosses = dbMatches - dbWins;
 
+      const atMatches = player.allTimeMatches !== undefined ? Number(player.allTimeMatches) : dbMatches;
+      const atWinrate = player.allTimeWinrate !== undefined ? Number(player.allTimeWinrate) : dbWinrate;
+      const atWins = player.allTimeWins !== undefined ? Number(player.allTimeWins) : Math.round((atWinrate / 100) * atMatches);
+      const atLosses = atMatches - atWins;
+
       statsMap[player.id] = {
         wins: dbWins,
         losses: dbLosses,
         matches: dbMatches,
+        allTimeWins: atWins,
+        allTimeMatches: atMatches,
+        allTimeLosses: atLosses,
         dbPlayer: player,
       };
     });
@@ -114,28 +133,33 @@ export default function HistoryDashboard({
       winningTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) {
-          statsMap[key] = { wins: 0, losses: 0, matches: 0 };
+          statsMap[key] = { wins: 0, losses: 0, matches: 0, allTimeWins: 0, allTimeLosses: 0, allTimeMatches: 0 };
         }
         if (!statsMap[key].dbPlayer) {
           statsMap[key].wins += 1;
           statsMap[key].matches += 1;
+          statsMap[key].allTimeWins += 1;
+          statsMap[key].allTimeMatches += 1;
         }
       });
 
       losingTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) {
-          statsMap[key] = { wins: 0, losses: 0, matches: 0 };
+          statsMap[key] = { wins: 0, losses: 0, matches: 0, allTimeWins: 0, allTimeLosses: 0, allTimeMatches: 0 };
         }
         if (!statsMap[key].dbPlayer) {
           statsMap[key].losses += 1;
           statsMap[key].matches += 1;
+          statsMap[key].allTimeLosses += 1;
+          statsMap[key].allTimeMatches += 1;
         }
       });
     });
 
     const statsList = Object.entries(statsMap).map(([key, data]) => {
-      const winrate = data.matches > 0 ? (data.wins / data.matches) * 100 : 0;
+      const seasonWinrate = data.matches > 0 ? (data.wins / data.matches) * 100 : 0;
+      const allTimeWinrate = data.allTimeMatches > 0 ? (data.allTimeWins / data.allTimeMatches) * 100 : 0;
       const name = data.dbPlayer
         ? data.dbPlayer.name
         : key.charAt(0).toUpperCase() + key.slice(1);
@@ -145,22 +169,31 @@ export default function HistoryDashboard({
         matches: data.matches,
         wins: data.wins,
         losses: data.losses,
-        winrate,
+        winrate: seasonWinrate,
+        allTimeMatches: data.allTimeMatches,
+        allTimeWins: data.allTimeWins,
+        allTimeLosses: data.allTimeLosses,
+        allTimeWinrate,
         dbPlayer: data.dbPlayer,
       };
     });
 
-    // Sort: highest win rate first, then most matches, then alphabetical
+    // Sort based on the selected sub-tab
     return statsList.sort((a, b) => {
-      if (b.winrate !== a.winrate) {
-        return b.winrate - a.winrate;
+      const aWR = statsSubTab === "season" ? a.winrate : a.allTimeWinrate;
+      const bWR = statsSubTab === "season" ? b.winrate : b.allTimeWinrate;
+      const aM = statsSubTab === "season" ? a.matches : a.allTimeMatches;
+      const bM = statsSubTab === "season" ? b.matches : b.allTimeMatches;
+
+      if (bWR !== aWR) {
+        return bWR - aWR;
       }
-      if (b.matches !== a.matches) {
-        return b.matches - a.matches;
+      if (bM !== aM) {
+        return bM - aM;
       }
       return a.name.localeCompare(b.name);
     });
-  }, [matches, availablePlayers]);
+  }, [matches, availablePlayers, statsSubTab]);
 
   const renderRankInfo = (dbPlayer: DbPlayer | undefined) => {
     if (!dbPlayer) return null;
@@ -359,125 +392,163 @@ export default function HistoryDashboard({
         ))}
 
       {/* Tab Contents: FIGHTER WINRATES */}
-      {activeTab === "stats" &&
-        (playerStats.length === 0 ? (
-          <div className={styles.emptyStateContainer}>
-            <span className={styles.emptyStateTitle}>NO FIGHTER STATS</span>
-            <span className={styles.emptyStateSubtitle}>
-              CHOOSE WINNERS IN THE HISTORY LOG TO GENERATE LEADERBOARD DATA!
-            </span>
+      {activeTab === "stats" && (
+        <div className="flex flex-col gap-4">
+          {/* Sub-tabs for Current Season vs All-Time */}
+          <div className="flex justify-center border-b-2 border-slate-800 pb-2.5 mb-2 gap-3 select-none">
+            <button
+              onClick={() => {
+                playBeep(260, 0.1, "sine");
+                setStatsSubTab("season");
+              }}
+              className={`font-pixel text-[8.5px] px-3.5 py-1.5 cursor-pointer border transition-all ${
+                statsSubTab === "season"
+                  ? "bg-neon-yellow border-white text-black font-bold glow-yellow"
+                  : "border-slate-800 text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              🏆 CURRENT SEASON
+            </button>
+            <button
+              onClick={() => {
+                playBeep(260, 0.1, "sine");
+                setStatsSubTab("alltime");
+              }}
+              className={`font-pixel text-[8.5px] px-3.5 py-1.5 cursor-pointer border transition-all ${
+                statsSubTab === "alltime"
+                  ? "bg-neon-yellow border-white text-black font-bold glow-yellow"
+                  : "border-slate-800 text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              🌍 ALL-TIME
+            </button>
           </div>
-        ) : (
-          <div className={styles.leaderboardList}>
-            {/* Header row (Only on desktop) */}
-            <div className={styles.leaderboardHeader}>
-              <div className={styles.leaderboardCol2}>RANK</div>
-              <div className={styles.leaderboardCol4}>FIGHTER NAME</div>
-              <div className={styles.leaderboardCol2Center}>MATCHES</div>
-              <div className={styles.leaderboardCol2Center}>RECORD (W-L)</div>
-              <div className={styles.leaderboardCol2Right}>WIN RATE</div>
+
+          {playerStats.length === 0 ? (
+            <div className={styles.emptyStateContainer}>
+              <span className={styles.emptyStateTitle}>NO FIGHTER STATS</span>
+              <span className={styles.emptyStateSubtitle}>
+                CHOOSE WINNERS IN THE HISTORY LOG TO GENERATE LEADERBOARD DATA!
+              </span>
             </div>
+          ) : (
+            <div className={styles.leaderboardList}>
+              {/* Header row (Only on desktop) */}
+              <div className={styles.leaderboardHeader}>
+                <div className={styles.leaderboardCol2}>RANK</div>
+                <div className={styles.leaderboardCol4}>FIGHTER NAME</div>
+                <div className={styles.leaderboardCol2Center}>MATCHES</div>
+                <div className={styles.leaderboardCol2Center}>RECORD (W-L)</div>
+                <div className={styles.leaderboardCol2Right}>WIN RATE</div>
+              </div>
 
-            {/* Leaderboard Cards */}
-            {playerStats.map((stats, index) => {
-              const rankLabel =
-                index === 0
-                  ? "1ST"
-                  : index === 1
-                    ? "2ND"
-                    : index === 2
-                      ? "3RD"
-                      : `${index + 1}TH`;
-              const rankColorStyle =
-                index === 0
-                  ? styles.rankBadgeGold
-                  : index === 1
-                    ? styles.rankBadgeSilver
-                    : index === 2
-                      ? styles.rankBadgeBronze
-                      : styles.rankBadgeNormal;
+              {/* Leaderboard Cards */}
+              {playerStats.map((stats, index) => {
+                const rankLabel =
+                  index === 0
+                    ? "1ST"
+                    : index === 1
+                      ? "2ND"
+                      : index === 2
+                        ? "3RD"
+                        : `${index + 1}TH`;
+                const rankColorStyle =
+                  index === 0
+                    ? styles.rankBadgeGold
+                    : index === 1
+                      ? styles.rankBadgeSilver
+                      : index === 2
+                        ? styles.rankBadgeBronze
+                        : styles.rankBadgeNormal;
 
-              return (
-                <div
-                  key={stats.name}
-                  className={`${styles.leaderboardCard} ${
-                    index === 0
-                      ? styles.leaderboardCardWinner
-                      : styles.leaderboardCardNormal
-                  }`}
-                >
-                  {/* Rank Badge */}
-                  <div className={styles.leaderboardCol2}>
-                    <span className={`${styles.rankBadge} ${rankColorStyle}`}>
-                      {rankLabel}
-                    </span>
-                  </div>
+                const displayMatches = statsSubTab === "season" ? stats.matches : stats.allTimeMatches;
+                const displayWins = statsSubTab === "season" ? stats.wins : stats.allTimeWins;
+                const displayLosses = statsSubTab === "season" ? stats.losses : stats.allTimeLosses;
+                const displayWinrate = statsSubTab === "season" ? stats.winrate : stats.allTimeWinrate;
 
-                  {/* Fighter Name, Avatar, Alias, Role & Rank details */}
+                return (
                   <div
-                    className={`${styles.leaderboardCol4} ${styles.fighterInfo}`}
+                    key={stats.name}
+                    className={`${styles.leaderboardCard} ${
+                      index === 0
+                        ? styles.leaderboardCardWinner
+                        : styles.leaderboardCardNormal
+                    }`}
                   >
-                    <div className={styles.fighterAvatarContainer}>
-                      <Image
-                        src={
-                          stats.dbPlayer?.avatar ||
-                          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${stats.name.toLowerCase()}&backgroundColor=1a1a2e`
-                        }
-                        alt={stats.name}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
-                    <div className={styles.fighterTextContainer}>
-                      <span
-                        className={`${styles.fighterName} ${
-                          /[\u0E00-\u0E7F]/.test(stats.name)
-                            ? styles.fighterNameThai
-                            : styles.fighterNameEnglish
-                        }`}
-                      >
-                        {stats.name}
+                    {/* Rank Badge */}
+                    <div className={styles.leaderboardCol2}>
+                      <span className={`${styles.rankBadge} ${rankColorStyle}`}>
+                        {rankLabel}
                       </span>
-                      {renderRankInfo(stats.dbPlayer)}
                     </div>
-                  </div>
 
-                  {/* Matches Count */}
-                  <div className={styles.statColMatches}>
-                    <span className={styles.mobileLabel}>MATCHES:</span>
-                    {stats.matches} M
-                  </div>
-
-                  {/* W/L Record */}
-                  <div className={styles.statColRecord}>
-                    <span className={styles.mobileLabel}>RECORD:</span>
-                    <span className={styles.winsText}>{stats.wins}W</span>
-                    <span className={styles.dividerText}>/</span>
-                    <span className={styles.lossesText}>{stats.losses}L</span>
-                  </div>
-
-                  {/* Interactive Win Rate & Progress Bar */}
-                  <div className={styles.statColWinrate}>
-                    <span className={styles.mobileLabel}>WIN RATE:</span>
-                    <div className={styles.winrateWrapper}>
-                      <span className={styles.winrateValue}>
-                        {stats.winrate.toFixed(1)}%
-                      </span>
-                      {/* visual glow progress bar */}
-                      <div className={styles.progressBarOuter}>
-                        <div
-                          className={styles.progressBarInner}
-                          style={{ width: `${stats.winrate}%` }}
+                    {/* Fighter Name, Avatar, Alias, Role & Rank details */}
+                    <div
+                      className={`${styles.leaderboardCol4} ${styles.fighterInfo}`}
+                    >
+                      <div className={styles.fighterAvatarContainer}>
+                        <Image
+                          src={
+                            stats.dbPlayer?.avatar ||
+                            `https://api.dicebear.com/9.x/pixel-art/svg?seed=${stats.name.toLowerCase()}&backgroundColor=1a1a2e`
+                          }
+                          alt={stats.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
                         />
+                      </div>
+                      <div className={styles.fighterTextContainer}>
+                        <span
+                          className={`${styles.fighterName} ${
+                            /[\u0E00-\u0E7F]/.test(stats.name)
+                              ? styles.fighterNameThai
+                              : styles.fighterNameEnglish
+                          }`}
+                        >
+                          {stats.name}
+                        </span>
+                        {renderRankInfo(stats.dbPlayer)}
+                      </div>
+                    </div>
+
+                    {/* Matches Count */}
+                    <div className={styles.statColMatches}>
+                      <span className={styles.mobileLabel}>MATCHES:</span>
+                      {displayMatches} M
+                    </div>
+
+                    {/* W/L Record */}
+                    <div className={styles.statColRecord}>
+                      <span className={styles.mobileLabel}>RECORD:</span>
+                      <span className={styles.winsText}>{displayWins}W</span>
+                      <span className={styles.dividerText}>/</span>
+                      <span className={styles.lossesText}>{displayLosses}L</span>
+                    </div>
+
+                    {/* Interactive Win Rate & Progress Bar */}
+                    <div className={styles.statColWinrate}>
+                      <span className={styles.mobileLabel}>WIN RATE:</span>
+                      <div className={styles.winrateWrapper}>
+                        <span className={styles.winrateValue}>
+                          {displayWinrate.toFixed(1)}%
+                        </span>
+                        {/* visual glow progress bar */}
+                        <div className={styles.progressBarOuter}>
+                          <div
+                            className={styles.progressBarInner}
+                            style={{ width: `${displayWinrate}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

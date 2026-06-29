@@ -15,6 +15,7 @@ import {
   limit,
   writeBatch,
   Firestore,
+  DocumentData,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -22,6 +23,7 @@ import {
   GoogleAuthProvider,
   signOut,
   Auth,
+  User,
 } from "firebase/auth";
 
 export interface Match {
@@ -98,8 +100,6 @@ export const DEFAULT_RANK_CONFIG: RankConfig = {
 };
 
 const LOCAL_CONFIG_KEY = "mlbb_generator_rank_config";
-
-const isDev = process.env.NODE_ENV === "development";
 
 // Check if all essential Firebase variables are defined in the environment
 export const isFirebaseConfigured = !!(
@@ -211,7 +211,7 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
   if (db) {
     try {
       const matchesCol = collection(db, "matches");
-      const firestoreData: any = {
+      const firestoreData: DocumentData = {
         createdAt: newMatch.createdAt,
         teamA: newMatch.teamA,
         teamB: newMatch.teamB,
@@ -700,7 +700,10 @@ export async function fetchAllMatches(): Promise<Match[]> {
 
 // Fetch active season config settings
 export async function fetchSeasonConfig(): Promise<SeasonConfig> {
-  const defaultConfig: SeasonConfig = { activeSeasonId: 1, seasonStart: Date.now() };
+  const defaultConfig: SeasonConfig = {
+    activeSeasonId: 1,
+    seasonStart: Date.now(),
+  };
   if (db) {
     try {
       const docRef = doc(db, "config", "seasonConfig");
@@ -728,7 +731,10 @@ export async function fetchSeasonConfig(): Promise<SeasonConfig> {
         return JSON.parse(stored) as SeasonConfig;
       } catch {}
     }
-    localStorage.setItem("mlbb_generator_season_config", JSON.stringify(defaultConfig));
+    localStorage.setItem(
+      "mlbb_generator_season_config",
+      JSON.stringify(defaultConfig),
+    );
   }
   return defaultConfig;
 }
@@ -793,15 +799,17 @@ export async function endCurrentSeason(): Promise<boolean> {
       });
 
     // Form Podium (Top 3)
-    const podium: SeasonPlayerStat[] = qualifiedPlayers.slice(0, 3).map((p) => ({
-      id: p.id,
-      name: p.name,
-      alias: p.alias,
-      avatar: p.avatar,
-      winrate: p.winrate,
-      total_match_played: p.total_match_played,
-      current_rank: p.current_rank,
-    }));
+    const podium: SeasonPlayerStat[] = qualifiedPlayers
+      .slice(0, 3)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        alias: p.alias,
+        avatar: p.avatar,
+        winrate: p.winrate,
+        total_match_played: p.total_match_played,
+        current_rank: p.current_rank,
+      }));
 
     // Find Last Place (Worst performer with at least 1 match played)
     const activePlayers = players.filter((p) => p.total_match_played > 0);
@@ -862,15 +870,23 @@ export async function endCurrentSeason(): Promise<boolean> {
       // LocalStorage Season archive
       if (typeof window !== "undefined") {
         const storedSeasons = localStorage.getItem("mlbb_generator_seasons");
-        const seasonsList = storedSeasons ? (JSON.parse(storedSeasons) as Season[]) : [];
+        const seasonsList = storedSeasons
+          ? (JSON.parse(storedSeasons) as Season[])
+          : [];
         seasonsList.push(archivedSeason);
-        localStorage.setItem("mlbb_generator_seasons", JSON.stringify(seasonsList));
+        localStorage.setItem(
+          "mlbb_generator_seasons",
+          JSON.stringify(seasonsList),
+        );
 
         const nextSeasonConfig: SeasonConfig = {
           activeSeasonId: activeSeasonId + 1,
           seasonStart: Date.now(),
         };
-        localStorage.setItem("mlbb_generator_season_config", JSON.stringify(nextSeasonConfig));
+        localStorage.setItem(
+          "mlbb_generator_season_config",
+          JSON.stringify(nextSeasonConfig),
+        );
       }
     }
 
@@ -937,7 +953,10 @@ export async function recalculateRanks(
     };
 
     // We will build stats map for BOTH current season and all-time
-    const currentSeasonStats: Record<string, { wins: number; matches: number }> = {};
+    const currentSeasonStats: Record<
+      string,
+      { wins: number; matches: number }
+    > = {};
     const allTimeStats: Record<string, { wins: number; matches: number }> = {};
 
     matches.forEach((match) => {
@@ -959,12 +978,13 @@ export async function recalculateRanks(
         return found ? found.id : nameOrId.toLowerCase();
       };
 
-      const matchSeasonId = match.seasonId !== undefined ? Number(match.seasonId) : 1;
+      const matchSeasonId =
+        match.seasonId !== undefined ? Number(match.seasonId) : 1;
       const isCurrentSeason = matchSeasonId === activeSeasonId;
 
       winningTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
-        
+
         // All-Time
         if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
         allTimeStats[key].wins += 1;
@@ -972,7 +992,8 @@ export async function recalculateRanks(
 
         // Current Season
         if (isCurrentSeason) {
-          if (!currentSeasonStats[key]) currentSeasonStats[key] = { wins: 0, matches: 0 };
+          if (!currentSeasonStats[key])
+            currentSeasonStats[key] = { wins: 0, matches: 0 };
           currentSeasonStats[key].wins += 1;
           currentSeasonStats[key].matches += 1;
         }
@@ -980,14 +1001,15 @@ export async function recalculateRanks(
 
       losingTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
-        
+
         // All-Time
         if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
         allTimeStats[key].matches += 1;
 
         // Current Season
         if (isCurrentSeason) {
-          if (!currentSeasonStats[key]) currentSeasonStats[key] = { wins: 0, matches: 0 };
+          if (!currentSeasonStats[key])
+            currentSeasonStats[key] = { wins: 0, matches: 0 };
           currentSeasonStats[key].matches += 1;
         }
       });
@@ -1025,7 +1047,9 @@ export async function recalculateRanks(
         // All-Time Stats
         const allTimeMatches = atStats.matches;
         const allTimeWinrate =
-          allTimeMatches > 0 ? Math.round((atStats.wins / allTimeMatches) * 100) : 0;
+          allTimeMatches > 0
+            ? Math.round((atStats.wins / allTimeMatches) * 100)
+            : 0;
 
         const hasChanged =
           player.total_match_played !== totalMatches ||
@@ -1220,7 +1244,9 @@ export async function checkBootstrapExists(): Promise<boolean> {
   }
 }
 
-export async function syncUserDoc(user: any): Promise<{ role: "admin" | "user" }> {
+export async function syncUserDoc(
+  user: User,
+): Promise<{ role: "admin" | "user" }> {
   if (!db) return { role: "user" };
   const userRef = doc(db, "users", user.uid);
   const docSnap = await getDoc(userRef);
@@ -1267,7 +1293,7 @@ export async function syncUserDoc(user: any): Promise<{ role: "admin" | "user" }
   }
 }
 
-export async function bootstrapFirstAdmin(user: any): Promise<boolean> {
+export async function bootstrapFirstAdmin(user: User): Promise<boolean> {
   if (!db) return false;
   try {
     const userRef = doc(db, "users", user.uid);
@@ -1316,7 +1342,10 @@ export async function fetchUsers(): Promise<DbUser[]> {
   }
 }
 
-export async function updateUserRole(uid: string, newRole: "admin" | "user"): Promise<boolean> {
+export async function updateUserRole(
+  uid: string,
+  newRole: "admin" | "user",
+): Promise<boolean> {
   if (!db) return false;
   try {
     const docRef = doc(db, "users", uid);
@@ -1337,17 +1366,81 @@ export async function seedMockSeasons(): Promise<boolean> {
       startDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
       endDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
       podium: [
-        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 75, total_match_played: 12, current_rank: "คนเก่ง" },
-        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 64, total_match_played: 11, current_rank: "คนเก่ง" },
-        { id: "mike", name: "Mike", alias: "Mike", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike", winrate: 58, total_match_played: 12, current_rank: "คนปกติ" },
+        {
+          id: "nutty",
+          name: "Nutty",
+          alias: "Nutty",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          winrate: 75,
+          total_match_played: 12,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "goku",
+          name: "Goku",
+          alias: "Goku",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
+          winrate: 64,
+          total_match_played: 11,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "mike",
+          name: "Mike",
+          alias: "Mike",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+          winrate: 58,
+          total_match_played: 12,
+          current_rank: "คนปกติ",
+        },
       ],
-      lastPlace: { id: "feeder", name: "Feeder Pro", alias: "Feeder", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder", winrate: 18, total_match_played: 11, current_rank: "คนกาก" },
+      lastPlace: {
+        id: "feeder",
+        name: "Feeder Pro",
+        alias: "Feeder",
+        avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder",
+        winrate: 18,
+        total_match_played: 11,
+        current_rank: "คนกาก",
+      },
       fighterStats: [
-        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 75, total_match_played: 12, current_rank: "คนเก่ง" },
-        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 64, total_match_played: 11, current_rank: "คนเก่ง" },
-        { id: "mike", name: "Mike", alias: "Mike", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike", winrate: 58, total_match_played: 12, current_rank: "คนปกติ" },
-        { id: "feeder", name: "Feeder Pro", alias: "Feeder", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder", winrate: 18, total_match_played: 11, current_rank: "คนกาก" },
-      ]
+        {
+          id: "nutty",
+          name: "Nutty",
+          alias: "Nutty",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          winrate: 75,
+          total_match_played: 12,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "goku",
+          name: "Goku",
+          alias: "Goku",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
+          winrate: 64,
+          total_match_played: 11,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "mike",
+          name: "Mike",
+          alias: "Mike",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+          winrate: 58,
+          total_match_played: 12,
+          current_rank: "คนปกติ",
+        },
+        {
+          id: "feeder",
+          name: "Feeder Pro",
+          alias: "Feeder",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder",
+          winrate: 18,
+          total_match_played: 11,
+          current_rank: "คนกาก",
+        },
+      ],
     },
     {
       id: 2,
@@ -1355,18 +1448,82 @@ export async function seedMockSeasons(): Promise<boolean> {
       startDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
       endDate: Date.now() - 1000,
       podium: [
-        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 80, total_match_played: 15, current_rank: "คนเก่ง" },
-        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 70, total_match_played: 10, current_rank: "คนเก่ง" },
-        { id: "billy", name: "Billy", alias: "Billy", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy", winrate: 60, total_match_played: 10, current_rank: "คนปกติ" },
+        {
+          id: "goku",
+          name: "Goku",
+          alias: "Goku",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
+          winrate: 80,
+          total_match_played: 15,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "nutty",
+          name: "Nutty",
+          alias: "Nutty",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          winrate: 70,
+          total_match_played: 10,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "billy",
+          name: "Billy",
+          alias: "Billy",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy",
+          winrate: 60,
+          total_match_played: 10,
+          current_rank: "คนปกติ",
+        },
       ],
-      lastPlace: { id: "noob", name: "Noob King", alias: "Noob", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob", winrate: 10, total_match_played: 10, current_rank: "คนกาก" },
+      lastPlace: {
+        id: "noob",
+        name: "Noob King",
+        alias: "Noob",
+        avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob",
+        winrate: 10,
+        total_match_played: 10,
+        current_rank: "คนกาก",
+      },
       fighterStats: [
-        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 80, total_match_played: 15, current_rank: "คนเก่ง" },
-        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 70, total_match_played: 10, current_rank: "คนเก่ง" },
-        { id: "billy", name: "Billy", alias: "Billy", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy", winrate: 60, total_match_played: 10, current_rank: "คนปกติ" },
-        { id: "noob", name: "Noob King", alias: "Noob", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob", winrate: 10, total_match_played: 10, current_rank: "คนกาก" },
-      ]
-    }
+        {
+          id: "goku",
+          name: "Goku",
+          alias: "Goku",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
+          winrate: 80,
+          total_match_played: 15,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "nutty",
+          name: "Nutty",
+          alias: "Nutty",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          winrate: 70,
+          total_match_played: 10,
+          current_rank: "คนเก่ง",
+        },
+        {
+          id: "billy",
+          name: "Billy",
+          alias: "Billy",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy",
+          winrate: 60,
+          total_match_played: 10,
+          current_rank: "คนปกติ",
+        },
+        {
+          id: "noob",
+          name: "Noob King",
+          alias: "Noob",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob",
+          winrate: 10,
+          total_match_played: 10,
+          current_rank: "คนกาก",
+        },
+      ],
+    },
   ];
 
   const mockMatches: Match[] = [
@@ -1393,7 +1550,7 @@ export async function seedMockSeasons(): Promise<boolean> {
       teamB: ["Noob King", "Player 7", "Player 8", "Player 9", "Player 10"],
       winner: "teamA",
       seasonId: 2,
-    }
+    },
   ];
 
   try {
@@ -1417,9 +1574,18 @@ export async function seedMockSeasons(): Promise<boolean> {
       await setDoc(configRef, { activeSeasonId: 3, seasonStart: Date.now() });
     } else {
       if (typeof window !== "undefined") {
-        localStorage.setItem("mlbb_generator_seasons", JSON.stringify(mockSeasons));
-        localStorage.setItem("mlbb_generator_matches", JSON.stringify(mockMatches));
-        localStorage.setItem("mlbb_generator_season_config", JSON.stringify({ activeSeasonId: 3, seasonStart: Date.now() }));
+        localStorage.setItem(
+          "mlbb_generator_seasons",
+          JSON.stringify(mockSeasons),
+        );
+        localStorage.setItem(
+          "mlbb_generator_matches",
+          JSON.stringify(mockMatches),
+        );
+        localStorage.setItem(
+          "mlbb_generator_season_config",
+          JSON.stringify({ activeSeasonId: 3, seasonStart: Date.now() }),
+        );
       }
     }
     return true;
@@ -1451,7 +1617,10 @@ export async function clearMockSeasons(): Promise<boolean> {
       if (typeof window !== "undefined") {
         localStorage.removeItem("mlbb_generator_seasons");
         localStorage.removeItem("mlbb_generator_matches");
-        localStorage.setItem("mlbb_generator_season_config", JSON.stringify({ activeSeasonId: 1, seasonStart: Date.now() }));
+        localStorage.setItem(
+          "mlbb_generator_season_config",
+          JSON.stringify({ activeSeasonId: 1, seasonStart: Date.now() }),
+        );
       }
     }
     return true;

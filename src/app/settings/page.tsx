@@ -21,7 +21,9 @@ import { useAuth } from "@/utils/AuthContext";
 
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
-  const [settingsTab, setSettingsTab] = useState<"ranks" | "users" | "seasons">("ranks");
+  const [settingsTab, setSettingsTab] = useState<"ranks" | "users" | "seasons">(
+    "ranks",
+  );
   const [users, setUsers] = useState<DbUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
@@ -53,10 +55,10 @@ export default function SettingsPage() {
       alert("SECURITY ALERT: YOU CANNOT DEMOTE YOURSELF!");
       return;
     }
-    
+
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     const confirmChange = window.confirm(
-      `Are you sure you want to change ${targetUser.name || targetUser.email}'s role to ${newRole.toUpperCase()}?`
+      `Are you sure you want to change ${targetUser.name || targetUser.email}'s role to ${newRole.toUpperCase()}?`,
     );
     if (!confirmChange) return;
 
@@ -71,7 +73,7 @@ export default function SettingsPage() {
 
   const handleEndSeason = async () => {
     if (!seasonConfig) return;
-    
+
     const confirmText1 = `⚠️ WARNING: YOU ARE ABOUT TO ROLLOVER SEASON ${seasonConfig.activeSeasonId}!\n\nThis will archive all current match logs, freeze active standings, determine the podium (Top 3) & last place fighters, and reset all current season winrates and matches back to zero.\n\nAre you sure you want to proceed?`;
     const confirmText2 = `🚨 FINAL SEASONS AUDIT: Type "CONFIRM" in capital letters to proceed with initiating a new season.`;
 
@@ -87,14 +89,18 @@ export default function SettingsPage() {
     try {
       const success = await endCurrentSeason();
       if (success) {
-        speakAnnounce(`SEASON ${seasonConfig.activeSeasonId} COMPLETED. NEW SEASON INITIALIZED.`);
+        speakAnnounce(
+          `SEASON ${seasonConfig.activeSeasonId} COMPLETED. NEW SEASON INITIALIZED.`,
+        );
         playCoin();
-        alert(`SUCCESS! Season ${seasonConfig.activeSeasonId} closed. Season ${seasonConfig.activeSeasonId + 1} has begun!`);
-        
+        alert(
+          `SUCCESS! Season ${seasonConfig.activeSeasonId} closed. Season ${seasonConfig.activeSeasonId + 1} has begun!`,
+        );
+
         // Reload states
         const sCfg = await fetchSeasonConfig();
         setSeasonConfig(sCfg);
-        
+
         const config = await fetchRankConfig();
         setRankConfig(config);
       } else {
@@ -247,7 +253,8 @@ export default function SettingsPage() {
             </h1>
             <div className="h-1 w-full bg-gradient-to-r from-transparent via-neon-red to-transparent" />
             <p className="text-[10px] text-slate-400 uppercase leading-relaxed tracking-wider">
-              UNAUTHORIZED ACCESS DETECTED. THIS TERMINAL IS RESTRICTED TO ADMINISTRATORS ONLY. YOUR ATTEMPT HAS BEEN LOGGED.
+              UNAUTHORIZED ACCESS DETECTED. THIS TERMINAL IS RESTRICTED TO
+              ADMINISTRATORS ONLY. YOUR ATTEMPT HAS BEEN LOGGED.
             </p>
             <Link
               href="/"
@@ -291,9 +298,11 @@ export default function SettingsPage() {
         </header>
 
         {/* Settings Control Panel Form Container */}
-        <main className={`mx-auto w-full p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300 ${
-          settingsTab === "users" ? "max-w-[850px]" : "max-w-[650px]"
-        }`}>
+        <main
+          className={`mx-auto w-full p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300 ${
+            settingsTab === "users" ? "max-w-[850px]" : "max-w-[650px]"
+          }`}
+        >
           <div
             className="w-full bg-[#161622]/90 border-4 border-slate-700 p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 rounded-md"
             style={{
@@ -578,13 +587,21 @@ export default function SettingsPage() {
                               <td className="p-3 flex items-center gap-2.5">
                                 <div className="w-6 h-6 border border-slate-700 relative overflow-hidden">
                                   <img
-                                    src={u.photoURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${u.uid}`}
+                                    src={
+                                      u.photoURL ||
+                                      `https://api.dicebear.com/9.x/pixel-art/svg?seed=${u.uid}`
+                                    }
                                     alt={u.name}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
                                 <span className="font-semibold text-slate-200">
-                                  {u.name} {isSelf && <span className="text-[7px] font-pixel text-neon-yellow ml-1 border border-neon-yellow/30 bg-neon-yellow/5 px-1 py-0.5 select-none">YOU</span>}
+                                  {u.name}{" "}
+                                  {isSelf && (
+                                    <span className="text-[7px] font-pixel text-neon-yellow ml-1 border border-neon-yellow/30 bg-neon-yellow/5 px-1 py-0.5 select-none">
+                                      YOU
+                                    </span>
+                                  )}
                                 </span>
                               </td>
                               <td className="p-3 text-slate-400 font-mono text-[10px]">
@@ -611,7 +628,9 @@ export default function SettingsPage() {
                                         : "border-neon-yellow/30 hover:border-neon-yellow text-neon-yellow/70 hover:text-neon-yellow hover:bg-neon-yellow/5"
                                     }`}
                                   >
-                                    {u.role === "admin" ? "✕ DEMOTE" : "👑 PROMOTE"}
+                                    {u.role === "admin"
+                                      ? "✕ DEMOTE"
+                                      : "👑 PROMOTE"}
                                   </button>
                                 ) : (
                                   <span className="text-[7.5px] font-pixel text-slate-600 uppercase select-none italic mr-1">
@@ -634,26 +653,34 @@ export default function SettingsPage() {
                   <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide border-b border-slate-800 pb-1">
                     🏆 Season Engine
                   </span>
-                  
+
                   <div className="bg-slate-950 p-4 border border-slate-800 rounded-sm flex flex-col gap-4 font-pixel text-xs text-slate-300">
                     <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-                      <span className="text-[9px] text-[#a0a0c0]">ACTIVE SEASON ID</span>
+                      <span className="text-[9px] text-[#a0a0c0]">
+                        ACTIVE SEASON ID
+                      </span>
                       <span className="text-neon-yellow glow-yellow text-sm font-bold">
                         SEASON {seasonConfig?.activeSeasonId || 1}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-                      <span className="text-[9px] text-[#a0a0c0]">START DATE</span>
+                      <span className="text-[9px] text-[#a0a0c0]">
+                        START DATE
+                      </span>
                       <span className="text-slate-400 text-[10px] font-sans">
-                        {seasonConfig?.seasonStart 
+                        {seasonConfig?.seasonStart
                           ? new Date(seasonConfig.seasonStart).toLocaleString()
                           : "UNKNOWN"}
                       </span>
                     </div>
 
                     <p className="font-sans text-[10px] text-slate-400 leading-relaxed uppercase mt-2">
-                      Ending the season finalizes fighter ratings, freezes the leaderboard records, determines the Top 3 and Last Place performers, and archives them. Current season wins, losses, matches, and ranks will be reset back to 0. All-time winrate statistics will remain unchanged.
+                      Ending the season finalizes fighter ratings, freezes the
+                      leaderboard records, determines the Top 3 and Last Place
+                      performers, and archives them. Current season wins,
+                      losses, matches, and ranks will be reset back to 0.
+                      All-time winrate statistics will remain unchanged.
                     </p>
                   </div>
                 </div>
@@ -665,10 +692,12 @@ export default function SettingsPage() {
                     disabled={seasonEnding || !seasonConfig}
                     className="font-pixel text-[10px] text-white bg-neon-red hover:bg-red-600 border-2 border-white px-6 py-3 cursor-pointer transition-all duration-200 glow-red select-none uppercase font-bold disabled:opacity-50"
                     style={{
-                      boxShadow: "0 0 15px rgba(239, 68, 68, 0.4)"
+                      boxShadow: "0 0 15px rgba(239, 68, 68, 0.4)",
                     }}
                   >
-                    {seasonEnding ? "ROLLING OVER SEASON..." : "🏆 END CURRENT SEASON & START NEW"}
+                    {seasonEnding
+                      ? "ROLLING OVER SEASON..."
+                      : "🏆 END CURRENT SEASON & START NEW"}
                   </button>
                 </div>
               </div>

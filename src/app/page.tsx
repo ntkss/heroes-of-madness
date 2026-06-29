@@ -30,7 +30,15 @@ import { toBlob } from "html-to-image";
 import { useAuth } from "@/utils/AuthContext";
 
 export default function Home() {
-  const { user, role, loading, isAdmin, isBootstrapPending, bootstrapAdmin, login, logout } = useAuth();
+  const {
+    user,
+    loading,
+    isAdmin,
+    isBootstrapPending,
+    bootstrapAdmin,
+    login,
+    logout,
+  } = useAuth();
   const [names, setNames] = useState<string[]>([]);
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
@@ -367,7 +375,10 @@ export default function Home() {
             ) : user ? (
               <div className="flex items-center gap-3 border border-slate-700 bg-slate-900/50 p-1 px-2.5 rounded-none">
                 <img
-                  src={user.photoURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}`}
+                  src={
+                    user.photoURL ||
+                    `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}`
+                  }
                   alt={user.displayName || "User"}
                   className="w-6 h-6 border border-neon-blue rounded-none object-cover"
                 />
@@ -375,23 +386,31 @@ export default function Home() {
                   <span className="text-[9px] font-mono text-white max-w-[90px] truncate">
                     {user.displayName || user.email}
                   </span>
-                  <span className={`text-[7px] font-pixel mt-0.5 ${isAdmin ? 'text-neon-yellow glow-yellow' : 'text-neon-blue glow-blue'}`}>
+                  <span
+                    className={`text-[7px] font-pixel mt-0.5 ${isAdmin ? "text-neon-yellow glow-yellow" : "text-neon-blue glow-blue"}`}
+                  >
                     {isAdmin ? "SYS_ADMIN" : "USER_GUEST"}
                   </span>
                 </div>
-                
+
                 {isBootstrapPending && (
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
                       playCoin();
-                      const confirmClaim = window.confirm("Do you want to initialize this database and claim the primary administrator role?");
+                      const confirmClaim = window.confirm(
+                        "Do you want to initialize this database and claim the primary administrator role?",
+                      );
                       if (confirmClaim) {
                         const success = await bootstrapAdmin();
                         if (success) {
-                          alert("SUCCESS! You are now the primary System Administrator.");
+                          alert(
+                            "SUCCESS! You are now the primary System Administrator.",
+                          );
                         } else {
-                          alert("Bootstrapping failed. A primary administrator might already exist.");
+                          alert(
+                            "Bootstrapping failed. A primary administrator might already exist.",
+                          );
                         }
                       }
                     }}

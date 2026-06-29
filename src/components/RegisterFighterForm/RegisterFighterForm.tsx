@@ -185,7 +185,6 @@ export default function RegisterFighterForm({
           <div className={styles.avatarRow}>
             {avatarPreview ? (
               <div className={styles.avatarPreviewContainer}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarPreview}
                   alt="Avatar Preview"

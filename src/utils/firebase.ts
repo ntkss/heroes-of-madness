@@ -30,6 +30,7 @@ export interface Match {
   teamA: string[];
   teamB: string[];
   winner: "teamA" | "teamB" | null;
+  seasonId?: number;
 }
 
 export interface DbPlayer {
@@ -44,6 +45,34 @@ export interface DbPlayer {
   total_match_played: number;
   role?: string;
   createdAt?: number;
+  allTimeWins?: number;
+  allTimeMatches?: number;
+  allTimeWinrate?: number;
+}
+
+export interface SeasonPlayerStat {
+  id: string;
+  name: string;
+  alias: string;
+  avatar: string;
+  winrate: number;
+  total_match_played: number;
+  current_rank: string;
+}
+
+export interface Season {
+  id: number;
+  name: string;
+  startDate: number;
+  endDate: number;
+  podium: SeasonPlayerStat[];
+  lastPlace: SeasonPlayerStat | null;
+  fighterStats: SeasonPlayerStat[];
+}
+
+export interface SeasonConfig {
+  activeSeasonId: number;
+  seasonStart: number;
 }
 
 export interface RankConfig {
@@ -145,6 +174,7 @@ export async function fetchMatches(): Promise<Match[]> {
           teamA: data.teamA || [],
           teamB: data.teamB || [],
           winner: data.winner !== undefined ? data.winner : null,
+          seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
         });
       });
       return list;
@@ -181,7 +211,16 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
   if (db) {
     try {
       const matchesCol = collection(db, "matches");
-      const docRef = await addDoc(matchesCol, newMatch);
+      const firestoreData: any = {
+        createdAt: newMatch.createdAt,
+        teamA: newMatch.teamA,
+        teamB: newMatch.teamB,
+        winner: newMatch.winner,
+      };
+      if (newMatch.seasonId !== undefined) {
+        firestoreData.seasonId = newMatch.seasonId;
+      }
+      const docRef = await addDoc(matchesCol, firestoreData);
       newMatch.id = docRef.id;
       return newMatch;
     } catch (e) {
@@ -338,6 +377,9 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           total_match_played: Number(data.total_match_played) || 0,
           role: data.role || "ALL-ROUNDER",
           createdAt: data.createdAt || Date.now(),
+          allTimeWins: Number(data.allTimeWins) || 0,
+          allTimeMatches: Number(data.allTimeMatches) || 0,
+          allTimeWinrate: Number(data.allTimeWinrate) || 0,
         });
       });
 
@@ -368,6 +410,9 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           total_match_played: 0,
           role: "ALL-ROUNDER",
           createdAt: Date.now(),
+          allTimeWins: 0,
+          allTimeMatches: 0,
+          allTimeWinrate: 0,
         };
       });
 
@@ -383,6 +428,9 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           total_match_played: player.total_match_played,
           role: player.role,
           createdAt: player.createdAt,
+          allTimeWins: player.allTimeWins,
+          allTimeMatches: player.allTimeMatches,
+          allTimeWinrate: player.allTimeWinrate,
         });
       }
 
@@ -429,6 +477,9 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
         total_match_played: 0,
         role: "ALL-ROUNDER",
         createdAt: Date.now(),
+        allTimeWins: 0,
+        allTimeMatches: 0,
+        allTimeWinrate: 0,
       };
     });
 
@@ -476,6 +527,9 @@ export async function savePlayer(
     total_match_played: Number(playerData.total_match_played) || 0,
     role: playerData.role || "ALL-ROUNDER",
     createdAt: Date.now(),
+    allTimeWins: 0,
+    allTimeMatches: 0,
+    allTimeWinrate: 0,
   };
 
   const newPlayer: DbPlayer = {
@@ -606,14 +660,271 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
   return false;
 }
 
+// Fetch all matches from database without a limit
+export async function fetchAllMatches(): Promise<Match[]> {
+  if (db) {
+    try {
+      const matchesCol = collection(db, "matches");
+      const q = query(matchesCol, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      const list: Match[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: docSnap.id,
+          createdAt: data.createdAt || Date.now(),
+          teamA: data.teamA || [],
+          teamB: data.teamB || [],
+          winner: data.winner !== undefined ? data.winner : null,
+          seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
+        });
+      });
+      return list;
+    } catch (e) {
+      console.error("Error fetching all matches from Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!stored) return [];
+  try {
+    const list = JSON.parse(stored) as Match[];
+    return list.sort((a, b) => b.createdAt - a.createdAt);
+  } catch {
+    return [];
+  }
+}
+
+// Fetch active season config settings
+export async function fetchSeasonConfig(): Promise<SeasonConfig> {
+  const defaultConfig: SeasonConfig = { activeSeasonId: 1, seasonStart: Date.now() };
+  if (db) {
+    try {
+      const docRef = doc(db, "config", "seasonConfig");
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          activeSeasonId: Number(data.activeSeasonId) || 1,
+          seasonStart: Number(data.seasonStart) || Date.now(),
+        };
+      } else {
+        await setDoc(docRef, defaultConfig);
+        return defaultConfig;
+      }
+    } catch (e) {
+      console.error("Error fetching season config:", e);
+    }
+  }
+
+  // LocalStorage fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_season_config");
+    if (stored) {
+      try {
+        return JSON.parse(stored) as SeasonConfig;
+      } catch {}
+    }
+    localStorage.setItem("mlbb_generator_season_config", JSON.stringify(defaultConfig));
+  }
+  return defaultConfig;
+}
+
+// Fetch all archived seasons
+export async function fetchSeasons(): Promise<Season[]> {
+  if (db) {
+    try {
+      const seasonsCol = collection(db, "seasons");
+      const q = query(seasonsCol, orderBy("id", "asc"));
+      const querySnapshot = await getDocs(q);
+      const list: Season[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: Number(data.id),
+          name: data.name || `Season ${data.id}`,
+          startDate: Number(data.startDate) || 0,
+          endDate: Number(data.endDate) || 0,
+          podium: data.podium || [],
+          lastPlace: data.lastPlace || null,
+          fighterStats: data.fighterStats || [],
+        });
+      });
+      return list;
+    } catch (e) {
+      console.error("Error fetching seasons from Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_seasons");
+    if (stored) {
+      try {
+        return JSON.parse(stored) as Season[];
+      } catch {}
+    }
+  }
+  return [];
+}
+
+// End current season, archive stats, and start a new one
+export async function endCurrentSeason(): Promise<boolean> {
+  try {
+    const seasonConfig = await fetchSeasonConfig();
+    const activeSeasonId = seasonConfig.activeSeasonId;
+    const startDate = seasonConfig.seasonStart;
+    const endDate = Date.now();
+
+    const config = await fetchRankConfig();
+    const players = await fetchPlayers();
+
+    // Sort players who qualified (played at least minMatches) by season winrate descending
+    const qualifiedPlayers = players
+      .filter((p) => p.total_match_played >= config.minMatches)
+      .sort((a, b) => {
+        if (b.winrate !== a.winrate) {
+          return b.winrate - a.winrate;
+        }
+        return b.total_match_played - a.total_match_played;
+      });
+
+    // Form Podium (Top 3)
+    const podium: SeasonPlayerStat[] = qualifiedPlayers.slice(0, 3).map((p) => ({
+      id: p.id,
+      name: p.name,
+      alias: p.alias,
+      avatar: p.avatar,
+      winrate: p.winrate,
+      total_match_played: p.total_match_played,
+      current_rank: p.current_rank,
+    }));
+
+    // Find Last Place (Worst performer with at least 1 match played)
+    const activePlayers = players.filter((p) => p.total_match_played > 0);
+    let lastPlace: SeasonPlayerStat | null = null;
+    if (activePlayers.length > 0) {
+      const sortedWorst = [...activePlayers].sort((a, b) => {
+        if (a.winrate !== b.winrate) {
+          return a.winrate - b.winrate;
+        }
+        return a.total_match_played - b.total_match_played;
+      });
+      const worstPlayer = sortedWorst[0];
+      lastPlace = {
+        id: worstPlayer.id,
+        name: worstPlayer.name,
+        alias: worstPlayer.alias,
+        avatar: worstPlayer.avatar,
+        winrate: worstPlayer.winrate,
+        total_match_played: worstPlayer.total_match_played,
+        current_rank: worstPlayer.current_rank,
+      };
+    }
+
+    // Capture all fighter stats
+    const fighterStats: SeasonPlayerStat[] = players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      alias: p.alias,
+      avatar: p.avatar,
+      winrate: p.winrate,
+      total_match_played: p.total_match_played,
+      current_rank: p.current_rank,
+    }));
+
+    const archivedSeason: Season = {
+      id: activeSeasonId,
+      name: `Season ${activeSeasonId}`,
+      startDate,
+      endDate,
+      podium,
+      lastPlace,
+      fighterStats,
+    };
+
+    // 2. Save Season document
+    if (db) {
+      const seasonRef = doc(db, "seasons", `season_${activeSeasonId}`);
+      await setDoc(seasonRef, archivedSeason);
+
+      // 3. Update Season Config
+      const nextSeasonConfig: SeasonConfig = {
+        activeSeasonId: activeSeasonId + 1,
+        seasonStart: Date.now(),
+      };
+      const configRef = doc(db, "config", "seasonConfig");
+      await setDoc(configRef, nextSeasonConfig);
+    } else {
+      // LocalStorage Season archive
+      if (typeof window !== "undefined") {
+        const storedSeasons = localStorage.getItem("mlbb_generator_seasons");
+        const seasonsList = storedSeasons ? (JSON.parse(storedSeasons) as Season[]) : [];
+        seasonsList.push(archivedSeason);
+        localStorage.setItem("mlbb_generator_seasons", JSON.stringify(seasonsList));
+
+        const nextSeasonConfig: SeasonConfig = {
+          activeSeasonId: activeSeasonId + 1,
+          seasonStart: Date.now(),
+        };
+        localStorage.setItem("mlbb_generator_season_config", JSON.stringify(nextSeasonConfig));
+      }
+    }
+
+    // 4. Reset player season stats to 0, current rank to Normal
+    if (db) {
+      const playersCol = collection(db, "players");
+      const querySnapshot = await getDocs(playersCol);
+      const batch = writeBatch(db);
+      querySnapshot.forEach((docSnap) => {
+        batch.update(docSnap.ref, {
+          total_match_played: 0,
+          winrate: 0,
+          current_rank: config.tiers.normal,
+          highest_rank: config.tiers.normal,
+        });
+      });
+      await batch.commit();
+    } else {
+      if (typeof window !== "undefined") {
+        const storedPlayers = localStorage.getItem(LOCAL_PLAYERS_KEY);
+        if (storedPlayers) {
+          const list = JSON.parse(storedPlayers) as DbPlayer[];
+          const resetList = list.map((p) => ({
+            ...p,
+            total_match_played: 0,
+            winrate: 0,
+            current_rank: config.tiers.normal,
+            highest_rank: config.tiers.normal,
+          }));
+          localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(resetList));
+        }
+      }
+    }
+
+    // Trigger a fresh recalculation of all stats
+    await recalculateRanks(config);
+    return true;
+  } catch (err) {
+    console.error("Error in endCurrentSeason:", err);
+    return false;
+  }
+}
+
 // Recalculate ranks and update all players in the database
 export async function recalculateRanks(
   passedConfig?: RankConfig,
 ): Promise<void> {
   try {
     const config = passedConfig || (await fetchRankConfig());
+    const seasonConfig = await fetchSeasonConfig();
+    const activeSeasonId = seasonConfig.activeSeasonId;
+
     const players = await fetchPlayers();
-    const matches = await fetchMatches();
+    const matches = await fetchAllMatches(); // Fetch ALL matches to compute correct stats
 
     const getTierPriority = (rankName: string, cfg: RankConfig): number => {
       if (rankName === cfg.tiers.high) return 3;
@@ -625,7 +936,10 @@ export async function recalculateRanks(
       return 2;
     };
 
-    const statsMap: Record<string, { wins: number; matches: number }> = {};
+    // We will build stats map for BOTH current season and all-time
+    const currentSeasonStats: Record<string, { wins: number; matches: number }> = {};
+    const allTimeStats: Record<string, { wins: number; matches: number }> = {};
+
     matches.forEach((match) => {
       if (!match.winner) return;
 
@@ -645,28 +959,50 @@ export async function recalculateRanks(
         return found ? found.id : nameOrId.toLowerCase();
       };
 
+      const matchSeasonId = match.seasonId !== undefined ? Number(match.seasonId) : 1;
+      const isCurrentSeason = matchSeasonId === activeSeasonId;
+
       winningTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
-        if (!statsMap[key]) statsMap[key] = { wins: 0, matches: 0 };
-        statsMap[key].wins += 1;
-        statsMap[key].matches += 1;
+        
+        // All-Time
+        if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
+        allTimeStats[key].wins += 1;
+        allTimeStats[key].matches += 1;
+
+        // Current Season
+        if (isCurrentSeason) {
+          if (!currentSeasonStats[key]) currentSeasonStats[key] = { wins: 0, matches: 0 };
+          currentSeasonStats[key].wins += 1;
+          currentSeasonStats[key].matches += 1;
+        }
       });
 
       losingTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
-        if (!statsMap[key]) statsMap[key] = { wins: 0, matches: 0 };
-        statsMap[key].matches += 1;
+        
+        // All-Time
+        if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
+        allTimeStats[key].matches += 1;
+
+        // Current Season
+        if (isCurrentSeason) {
+          if (!currentSeasonStats[key]) currentSeasonStats[key] = { wins: 0, matches: 0 };
+          currentSeasonStats[key].matches += 1;
+        }
       });
     });
 
     const updatedPlayers = await Promise.all(
       players.map(async (player) => {
         const key = player.id;
-        const pStats = statsMap[key] || { wins: 0, matches: 0 };
+        const sStats = currentSeasonStats[key] || { wins: 0, matches: 0 };
+        const atStats = allTimeStats[key] || { wins: 0, matches: 0 };
 
-        const totalMatches = pStats.matches;
+        // Current Season Stats
+        const totalMatches = sStats.matches;
         const winrate =
-          totalMatches > 0 ? Math.round((pStats.wins / totalMatches) * 100) : 0;
+          totalMatches > 0 ? Math.round((sStats.wins / totalMatches) * 100) : 0;
 
         let newRank = config.tiers.normal;
         if (totalMatches >= config.minMatches) {
@@ -686,11 +1022,19 @@ export async function recalculateRanks(
           newHighestRank = newRank;
         }
 
+        // All-Time Stats
+        const allTimeMatches = atStats.matches;
+        const allTimeWinrate =
+          allTimeMatches > 0 ? Math.round((atStats.wins / allTimeMatches) * 100) : 0;
+
         const hasChanged =
           player.total_match_played !== totalMatches ||
           player.winrate !== winrate ||
           player.current_rank !== newRank ||
-          player.highest_rank !== newHighestRank;
+          player.highest_rank !== newHighestRank ||
+          player.allTimeWins !== atStats.wins ||
+          player.allTimeMatches !== allTimeMatches ||
+          player.allTimeWinrate !== allTimeWinrate;
 
         if (hasChanged) {
           const updatedFields = {
@@ -698,6 +1042,9 @@ export async function recalculateRanks(
             winrate: winrate,
             current_rank: newRank,
             highest_rank: newHighestRank,
+            allTimeWins: atStats.wins,
+            allTimeMatches: allTimeMatches,
+            allTimeWinrate: allTimeWinrate,
           };
 
           const updatedPlayer: DbPlayer = {
@@ -977,6 +1324,139 @@ export async function updateUserRole(uid: string, newRole: "admin" | "user"): Pr
     return true;
   } catch (e) {
     console.error("Error updating user role:", e);
+    return false;
+  }
+}
+
+// Seed mock seasons and matches data for testing
+export async function seedMockSeasons(): Promise<boolean> {
+  const mockSeasons: Season[] = [
+    {
+      id: 1,
+      name: "Season 1",
+      startDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
+      endDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
+      podium: [
+        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 75, total_match_played: 12, current_rank: "คนเก่ง" },
+        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 64, total_match_played: 11, current_rank: "คนเก่ง" },
+        { id: "mike", name: "Mike", alias: "Mike", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike", winrate: 58, total_match_played: 12, current_rank: "คนปกติ" },
+      ],
+      lastPlace: { id: "feeder", name: "Feeder Pro", alias: "Feeder", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder", winrate: 18, total_match_played: 11, current_rank: "คนกาก" },
+      fighterStats: [
+        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 75, total_match_played: 12, current_rank: "คนเก่ง" },
+        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 64, total_match_played: 11, current_rank: "คนเก่ง" },
+        { id: "mike", name: "Mike", alias: "Mike", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike", winrate: 58, total_match_played: 12, current_rank: "คนปกติ" },
+        { id: "feeder", name: "Feeder Pro", alias: "Feeder", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder", winrate: 18, total_match_played: 11, current_rank: "คนกาก" },
+      ]
+    },
+    {
+      id: 2,
+      name: "Season 2",
+      startDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
+      endDate: Date.now() - 1000,
+      podium: [
+        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 80, total_match_played: 15, current_rank: "คนเก่ง" },
+        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 70, total_match_played: 10, current_rank: "คนเก่ง" },
+        { id: "billy", name: "Billy", alias: "Billy", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy", winrate: 60, total_match_played: 10, current_rank: "คนปกติ" },
+      ],
+      lastPlace: { id: "noob", name: "Noob King", alias: "Noob", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob", winrate: 10, total_match_played: 10, current_rank: "คนกาก" },
+      fighterStats: [
+        { id: "goku", name: "Goku", alias: "Goku", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku", winrate: 80, total_match_played: 15, current_rank: "คนเก่ง" },
+        { id: "nutty", name: "Nutty", alias: "Nutty", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty", winrate: 70, total_match_played: 10, current_rank: "คนเก่ง" },
+        { id: "billy", name: "Billy", alias: "Billy", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy", winrate: 60, total_match_played: 10, current_rank: "คนปกติ" },
+        { id: "noob", name: "Noob King", alias: "Noob", avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob", winrate: 10, total_match_played: 10, current_rank: "คนกาก" },
+      ]
+    }
+  ];
+
+  const mockMatches: Match[] = [
+    {
+      id: "mock_m1",
+      createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+      teamA: ["Nutty", "Goku", "Mike", "Player 4", "Player 5"],
+      teamB: ["Feeder Pro", "Player 7", "Player 8", "Player 9", "Player 10"],
+      winner: "teamA",
+      seasonId: 1,
+    },
+    {
+      id: "mock_m2",
+      createdAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
+      teamA: ["Nutty", "Goku", "Mike", "Player 4", "Player 5"],
+      teamB: ["Feeder Pro", "Player 7", "Player 8", "Player 9", "Player 10"],
+      winner: "teamA",
+      seasonId: 1,
+    },
+    {
+      id: "mock_m3",
+      createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
+      teamA: ["Goku", "Nutty", "Billy", "Player 4", "Player 5"],
+      teamB: ["Noob King", "Player 7", "Player 8", "Player 9", "Player 10"],
+      winner: "teamA",
+      seasonId: 2,
+    }
+  ];
+
+  try {
+    if (db) {
+      for (const season of mockSeasons) {
+        const seasonRef = doc(db, "seasons", `season_${season.id}`);
+        await setDoc(seasonRef, season);
+      }
+      for (const match of mockMatches) {
+        const matchRef = doc(db, "matches", match.id);
+        const cleanMatch = {
+          createdAt: match.createdAt,
+          teamA: match.teamA,
+          teamB: match.teamB,
+          winner: match.winner,
+          seasonId: match.seasonId,
+        };
+        await setDoc(matchRef, cleanMatch);
+      }
+      const configRef = doc(db, "config", "seasonConfig");
+      await setDoc(configRef, { activeSeasonId: 3, seasonStart: Date.now() });
+    } else {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mlbb_generator_seasons", JSON.stringify(mockSeasons));
+        localStorage.setItem("mlbb_generator_matches", JSON.stringify(mockMatches));
+        localStorage.setItem("mlbb_generator_season_config", JSON.stringify({ activeSeasonId: 3, seasonStart: Date.now() }));
+      }
+    }
+    return true;
+  } catch (e) {
+    console.error("Error seeding mock seasons:", e);
+    return false;
+  }
+}
+
+// Clear seeded mock seasons and matches data
+export async function clearMockSeasons(): Promise<boolean> {
+  try {
+    if (db) {
+      const s1 = doc(db, "seasons", "season_1");
+      const s2 = doc(db, "seasons", "season_2");
+      await deleteDoc(s1);
+      await deleteDoc(s2);
+
+      const m1 = doc(db, "matches", "mock_m1");
+      const m2 = doc(db, "matches", "mock_m2");
+      const m3 = doc(db, "matches", "mock_m3");
+      await deleteDoc(m1);
+      await deleteDoc(m2);
+      await deleteDoc(m3);
+
+      const configRef = doc(db, "config", "seasonConfig");
+      await setDoc(configRef, { activeSeasonId: 1, seasonStart: Date.now() });
+    } else {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("mlbb_generator_seasons");
+        localStorage.removeItem("mlbb_generator_matches");
+        localStorage.setItem("mlbb_generator_season_config", JSON.stringify({ activeSeasonId: 1, seasonStart: Date.now() }));
+      }
+    }
+    return true;
+  } catch (e) {
+    console.error("Error clearing mock seasons:", e);
     return false;
   }
 }

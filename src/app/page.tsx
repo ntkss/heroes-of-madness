@@ -52,7 +52,7 @@ export default function Home() {
   const showArena = teamA.length > 0 || isGenerating;
 
   useEffect(() => {
-    if (showArena) {
+    if (isGenerating) {
       const timer = setTimeout(() => {
         arenaRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -61,7 +61,7 @@ export default function Home() {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [showArena]);
+  }, [isGenerating]);
 
   useEffect(() => {
     const loadData = async () => {

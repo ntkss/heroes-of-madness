@@ -207,9 +207,9 @@ export default function PlayerInput({
                 playBeep(880, 0.15, "sawtooth");
                 onGenerate();
               }}
-              disabled={isGenerating || !isReady || !isAdmin}
+              disabled={isGenerating || !isReady}
               className={`${styles.randomizeBtn} ${
-                isGenerating || !isReady || !isAdmin
+                isGenerating || !isReady
                   ? styles.randomizeBtnDisabled
                   : styles.randomizeBtnActive
               }`}
@@ -220,12 +220,6 @@ export default function PlayerInput({
             {!isReady && (
               <div className={styles.draftError}>
                 ⚠️ DRAFT INCOMPLETE ({currentCount}/10). SELECT 10 PLAYERS!
-              </div>
-            )}
-
-            {!isAdmin && (
-              <div className={styles.draftError} style={{ color: '#ef4444', borderColor: '#ef4444' }}>
-                ⚠️ SECURE SYSTEM ACTIVE. ADMIN LOG IN REQUIRED TO START DRAFT!
               </div>
             )}
           </div>

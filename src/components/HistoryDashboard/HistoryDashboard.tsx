@@ -94,9 +94,18 @@ export default function HistoryDashboard({
       const dbWins = Math.round((dbWinrate / 100) * dbMatches);
       const dbLosses = dbMatches - dbWins;
 
-      const atMatches = player.allTimeMatches !== undefined ? Number(player.allTimeMatches) : dbMatches;
-      const atWinrate = player.allTimeWinrate !== undefined ? Number(player.allTimeWinrate) : dbWinrate;
-      const atWins = player.allTimeWins !== undefined ? Number(player.allTimeWins) : Math.round((atWinrate / 100) * atMatches);
+      const atMatches =
+        player.allTimeMatches !== undefined
+          ? Number(player.allTimeMatches)
+          : dbMatches;
+      const atWinrate =
+        player.allTimeWinrate !== undefined
+          ? Number(player.allTimeWinrate)
+          : dbWinrate;
+      const atWins =
+        player.allTimeWins !== undefined
+          ? Number(player.allTimeWins)
+          : Math.round((atWinrate / 100) * atMatches);
       const atLosses = atMatches - atWins;
 
       statsMap[player.id] = {
@@ -133,7 +142,14 @@ export default function HistoryDashboard({
       winningTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) {
-          statsMap[key] = { wins: 0, losses: 0, matches: 0, allTimeWins: 0, allTimeLosses: 0, allTimeMatches: 0 };
+          statsMap[key] = {
+            wins: 0,
+            losses: 0,
+            matches: 0,
+            allTimeWins: 0,
+            allTimeLosses: 0,
+            allTimeMatches: 0,
+          };
         }
         if (!statsMap[key].dbPlayer) {
           statsMap[key].wins += 1;
@@ -146,7 +162,14 @@ export default function HistoryDashboard({
       losingTeam.forEach((playerNameOrId) => {
         const key = getPlayerKey(playerNameOrId);
         if (!statsMap[key]) {
-          statsMap[key] = { wins: 0, losses: 0, matches: 0, allTimeWins: 0, allTimeLosses: 0, allTimeMatches: 0 };
+          statsMap[key] = {
+            wins: 0,
+            losses: 0,
+            matches: 0,
+            allTimeWins: 0,
+            allTimeLosses: 0,
+            allTimeMatches: 0,
+          };
         }
         if (!statsMap[key].dbPlayer) {
           statsMap[key].losses += 1;
@@ -158,8 +181,12 @@ export default function HistoryDashboard({
     });
 
     const statsList = Object.entries(statsMap).map(([key, data]) => {
-      const seasonWinrate = data.matches > 0 ? (data.wins / data.matches) * 100 : 0;
-      const allTimeWinrate = data.allTimeMatches > 0 ? (data.allTimeWins / data.allTimeMatches) * 100 : 0;
+      const seasonWinrate =
+        data.matches > 0 ? (data.wins / data.matches) * 100 : 0;
+      const allTimeWinrate =
+        data.allTimeMatches > 0
+          ? (data.allTimeWins / data.allTimeMatches) * 100
+          : 0;
       const name = data.dbPlayer
         ? data.dbPlayer.name
         : key.charAt(0).toUpperCase() + key.slice(1);
@@ -356,13 +383,17 @@ export default function HistoryDashboard({
                       {isAdmin && (
                         <div className={styles.pendingBtnGrid}>
                           <button
-                            onClick={() => handleWinnerChange(match.id, "teamA")}
+                            onClick={() =>
+                              handleWinnerChange(match.id, "teamA")
+                            }
                             className={styles.pendingBtnBlue}
                           >
                             👑 BLUE WIN
                           </button>
                           <button
-                            onClick={() => handleWinnerChange(match.id, "teamB")}
+                            onClick={() =>
+                              handleWinnerChange(match.id, "teamB")
+                            }
                             className={styles.pendingBtnRed}
                           >
                             👑 RED WIN
@@ -461,10 +492,18 @@ export default function HistoryDashboard({
                         ? styles.rankBadgeBronze
                         : styles.rankBadgeNormal;
 
-                const displayMatches = statsSubTab === "season" ? stats.matches : stats.allTimeMatches;
-                const displayWins = statsSubTab === "season" ? stats.wins : stats.allTimeWins;
-                const displayLosses = statsSubTab === "season" ? stats.losses : stats.allTimeLosses;
-                const displayWinrate = statsSubTab === "season" ? stats.winrate : stats.allTimeWinrate;
+                const displayMatches =
+                  statsSubTab === "season"
+                    ? stats.matches
+                    : stats.allTimeMatches;
+                const displayWins =
+                  statsSubTab === "season" ? stats.wins : stats.allTimeWins;
+                const displayLosses =
+                  statsSubTab === "season" ? stats.losses : stats.allTimeLosses;
+                const displayWinrate =
+                  statsSubTab === "season"
+                    ? stats.winrate
+                    : stats.allTimeWinrate;
 
                 return (
                   <div
@@ -523,7 +562,9 @@ export default function HistoryDashboard({
                       <span className={styles.mobileLabel}>RECORD:</span>
                       <span className={styles.winsText}>{displayWins}W</span>
                       <span className={styles.dividerText}>/</span>
-                      <span className={styles.lossesText}>{displayLosses}L</span>
+                      <span className={styles.lossesText}>
+                        {displayLosses}L
+                      </span>
                     </div>
 
                     {/* Interactive Win Rate & Progress Bar */}

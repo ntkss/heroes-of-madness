@@ -17,7 +17,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isBootstrapPending: boolean;
   bootstrapAdmin: () => Promise<boolean>;
-  login: () => Promise<any>;
+  login: () => Promise<unknown>;
   logout: () => Promise<void>;
 }
 
@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<"admin" | "user" | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isFirebaseConfigured);
   const [isBootstrapPending, setIsBootstrapPending] = useState(false);
 
   const login = async () => {
@@ -56,12 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
-      setLoading(false);
       return;
     }
 
     // Check if bootstrap exists once initially
-    checkBootstrap();
+    setTimeout(() => {
+      checkBootstrap();
+    }, 0);
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);

@@ -13,6 +13,7 @@ interface HistoryDashboardProps {
   onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
+  isAdmin?: boolean;
 }
 
 export default function HistoryDashboard({
@@ -22,6 +23,7 @@ export default function HistoryDashboard({
   onUpdateWinner,
   availablePlayers,
   rankConfig,
+  isAdmin = false,
 }: HistoryDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
     "history",
@@ -209,7 +211,7 @@ export default function HistoryDashboard({
         <h2 className={styles.title}>ARENA LOGBOOK</h2>
         <div className={styles.headerControls}>
           <span className={styles.recordsCount}>RECORDS: {matches.length}</span>
-          {matches.length > 0 && activeTab === "history" && (
+          {matches.length > 0 && activeTab === "history" && isAdmin && (
             <button
               onClick={handlePurgeAllClick}
               className={styles.purgeAllBtn}
@@ -318,34 +320,38 @@ export default function HistoryDashboard({
                       <span className={styles.pendingLabel}>
                         PENDING OUTCOME
                       </span>
-                      <div className={styles.pendingBtnGrid}>
-                        <button
-                          onClick={() => handleWinnerChange(match.id, "teamA")}
-                          className={styles.pendingBtnBlue}
-                        >
-                          👑 BLUE WIN
-                        </button>
-                        <button
-                          onClick={() => handleWinnerChange(match.id, "teamB")}
-                          className={styles.pendingBtnRed}
-                        >
-                          👑 RED WIN
-                        </button>
-                      </div>
+                      {isAdmin && (
+                        <div className={styles.pendingBtnGrid}>
+                          <button
+                            onClick={() => handleWinnerChange(match.id, "teamA")}
+                            className={styles.pendingBtnBlue}
+                          >
+                            👑 BLUE WIN
+                          </button>
+                          <button
+                            onClick={() => handleWinnerChange(match.id, "teamB")}
+                            className={styles.pendingBtnRed}
+                          >
+                            👑 RED WIN
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Delete button */}
-                  <button
-                    onClick={() => handleDelete(match.id)}
-                    className={styles.deleteBtn}
-                    title="Purge record"
-                  >
-                    <svg className={styles.deleteIcon} viewBox="0 0 24 24">
-                      <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9m2 2h2v1h-2V5m-3 3h2v10H8V8m4 0h2v10h-2V8m4 0h2v10h-2V8z" />
-                    </svg>
-                    PURGE
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDelete(match.id)}
+                      className={styles.deleteBtn}
+                      title="Purge record"
+                    >
+                      <svg className={styles.deleteIcon} viewBox="0 0 24 24">
+                        <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9m2 2h2v1h-2V5m-3 3h2v10H8V8m4 0h2v10h-2V8m4 0h2v10h-2V8z" />
+                      </svg>
+                      PURGE
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

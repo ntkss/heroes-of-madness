@@ -18,6 +18,7 @@ interface FighterDirectoryProps {
     alias: string,
     avatar: string,
   ) => Promise<DbPlayer>;
+  isAdmin?: boolean;
 }
 
 export default function FighterDirectory({
@@ -26,6 +27,7 @@ export default function FighterDirectory({
   onTogglePlayer,
   onDeletePlayer,
   onUpdatePlayer,
+  isAdmin = false,
 }: FighterDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingPlayer, setEditingPlayer] = useState<DbPlayer | null>(null);
@@ -201,43 +203,45 @@ export default function FighterDirectory({
                 </button>
 
                 {/* Edit & Delete Action Panel */}
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playBeep(440, 0.08, "triangle");
-                      setEditingPlayer(player);
-                    }}
-                    className={`${styles.actionBtn} ${styles.editBtn}`}
-                    title="Edit Profile"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 fill-current"
-                      viewBox="0 0 24 24"
+                {isAdmin && (
+                  <div className={styles.actions}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBeep(440, 0.08, "triangle");
+                        setEditingPlayer(player);
+                      }}
+                      className={`${styles.actionBtn} ${styles.editBtn}`}
+                      title="Edit Profile"
                     >
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-3.5 h-3.5 fill-current"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                      </svg>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playBeep(220, 0.15, "sawtooth");
-                      setDeletingPlayer(player);
-                    }}
-                    className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                    title="Delete Profile"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 fill-current"
-                      viewBox="0 0 24 24"
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBeep(220, 0.15, "sawtooth");
+                        setDeletingPlayer(player);
+                      }}
+                      className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                      title="Delete Profile"
                     >
-                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                    </svg>
-                  </button>
-                </div>
+                      <svg
+                        className="w-3.5 h-3.5 fill-current"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

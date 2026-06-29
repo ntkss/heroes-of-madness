@@ -13,8 +13,16 @@ import {
   orderBy,
   query,
   limit,
+  writeBatch,
   Firestore,
 } from "firebase/firestore";
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  Auth,
+} from "firebase/auth";
 
 export interface Match {
   id: string;
@@ -65,35 +73,27 @@ const LOCAL_CONFIG_KEY = "mlbb_generator_rank_config";
 const isDev = process.env.NODE_ENV === "development";
 
 // Check if all essential Firebase variables are defined in the environment
-// In development, always use LocalStorage to avoid polluting production data
-export const isFirebaseConfigured =
-  !isDev &&
-  !!(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-  );
+export const isFirebaseConfigured = !!(
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+  process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+  process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
+  process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
+  process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+);
 
-if (isDev) {
-  console.log(
-    "🛠️ Development mode — using LocalStorage only (Firebase disabled).",
-  );
-} else {
-  console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
-    apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    isFirebaseConfigured,
-  });
-}
+console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
+  apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  isFirebaseConfigured,
+});
 
 let db: Firestore | null = null;
+export let auth: Auth | null = null;
 
 if (isFirebaseConfigured) {
   try {
@@ -110,14 +110,15 @@ if (isFirebaseConfigured) {
     const app =
       getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
-    console.log("🔥 Firebase initialized successfully!");
+    auth = getAuth(app);
+    console.log("🔥 Firebase & Auth initialized successfully!");
   } catch (error) {
     console.error(
       "❌ Firebase initialization error, falling back to LocalStorage:",
       error,
     );
   }
-} else if (!isDev) {
+} else {
   console.log(
     "💾 Firebase environment variables missing. Operating in offline LocalStorage mode.",
   );
@@ -838,4 +839,144 @@ export async function updatePlayer(
   }
 
   return newPlayer;
+}
+
+// --- Auth & User Management Functions ---
+
+export interface DbUser {
+  uid: string;
+  name: string;
+  email: string;
+  photoURL: string;
+  role: "admin" | "user";
+  updatedAt: number;
+}
+
+export async function signInWithGoogle() {
+  if (!auth) return null;
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider);
+}
+
+export async function signOutUser() {
+  if (!auth) return;
+  return signOut(auth);
+}
+
+export async function checkBootstrapExists(): Promise<boolean> {
+  if (!db) return true; // Default to true if db is not configured
+  try {
+    const docSnap = await getDoc(doc(db, "config", "bootstrap"));
+    return docSnap.exists();
+  } catch {
+    return true; // Safe fallback
+  }
+}
+
+export async function syncUserDoc(user: any): Promise<{ role: "admin" | "user" }> {
+  if (!db) return { role: "user" };
+  const userRef = doc(db, "users", user.uid);
+  const docSnap = await getDoc(userRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    return { role: (data.role as "admin" | "user") || "user" };
+  }
+
+  const isDefaultAdmin = user.email === "nattakit.suksaeng@gmail.com";
+  const defaultRole = isDefaultAdmin ? "admin" : "user";
+
+  try {
+    if (isDefaultAdmin) {
+      // For default admin, save user and bootstrap in a batch to fulfill firestore.rules requirements
+      const batch = writeBatch(db);
+      batch.set(userRef, {
+        name: user.displayName || user.email || "Unknown Admin",
+        email: user.email || "",
+        photoURL: user.photoURL || "",
+        role: "admin",
+        updatedAt: Date.now(),
+      });
+      const bootstrapRef = doc(db, "config", "bootstrap");
+      batch.set(bootstrapRef, {
+        createdBy: user.uid,
+        createdAt: Date.now(),
+      });
+      await batch.commit();
+      return { role: "admin" };
+    }
+
+    // Standard user
+    await setDoc(userRef, {
+      name: user.displayName || user.email || "Unknown User",
+      email: user.email || "",
+      photoURL: user.photoURL || "",
+      role: defaultRole,
+      updatedAt: Date.now(),
+    });
+    return { role: defaultRole as "admin" | "user" };
+  } catch (e) {
+    console.error("Error syncing user document:", e);
+    return { role: "user" };
+  }
+}
+
+export async function bootstrapFirstAdmin(user: any): Promise<boolean> {
+  if (!db) return false;
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const bootstrapRef = doc(db, "config", "bootstrap");
+    const batch = writeBatch(db);
+    batch.set(userRef, {
+      name: user.displayName || user.email || "Unknown Admin",
+      email: user.email || "",
+      photoURL: user.photoURL || "",
+      role: "admin",
+      updatedAt: Date.now(),
+    });
+    batch.set(bootstrapRef, {
+      createdBy: user.uid,
+      createdAt: Date.now(),
+    });
+    await batch.commit();
+    return true;
+  } catch (e) {
+    console.error("Bootstrap first admin failed:", e);
+    return false;
+  }
+}
+
+export async function fetchUsers(): Promise<DbUser[]> {
+  if (!db) return [];
+  try {
+    const usersCol = collection(db, "users");
+    const querySnapshot = await getDocs(usersCol);
+    const list: DbUser[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      list.push({
+        uid: docSnap.id,
+        name: data.name || "",
+        email: data.email || "",
+        photoURL: data.photoURL || "",
+        role: (data.role as "admin" | "user") || "user",
+        updatedAt: data.updatedAt || Date.now(),
+      });
+    });
+    return list;
+  } catch (e) {
+    console.error("Error fetching users:", e);
+    return [];
+  }
+}
+
+export async function updateUserRole(uid: string, newRole: "admin" | "user"): Promise<boolean> {
+  if (!db) return false;
+  try {
+    const docRef = doc(db, "users", uid);
+    await updateDoc(docRef, { role: newRole, updatedAt: Date.now() });
+    return true;
+  } catch (e) {
+    console.error("Error updating user role:", e);
+    return false;
+  }
 }

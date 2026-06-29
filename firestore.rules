@@ -30,6 +30,12 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Seasons
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Config
     match /config/{configId} {
       allow read: if true;

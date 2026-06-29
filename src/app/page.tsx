@@ -22,6 +22,7 @@ import {
   RankConfig,
   fetchRankConfig,
   DEFAULT_RANK_CONFIG,
+  fetchSeasonConfig,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
@@ -49,6 +50,7 @@ export default function Home() {
   const [audioInitialized, setAudioInitialized] = useState(false);
   const [availablePlayers, setAvailablePlayers] = useState<DbPlayer[]>([]);
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
+  const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
 
   const arenaRef = useRef<HTMLDivElement>(null);
   const showArena = teamA.length > 0 || isGenerating;
@@ -67,14 +69,16 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [logs, players, config] = await Promise.all([
+      const [logs, players, config, seasonCfg] = await Promise.all([
         fetchMatches(),
         fetchPlayers(),
         fetchRankConfig(),
+        fetchSeasonConfig(),
       ]);
       setMatches(logs);
       setAvailablePlayers(players);
       setRankConfig(config);
+      setActiveSeasonId(seasonCfg.activeSeasonId);
     };
     loadData();
   }, []);
@@ -274,6 +278,7 @@ export default function Home() {
           teamB: finalTeamB,
           winner: null,
           createdAt: Date.now(),
+          seasonId: activeSeasonId,
         });
         setActiveMatchId(saved.id);
 
@@ -349,7 +354,7 @@ export default function Home() {
               HEROES OF MADNESS
             </h1>
             <p className="text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase glow-yellow">
-              MLBB RANDOM TEAM GENERATOR
+              MLBB RANDOM TEAM GENERATOR • ACTIVE SEASON {activeSeasonId}
             </p>
           </div>
 
@@ -426,6 +431,18 @@ export default function Home() {
               </span>
               <span className="text-slate-500 mt-1">DIAGNOSTOK</span>
             </div>
+
+            {/* Seasons History Dashboard Link */}
+            <Link
+              href="/seasons"
+              onClick={() => {
+                playBeep(300, 0.15, "sawtooth");
+              }}
+              className="flex items-center gap-1.5 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide"
+              title="Browse Seasons History"
+            >
+              🏆 SEASONS
+            </Link>
 
             {/* Announcer Synth Activator */}
             <button

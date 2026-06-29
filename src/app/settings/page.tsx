@@ -12,17 +12,22 @@ import {
   fetchUsers,
   updateUserRole,
   DbUser,
+  fetchSeasonConfig,
+  endCurrentSeason,
+  SeasonConfig,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
 
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
-  const [settingsTab, setSettingsTab] = useState<"ranks" | "users">("ranks");
+  const [settingsTab, setSettingsTab] = useState<"ranks" | "users" | "seasons">("ranks");
   const [users, setUsers] = useState<DbUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
+  const [seasonConfig, setSeasonConfig] = useState<SeasonConfig | null>(null);
+  const [seasonEnding, setSeasonEnding] = useState(false);
 
   const [highName, setHighName] = useState("");
   const [normalName, setNormalName] = useState("");
@@ -64,6 +69,44 @@ export default function SettingsPage() {
     }
   };
 
+  const handleEndSeason = async () => {
+    if (!seasonConfig) return;
+    
+    const confirmText1 = `⚠️ WARNING: YOU ARE ABOUT TO ROLLOVER SEASON ${seasonConfig.activeSeasonId}!\n\nThis will archive all current match logs, freeze active standings, determine the podium (Top 3) & last place fighters, and reset all current season winrates and matches back to zero.\n\nAre you sure you want to proceed?`;
+    const confirmText2 = `🚨 FINAL SEASONS AUDIT: Type "CONFIRM" in capital letters to proceed with initiating a new season.`;
+
+    if (!window.confirm(confirmText1)) return;
+    const userInput = window.prompt(confirmText2);
+    if (userInput !== "CONFIRM") {
+      alert("Season rollover cancelled.");
+      return;
+    }
+
+    setSeasonEnding(true);
+    playCoin();
+    try {
+      const success = await endCurrentSeason();
+      if (success) {
+        speakAnnounce(`SEASON ${seasonConfig.activeSeasonId} COMPLETED. NEW SEASON INITIALIZED.`);
+        playCoin();
+        alert(`SUCCESS! Season ${seasonConfig.activeSeasonId} closed. Season ${seasonConfig.activeSeasonId + 1} has begun!`);
+        
+        // Reload states
+        const sCfg = await fetchSeasonConfig();
+        setSeasonConfig(sCfg);
+        
+        const config = await fetchRankConfig();
+        setRankConfig(config);
+      } else {
+        alert("Rollover process failed. Check developer console.");
+      }
+    } catch (e) {
+      alert("Error rolled over: " + e);
+    } finally {
+      setSeasonEnding(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin && settingsTab === "users") {
       const timer = setTimeout(() => {
@@ -84,6 +127,9 @@ export default function SettingsPage() {
       setMinMatches(config.minMatches);
       setHighWinrate(config.highTierWinrate);
       setLowWinrate(config.lowTierWinrate);
+
+      const sCfg = await fetchSeasonConfig();
+      setSeasonConfig(sCfg);
     };
     loadConfig();
   }, [isAdmin]);
@@ -301,6 +347,20 @@ export default function SettingsPage() {
               >
                 👥 USER MANAGEMENT
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playBeep(330, 0.1, "sawtooth");
+                  setSettingsTab("seasons");
+                }}
+                className={`font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all ${
+                  settingsTab === "seasons"
+                    ? "border-b-2 border-neon-yellow text-neon-yellow glow-yellow"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                🏆 SEASON ENGINE
+              </button>
             </div>
 
             {rankConfig === null ? (
@@ -468,7 +528,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
-            ) : (
+            ) : settingsTab === "users" ? (
               /* User management UI */
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center select-none">
@@ -566,6 +626,51 @@ export default function SettingsPage() {
                     </table>
                   </div>
                 )}
+              </div>
+            ) : (
+              /* Season Engine UI */
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-2">
+                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide border-b border-slate-800 pb-1">
+                    🏆 Season Engine
+                  </span>
+                  
+                  <div className="bg-slate-950 p-4 border border-slate-800 rounded-sm flex flex-col gap-4 font-pixel text-xs text-slate-300">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                      <span className="text-[9px] text-[#a0a0c0]">ACTIVE SEASON ID</span>
+                      <span className="text-neon-yellow glow-yellow text-sm font-bold">
+                        SEASON {seasonConfig?.activeSeasonId || 1}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                      <span className="text-[9px] text-[#a0a0c0]">START DATE</span>
+                      <span className="text-slate-400 text-[10px] font-sans">
+                        {seasonConfig?.seasonStart 
+                          ? new Date(seasonConfig.seasonStart).toLocaleString()
+                          : "UNKNOWN"}
+                      </span>
+                    </div>
+
+                    <p className="font-sans text-[10px] text-slate-400 leading-relaxed uppercase mt-2">
+                      Ending the season finalizes fighter ratings, freezes the leaderboard records, determines the Top 3 and Last Place performers, and archives them. Current season wins, losses, matches, and ranks will be reset back to 0. All-time winrate statistics will remain unchanged.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center border-t border-slate-800 pt-6 mt-4">
+                  <button
+                    type="button"
+                    onClick={handleEndSeason}
+                    disabled={seasonEnding || !seasonConfig}
+                    className="font-pixel text-[10px] text-white bg-neon-red hover:bg-red-600 border-2 border-white px-6 py-3 cursor-pointer transition-all duration-200 glow-red select-none uppercase font-bold disabled:opacity-50"
+                    style={{
+                      boxShadow: "0 0 15px rgba(239, 68, 68, 0.4)"
+                    }}
+                  >
+                    {seasonEnding ? "ROLLING OVER SEASON..." : "🏆 END CURRENT SEASON & START NEW"}
+                  </button>
+                </div>
               </div>
             )}
           </div>

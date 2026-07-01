@@ -2,9 +2,10 @@
 
 import React from "react";
 import Image from "next/image";
-import { Match, DbPlayer, RankConfig } from "@/utils/firebase";
+import { Match, DbPlayer, RankConfig, SeasonPlayerStat } from "@/utils/firebase";
 import styles from "./styles.module.css";
 import { playBeep, playWin } from "@/utils/audio";
+import PodiumStandings from "@/components/PodiumStandings";
 
 interface HistoryDashboardProps {
   matches: Match[];
@@ -221,6 +222,29 @@ export default function HistoryDashboard({
       return a.name.localeCompare(b.name);
     });
   }, [matches, availablePlayers, statsSubTab]);
+
+  // Dynamically compute podium positions for the winrates tab based on statsSubTab selection
+  const podiumData = React.useMemo(() => {
+    const mapToSeasonPlayerStat = (stat: typeof playerStats[0]): SeasonPlayerStat => {
+      const isSeason = statsSubTab === "season";
+      return {
+        id: stat.dbPlayer?.id || stat.name.toLowerCase(),
+        name: stat.name,
+        alias: stat.dbPlayer?.alias || "",
+        avatar: stat.dbPlayer?.avatar || "",
+        winrate: Math.round(isSeason ? stat.winrate : stat.allTimeWinrate),
+        total_match_played: isSeason ? stat.matches : stat.allTimeMatches,
+        current_rank: stat.dbPlayer?.current_rank || "Normal",
+      };
+    };
+
+    return {
+      firstPlace: playerStats[0] ? mapToSeasonPlayerStat(playerStats[0]) : null,
+      secondPlace: playerStats[1] ? mapToSeasonPlayerStat(playerStats[1]) : null,
+      thirdPlace: playerStats[2] ? mapToSeasonPlayerStat(playerStats[2]) : null,
+      lastPlace: playerStats.length > 3 ? mapToSeasonPlayerStat(playerStats[playerStats.length - 1]) : null,
+    };
+  }, [playerStats, statsSubTab]);
 
   const renderRankInfo = (dbPlayer: DbPlayer | undefined) => {
     if (!dbPlayer) return null;
@@ -455,6 +479,15 @@ export default function HistoryDashboard({
             </button>
           </div>
 
+          {playerStats.length > 0 && (
+            <PodiumStandings
+              firstPlace={podiumData.firstPlace}
+              secondPlace={podiumData.secondPlace}
+              thirdPlace={podiumData.thirdPlace}
+              lastPlace={podiumData.lastPlace}
+            />
+          )}
+
           {playerStats.length === 0 ? (
             <div className={styles.emptyStateContainer}>
               <span className={styles.emptyStateTitle}>NO FIGHTER STATS</span>
@@ -475,22 +508,9 @@ export default function HistoryDashboard({
 
               {/* Leaderboard Cards */}
               {playerStats.map((stats, index) => {
-                const rankLabel =
-                  index === 0
-                    ? "1ST"
-                    : index === 1
-                      ? "2ND"
-                      : index === 2
-                        ? "3RD"
-                        : `${index + 1}TH`;
-                const rankColorStyle =
-                  index === 0
-                    ? styles.rankBadgeGold
-                    : index === 1
-                      ? styles.rankBadgeSilver
-                      : index === 2
-                        ? styles.rankBadgeBronze
-                        : styles.rankBadgeNormal;
+                if (index < 3) return null;
+                const rankLabel = `${index + 1}TH`;
+                const rankColorStyle = styles.rankBadgeNormal;
 
                 const displayMatches =
                   statsSubTab === "season"

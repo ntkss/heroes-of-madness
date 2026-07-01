@@ -1,0 +1,414 @@
+@reference "../../app/globals.css";
+
+.loadingContainer {
+  @apply flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] font-pixel text-neon-yellow;
+}
+
+.loadingText {
+  @apply text-[10px] uppercase tracking-widest animate-pulse;
+}
+
+.unauthorizedContainer {
+  @apply flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] p-6 relative font-pixel;
+}
+
+.violationCard {
+  @apply border-4 border-neon-red bg-slate-950/95 max-w-[500px] p-8 text-center flex flex-col items-center gap-6;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+}
+
+.violationIcon {
+  @apply w-16 h-16 rounded-full border-4 border-neon-red flex items-center justify-center text-neon-red text-3xl animate-bounce;
+}
+
+.violationTitle {
+  @apply text-2xl font-bold tracking-tighter text-neon-red uppercase animate-pulse;
+}
+
+.violationDivider {
+  @apply h-1 w-full bg-gradient-to-r from-transparent via-neon-red to-transparent;
+}
+
+.violationDesc {
+  @apply text-[10px] text-slate-400 uppercase leading-relaxed tracking-wider;
+}
+
+.returnToArenaBtn {
+  @apply flex items-center gap-2 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-5 py-2.5 text-[9px] cursor-pointer transition-all duration-200 uppercase tracking-widest mt-2;
+  text-shadow:
+    0 0 10px var(--color-neon-blue),
+    0 0 20px rgba(0, 210, 255, 0.4);
+}
+
+.container {
+  @apply flex-grow flex flex-col justify-between;
+}
+
+.header {
+  @apply border-b-4 border-neon-red bg-slate-950 py-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative;
+}
+
+.headerBorderLine {
+  @apply absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red;
+}
+
+.headerTitleContainer {
+  @apply flex flex-col items-center md:items-start text-center md:text-left select-none;
+}
+
+.headerTitle {
+  @apply text-4xl md:text-5xl font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red;
+}
+
+.headerSubtitle {
+  @apply text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.backBtn {
+  @apply flex items-center gap-1 border-2 border-neon-red bg-neon-red/10 text-neon-red hover:bg-neon-red hover:text-white px-3 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 select-none;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.main {
+  @apply mx-auto w-full p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300;
+}
+
+.mainUsers {
+  @apply max-w-[850px];
+}
+
+.mainRanksSeasons {
+  @apply max-w-[650px];
+}
+
+.configPanel {
+  @apply w-full bg-[#161622]/90 border-4 border-slate-700 p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 rounded-md;
+  box-shadow:
+    0 0 15px rgba(0, 0, 0, 0.8),
+    inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.rivet {
+  @apply absolute w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70;
+}
+
+.rivetTopLeft {
+  @apply top-2 left-2;
+}
+
+.rivetTopRight {
+  @apply top-2 right-2;
+}
+
+.rivetBottomLeft {
+  @apply bottom-2 left-2;
+}
+
+.rivetBottomRight {
+  @apply bottom-2 right-2;
+}
+
+.panelHeader {
+  @apply border-b-4 border-slate-700 pb-3 mb-1 flex items-center justify-between;
+}
+
+.panelTitle {
+  @apply text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel select-none;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.panelStatus {
+  @apply font-pixel text-[8px] text-[#a0a0c0];
+}
+
+.tabsContainer {
+  @apply flex border-b border-slate-700/50 pb-2 gap-4 select-none;
+}
+
+.tabBtn {
+  @apply font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all;
+}
+
+.tabBtnActive {
+  @apply border-b-2 border-neon-yellow text-neon-yellow;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.tabBtnInactive {
+  @apply text-slate-500 hover:text-slate-300;
+}
+
+.panelLoading {
+  @apply flex flex-col items-center justify-center py-12;
+}
+
+.panelLoadingText {
+  @apply font-pixel text-[10px] text-neon-yellow uppercase tracking-widest mb-2 animate-pulse;
+}
+
+.form {
+  @apply flex flex-col gap-5;
+}
+
+.formSection {
+  @apply flex flex-col gap-2;
+}
+
+.sectionTitle {
+  @apply font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide border-b border-slate-800 pb-1;
+}
+
+.inputsGridThree {
+  @apply grid grid-cols-3 gap-3;
+}
+
+.inputWrapper {
+  @apply flex flex-col gap-1;
+}
+
+.inputLabelPurple {
+  @apply text-purple-400 font-pixel text-[7px] uppercase tracking-wide text-center block;
+}
+
+.inputLabelOrange {
+  @apply text-orange-400 font-pixel text-[7px] uppercase tracking-wide text-center block;
+}
+
+.inputLabelGreen {
+  @apply text-green-400 font-pixel text-[7px] uppercase tracking-wide text-center block;
+}
+
+.inputPurple {
+  @apply bg-slate-950 border border-purple-500/30 text-purple-200 text-sm p-2 focus:outline-none focus:border-purple-500 font-sans text-center rounded-sm;
+}
+
+.inputOrange {
+  @apply bg-slate-950 border border-orange-500/30 text-orange-200 text-sm p-2 focus:outline-none focus:border-orange-500 font-sans text-center rounded-sm;
+}
+
+.inputGreen {
+  @apply bg-slate-950 border border-green-500/30 text-green-200 text-sm p-2 focus:outline-none focus:border-green-500 font-sans text-center rounded-sm;
+}
+
+.formSectionEvaluation {
+  @apply flex flex-col gap-2 mt-2;
+}
+
+.inputsGridThresholds {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4 font-tech text-xs;
+}
+
+.inputWrapperFull {
+  @apply flex flex-col gap-1 sm:col-span-2;
+}
+
+.inputLabel {
+  @apply text-slate-400 font-pixel text-[7.5px] uppercase;
+}
+
+.inputDefault {
+  @apply bg-slate-950 border border-slate-800 text-white p-2.5 focus:outline-none focus:border-neon-yellow rounded-sm;
+}
+
+.inputHelpText {
+  @apply text-[6.5px] text-slate-500 font-sans italic mt-0.5;
+}
+
+.inputWrapperThreshold {
+  @apply flex flex-col gap-1;
+}
+
+.inputLabelPurpleLeft {
+  @apply text-purple-400 font-pixel text-[7px] uppercase;
+}
+
+.inputPurpleLeft {
+  @apply bg-slate-950 border border-purple-500/20 text-white p-2.5 focus:outline-none focus:border-purple-500 rounded-sm;
+}
+
+.inputLabelGreenLeft {
+  @apply text-green-400 font-pixel text-[7px] uppercase;
+}
+
+.inputGreenLeft {
+  @apply bg-slate-950 border border-green-500/20 text-white p-2.5 focus:outline-none focus:border-green-500 rounded-sm;
+}
+
+.statusError {
+  @apply text-[8.5px] font-pixel text-neon-red uppercase mt-2;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.statusSuccess {
+  @apply text-[8.5px] font-pixel text-neon-yellow uppercase mt-2;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.formActions {
+  @apply flex justify-between items-center border-t border-slate-800 pt-4 mt-2 select-none;
+}
+
+.resetBtn {
+  @apply font-pixel text-[8.5px] text-slate-400 hover:text-white bg-slate-900 border border-slate-700 px-3 py-2 hover:bg-slate-800 transition-all cursor-pointer uppercase font-bold;
+}
+
+.applyBtn {
+  @apply font-pixel text-[8.5px] text-black bg-neon-yellow border-2 border-white px-5 py-2 hover:bg-white transition-all cursor-pointer uppercase font-bold disabled:opacity-50;
+}
+
+.usersSection {
+  @apply flex flex-col gap-4;
+}
+
+.usersHeader {
+  @apply flex justify-between items-center select-none;
+}
+
+.usersHeaderTitle {
+  @apply font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide;
+}
+
+.refreshBtn {
+  @apply font-pixel text-[7.5px] border border-slate-600 hover:border-neon-yellow text-slate-400 hover:text-neon-yellow px-2.5 py-1.5 cursor-pointer bg-slate-950 transition-all uppercase font-bold;
+}
+
+.usersLoading {
+  @apply flex justify-center py-12 select-none;
+}
+
+.usersLoadingText {
+  @apply font-pixel text-[8.5px] text-neon-yellow uppercase tracking-widest animate-pulse;
+}
+
+.usersEmpty {
+  @apply flex justify-center py-12 select-none;
+}
+
+.usersEmptyText {
+  @apply font-pixel text-[8.5px] text-slate-500 uppercase tracking-widest;
+}
+
+.usersTableContainer {
+  @apply border border-slate-800 overflow-hidden bg-slate-950 rounded-sm;
+}
+
+.usersTable {
+  @apply w-full text-left font-sans text-xs border-collapse;
+}
+
+.usersTableHeaderRow {
+  @apply bg-slate-900 border-b border-slate-800 font-pixel text-[7px] text-[#a0a0c0] uppercase select-none;
+}
+
+.usersTableBodyRow {
+  @apply border-b border-slate-900/50 hover:bg-slate-900/20 transition-colors;
+}
+
+.userCell {
+  @apply p-3 flex items-center gap-2.5;
+}
+
+.userAvatarWrapper {
+  @apply w-6 h-6 border border-slate-700 relative overflow-hidden;
+}
+
+.userAvatar {
+  @apply w-full h-full object-cover;
+}
+
+.userName {
+  @apply font-semibold text-slate-200;
+}
+
+.currentUserBadge {
+  @apply text-[7px] font-pixel text-neon-yellow ml-1 border border-neon-yellow/30 bg-neon-yellow/5 px-1 py-0.5 select-none;
+}
+
+.userEmail {
+  @apply p-3 text-slate-400 font-mono text-[10px];
+}
+
+.userRoleWrapper {
+  @apply p-3;
+}
+
+.roleBadgeAdmin {
+  @apply text-[8.5px] font-pixel px-1.5 py-0.5 select-none text-neon-yellow border border-neon-yellow/20 bg-neon-yellow/5;
+}
+
+.roleBadgeUser {
+  @apply text-[8.5px] font-pixel px-1.5 py-0.5 select-none text-neon-blue border border-neon-blue/20 bg-neon-blue/5;
+}
+
+.userActionsCell {
+  @apply p-3 text-right;
+}
+
+.demoteBtn {
+  @apply font-pixel text-[7px] px-2.5 py-1.5 cursor-pointer transition-all duration-150 uppercase border font-bold border-neon-red/30 hover:border-neon-red text-neon-red/70 hover:text-neon-red hover:bg-neon-red/5;
+}
+
+.promoteBtn {
+  @apply font-pixel text-[7px] px-2.5 py-1.5 cursor-pointer transition-all duration-150 uppercase border font-bold border-neon-yellow/30 hover:border-neon-yellow text-neon-yellow/70 hover:text-neon-yellow hover:bg-neon-yellow/5;
+}
+
+.lockedText {
+  @apply text-[7.5px] font-pixel text-slate-600 uppercase select-none italic mr-1;
+}
+
+.seasonEngineContainer {
+  @apply flex flex-col gap-5;
+}
+
+.seasonEngineDetails {
+  @apply bg-slate-950 p-4 border border-slate-800 rounded-sm flex flex-col gap-4 font-pixel text-xs text-slate-300;
+}
+
+.seasonEngineDetailRow {
+  @apply flex justify-between items-center border-b border-slate-900 pb-2;
+}
+
+.seasonEngineDetailLabel {
+  @apply text-[9px] text-[#a0a0c0];
+}
+
+.seasonEngineActiveVal {
+  @apply text-neon-yellow text-sm font-bold;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.seasonEngineDateVal {
+  @apply text-slate-400 text-[10px] font-sans;
+}
+
+.seasonEngineDesc {
+  @apply font-sans text-[10px] text-slate-400 leading-relaxed uppercase mt-2;
+}
+
+.seasonEngineActionWrapper {
+  @apply flex flex-col items-center border-t border-slate-800 pt-6 mt-4;
+}
+
+.endSeasonBtn {
+  @apply font-pixel text-[10px] text-white bg-neon-red hover:bg-red-600 border-2 border-white px-6 py-3 cursor-pointer transition-all duration-200 select-none uppercase font-bold disabled:opacity-50;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.footer {
+  @apply border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none;
+}

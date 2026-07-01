@@ -1,0 +1,123 @@
+@reference "../../app/globals.css";
+
+.podiumGrid {
+  @apply grid grid-cols-1 md:grid-cols-4 gap-4 items-end select-none;
+}
+
+.podiumColumn {
+  @apply flex flex-col items-center;
+}
+
+.podiumHeader {
+  @apply w-full flex flex-col items-center;
+}
+
+.secondPlaceAvatarWrapper {
+  @apply w-14 h-14 relative border-2 border-slate-300 rounded-sm overflow-hidden bg-slate-900 shadow-lg mb-2;
+}
+
+.avatarImage {
+  @apply object-cover;
+}
+
+.podiumName {
+  @apply font-semibold text-slate-200 text-xs truncate max-w-full text-center;
+}
+
+.podiumSub {
+  @apply text-[9px] text-slate-400 font-mono;
+}
+
+.secondPlacePedestal {
+  @apply w-full bg-[#1e1e2d] border-t-2 border-l-2 border-r-2 border-slate-400 h-24 flex items-center justify-center flex-col mt-2;
+}
+
+.pedestalRankNumber {
+  @apply font-pixel text-slate-300 text-lg font-bold;
+}
+
+.secondPlacePedestalLabel {
+  @apply font-pixel text-slate-400 text-[6.5px] tracking-wide mt-1 uppercase;
+}
+
+.crownEmoji {
+  @apply text-xl mb-1 animate-bounce;
+}
+
+.firstPlaceAvatarWrapper {
+  @apply w-18 h-18 relative border-4 border-neon-yellow rounded-sm overflow-hidden bg-slate-900 mb-2;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+.championName {
+  @apply font-bold text-neon-yellow text-sm truncate max-w-full text-center;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.championSub {
+  @apply text-[10px] text-yellow-300/80 font-mono font-bold;
+}
+
+.firstPlacePedestal {
+  @apply w-full bg-[#27273a] border-t-4 border-l-2 border-r-2 border-neon-yellow h-32 flex items-center justify-center flex-col mt-2;
+  box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.1);
+}
+
+.championPedestalRankNumber {
+  @apply font-pixel text-neon-yellow text-2xl font-bold;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.championPedestalLabel {
+  @apply font-pixel text-neon-yellow text-[7.5px] tracking-wider mt-1 uppercase;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.thirdPlaceAvatarWrapper {
+  @apply w-14 h-14 relative border-2 border-amber-600 rounded-sm overflow-hidden bg-slate-900 shadow-lg mb-2;
+}
+
+.thirdPlacePedestal {
+  @apply w-full bg-[#1a1a26] border-t-2 border-l-2 border-r-2 border-amber-700 h-20 flex items-center justify-center flex-col mt-2;
+}
+
+.thirdPlacePedestalRankNumber {
+  @apply font-pixel text-amber-600 text-lg font-bold;
+}
+
+.thirdPlacePedestalLabel {
+  @apply font-pixel text-amber-600 text-[6.5px] tracking-wide mt-1 uppercase;
+}
+
+.spoonAvatarWrapper {
+  @apply w-14 h-14 relative border-2 border-neon-red rounded-sm overflow-hidden bg-slate-900 shadow-lg mb-2 opacity-80;
+}
+
+.spoonName {
+  @apply font-semibold text-neon-red text-xs truncate max-w-full text-center;
+}
+
+.spoonSub {
+  @apply text-[9px] text-neon-red/70 font-mono;
+}
+
+.spoonPedestal {
+  @apply w-full bg-[#1a1010] border-t-2 border-l-2 border-r-2 border-neon-red/50 h-20 flex items-center justify-center flex-col mt-2;
+}
+
+.spoonEmoji {
+  @apply text-sm;
+}
+
+.spoonPedestalLabel {
+  @apply font-pixel text-neon-red text-[6px] tracking-widest mt-1 uppercase;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}

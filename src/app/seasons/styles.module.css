@@ -1,0 +1,255 @@
+@reference "../../app/globals.css";
+
+.loadingContainer {
+  @apply flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] font-pixel text-neon-yellow;
+}
+
+.loadingText {
+  @apply text-[10px] uppercase tracking-widest animate-pulse;
+}
+
+.container {
+  @apply flex-grow flex flex-col justify-between min-h-screen text-slate-100 font-sans;
+}
+
+.header {
+  @apply border-b-4 border-neon-red bg-slate-950 py-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative;
+}
+
+.headerBorderLine {
+  @apply absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red;
+}
+
+.headerTitleContainer {
+  @apply flex flex-col items-center md:items-start text-center md:text-left select-none;
+}
+
+.headerTitle {
+  @apply text-4xl md:text-5xl font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red;
+}
+
+.headerSubtitle {
+  @apply text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.backBtn {
+  @apply flex items-center gap-1 border-2 border-neon-red bg-neon-red/10 text-neon-red hover:bg-neon-red hover:text-white px-3 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 select-none;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.main {
+  @apply mx-auto w-full max-w-[850px] p-4 md:p-8 flex-grow flex flex-col gap-6;
+}
+
+.emptyCard {
+  @apply w-full bg-[#161622]/90 border-4 border-slate-700 p-8 shadow-2xl rounded-md text-center flex flex-col items-center justify-center py-16 gap-4;
+}
+
+.emptyEmoji {
+  @apply text-3xl;
+}
+
+.emptyTitle {
+  @apply font-pixel text-[12px] text-neon-yellow uppercase tracking-widest;
+}
+
+.emptyDesc {
+  @apply text-xs text-slate-400 font-mono uppercase tracking-wide max-w-sm leading-relaxed;
+}
+
+.seedBtn {
+  @apply mt-4 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-4 py-2 font-pixel text-[8px] cursor-pointer transition-all duration-200 uppercase tracking-wide font-bold;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+}
+
+.returnBtn {
+  @apply mt-2 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-4 py-2 font-pixel text-[8px] cursor-pointer transition-all duration-200;
+}
+
+.selectorCard {
+  @apply bg-[#161622]/95 border-4 border-slate-700 p-4 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-4 rounded-sm;
+}
+
+.selectorControls {
+  @apply flex items-center gap-3;
+}
+
+.selectLabel {
+  @apply font-pixel text-[9px] text-[#a0a0c0] uppercase;
+}
+
+.selectBox {
+  @apply bg-slate-950 border border-slate-800 text-neon-yellow font-pixel text-[9.5px] p-2 focus:outline-none focus:border-neon-yellow rounded-sm cursor-pointer select-none;
+}
+
+.clearBtn {
+  @apply ml-3 border border-neon-red/30 hover:border-neon-red text-neon-red/70 hover:text-neon-red bg-neon-red/5 px-2.5 py-1.5 font-pixel text-[7.5px] cursor-pointer transition-all duration-150 uppercase font-bold;
+}
+
+.durationText {
+  @apply text-right font-mono text-[9px] text-slate-400 uppercase select-none;
+}
+
+.avatarImage {
+  @apply object-cover;
+}
+
+.tabsList {
+  @apply flex border-b-4 border-slate-700 pb-2.5 gap-4 mt-2 select-none;
+}
+
+.tabBtn {
+  @apply font-pixel text-[9px] px-3.5 py-1.5 cursor-pointer transition-all;
+}
+
+.tabBtnActive {
+  @apply border-b-2 border-neon-yellow text-neon-yellow;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.tabBtnInactive {
+  @apply text-slate-500 hover:text-slate-300;
+}
+
+.card {
+  @apply border border-slate-800 bg-[#161622]/80 p-5 shadow-xl rounded-sm;
+}
+
+.cardTitle {
+  @apply font-pixel text-[8px] text-[#a0a0c0] uppercase tracking-wider block mb-4;
+}
+
+.tableContainer {
+  @apply border border-slate-800 overflow-hidden bg-slate-950 rounded-sm;
+}
+
+.table {
+  @apply w-full text-left font-sans text-xs border-collapse;
+}
+
+.tableHeaderRow {
+  @apply bg-slate-900 border-b border-slate-800 font-pixel text-[7px] text-[#a0a0c0] uppercase select-none;
+}
+
+.tableHeaderCell {
+  @apply p-3;
+}
+
+.tableBodyRow {
+  @apply border-b border-slate-900/50 hover:bg-slate-900/10 transition-colors;
+}
+
+.rankCell {
+  @apply p-3 font-mono font-bold text-slate-400;
+}
+
+.fighterCell {
+  @apply p-3 flex items-center gap-2;
+}
+
+.miniAvatarWrapper {
+  @apply w-6 h-6 border border-slate-800 relative overflow-hidden bg-slate-950;
+}
+
+.fighterCellName {
+  @apply font-semibold text-slate-200;
+}
+
+.matchesCell {
+  @apply p-3 text-slate-400 font-mono;
+}
+
+.winrateCell {
+  @apply p-3 font-mono text-neon-blue font-bold;
+}
+
+.rankCellWrapper {
+  @apply p-3;
+}
+
+.rankBadge {
+  @apply text-[8.5px] font-pixel px-1.5 py-0.5 border border-slate-800 text-slate-400 bg-slate-900/50 select-none;
+}
+
+.battleLogsCard {
+  @apply border border-slate-800 bg-[#161622]/80 p-5 shadow-xl rounded-sm flex flex-col gap-4;
+}
+
+.battleLogsTitle {
+  @apply font-pixel text-[8px] text-[#a0a0c0] uppercase tracking-wider block;
+}
+
+.emptyBattleLogs {
+  @apply text-center py-12 select-none;
+}
+
+.emptyBattleLogsText {
+  @apply font-pixel text-[8.5px] text-slate-500 uppercase tracking-widest;
+}
+
+.battleLogList {
+  @apply flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-1;
+}
+
+.battleLogCard {
+  @apply bg-slate-950 border border-slate-800 p-4 relative flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm;
+}
+
+.battleLogDetails {
+  @apply flex flex-col gap-1.5 w-full md:w-auto;
+}
+
+.battleLogMetaRow {
+  @apply flex justify-between items-center md:justify-start gap-4;
+}
+
+.battleLogRecordTag {
+  @apply font-pixel text-[7.5px] text-[#a0a0c0] uppercase;
+}
+
+.battleLogTime {
+  @apply text-[9px] text-slate-500 font-mono;
+}
+
+.battleLogTeamsRow {
+  @apply flex flex-col sm:flex-row gap-4 mt-1 font-mono text-xs select-none;
+}
+
+.teamCol {
+  @apply flex flex-col gap-1;
+}
+
+.teamNameBlue {
+  @apply text-blue-400 font-bold text-[9px] font-pixel;
+}
+
+.teamNameRed {
+  @apply text-red-400 font-bold text-[9px] font-pixel;
+}
+
+.fightersListText {
+  @apply text-slate-300 leading-relaxed text-[11px];
+}
+
+.teamColWithDivider {
+  @apply flex flex-col gap-1 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-4;
+}
+
+.battleLogActions {
+  @apply flex items-center gap-3;
+}
+
+.completedBadge {
+  @apply font-pixel text-[7.5px] border border-slate-800 bg-slate-900 px-2 py-1 text-slate-400 select-none;
+}
+
+.footer {
+  @apply border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none;
+}

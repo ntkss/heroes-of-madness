@@ -1,0 +1,210 @@
+@reference "../../app/globals.css";
+
+.podiumGrid {
+  @apply grid grid-cols-1 md:grid-cols-4 gap-4 items-end select-none;
+}
+
+.podiumColumn {
+  @apply flex flex-col items-center;
+}
+
+.podiumHeader {
+  @apply w-full flex flex-col items-center;
+}
+
+.secondPlaceAvatarWrapper {
+  @apply w-14 h-14 relative border-2 border-slate-300 rounded-sm overflow-hidden bg-slate-900 shadow-lg mb-2;
+}
+
+.avatarImage {
+  @apply object-cover;
+}
+
+.podiumName {
+  @apply font-semibold text-slate-200 text-xs truncate max-w-full text-center;
+}
+
+.podiumSub {
+  @apply text-[9px] text-slate-400 font-mono;
+}
+
+.secondPlacePedestal {
+  @apply w-full bg-[#1e1e2d] border-t-2 border-l-2 border-r-2 border-slate-400 h-24 flex items-center justify-center flex-col mt-2;
+}
+
+.pedestalRankNumber {
+  @apply font-pixel text-slate-300 text-lg font-bold;
+}
+
+.secondPlacePedestalLabel {
+  @apply font-pixel text-slate-400 text-[6.5px] tracking-wide mt-1 uppercase;
+}
+
+.crownEmoji {
+  @apply text-xl mb-1 animate-bounce;
+}
+
+.firstPlaceAvatarWrapper {
+  @apply w-18 h-18 relative border-4 border-neon-yellow rounded-sm overflow-hidden bg-slate-900 mb-2;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+.championName {
+  @apply font-bold text-neon-yellow text-sm truncate max-w-full text-center;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.championSub {
+  @apply text-[10px] text-yellow-300/80 font-mono font-bold;
+}
+
+.firstPlacePedestal {
+  @apply w-full bg-[#27273a] border-t-4 border-l-2 border-r-2 border-neon-yellow h-32 flex items-center justify-center flex-col mt-2 relative overflow-hidden;
+  box-shadow:
+    inset 0 0 15px rgba(251, 191, 36, 0.1),
+    0 0 15px rgba(251, 191, 36, 0.2);
+  animation: pedestalGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pedestalGlow {
+  0% {
+    box-shadow:
+      inset 0 0 15px rgba(251, 191, 36, 0.1),
+      0 0 15px rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.8);
+  }
+  100% {
+    box-shadow:
+      inset 0 0 25px rgba(251, 191, 36, 0.25),
+      0 0 30px rgba(251, 191, 36, 0.6);
+    border-color: #fbbf24;
+  }
+}
+
+.fireContainer {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 125%;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.flame {
+  width: 18px;
+  height: 18px;
+  background: #f59e0b;
+  border-radius: 50% 50% 20% 20%;
+  transform: rotate(-45deg);
+  animation: flicker 0.6s ease-in-out infinite alternate;
+  filter: blur(2.5px);
+  opacity: 0.85;
+  margin: 0 -4px;
+}
+
+.flame:nth-child(2) {
+  width: 26px;
+  height: 26px;
+  background: #ef4444;
+  animation-duration: 0.4s;
+  animation-delay: 0.1s;
+}
+
+.flame:nth-child(3) {
+  width: 36px;
+  height: 36px;
+  background: #fbbf24;
+  animation-duration: 0.5s;
+  animation-delay: 0.2s;
+}
+
+.flame:nth-child(4) {
+  width: 24px;
+  height: 24px;
+  background: #ea580c;
+  animation-duration: 0.7s;
+  animation-delay: 0.05s;
+}
+
+.flame:nth-child(5) {
+  width: 16px;
+  height: 16px;
+  background: #f59e0b;
+  animation-duration: 0.8s;
+  animation-delay: 0.15s;
+}
+
+@keyframes flicker {
+  0% {
+    transform: rotate(-45deg) scale(0.8) translateY(0);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+  }
+  100% {
+    transform: rotate(-40deg) scale(1.3) translateY(-24px);
+    box-shadow: 0 0 35px rgba(251, 191, 36, 0.95);
+  }
+}
+
+.championPedestalRankNumber {
+  @apply font-pixel text-neon-yellow text-2xl font-bold;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.championPedestalLabel {
+  @apply font-pixel text-neon-yellow text-[7.5px] tracking-wider mt-1 uppercase;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.thirdPlaceAvatarWrapper {
+  @apply w-14 h-14 relative border-2 border-amber-600 rounded-sm overflow-hidden bg-slate-900 shadow-lg mb-2;
+}
+
+.thirdPlacePedestal {
+  @apply w-full bg-[#1a1a26] border-t-2 border-l-2 border-r-2 border-amber-700 h-20 flex items-center justify-center flex-col mt-2;
+}
+
+.thirdPlacePedestalRankNumber {
+  @apply font-pixel text-amber-600 text-lg font-bold;
+}
+
+.thirdPlacePedestalLabel {
+  @apply font-pixel text-amber-600 text-[6.5px] tracking-wide mt-1 uppercase;
+}
+
+.spoonAvatarWrapper {
+  @apply w-14 h-14 relative border-2 border-neon-red rounded-sm overflow-hidden bg-slate-900 shadow-lg mb-2 opacity-80;
+}
+
+.spoonName {
+  @apply font-semibold text-neon-red text-xs truncate max-w-full text-center;
+}
+
+.spoonSub {
+  @apply text-[9px] text-neon-red/70 font-mono;
+}
+
+.spoonPedestal {
+  @apply w-full bg-[#1a1010] border-t-2 border-l-2 border-r-2 border-neon-red/50 h-14 flex items-center justify-center flex-col mt-2;
+}
+
+.spoonEmoji {
+  @apply text-sm;
+}
+
+.spoonPedestalLabel {
+  @apply font-pixel text-neon-red text-[6px] tracking-widest mt-1 uppercase;
+  text-shadow:
+    0 0 10px var(--color-neon-red),
+    0 0 20px rgba(255, 42, 95, 0.4);
+}

@@ -18,6 +18,7 @@ import {
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
+import styles from "./styles.module.css";
 
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
@@ -231,8 +232,8 @@ export default function SettingsPage() {
   if (authLoading) {
     return (
       <CRTOverlay>
-        <div className="flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] font-pixel text-neon-yellow">
-          <span className="text-[10px] uppercase tracking-widest animate-pulse">
+        <div className={styles.loadingContainer}>
+          <span className={styles.loadingText}>
             CONNECTING TO SECURITY CABINET...
           </span>
         </div>
@@ -243,23 +244,19 @@ export default function SettingsPage() {
   if (!isAdmin) {
     return (
       <CRTOverlay>
-        <div className="flex-grow flex flex-col items-center justify-center min-h-screen bg-[#050508] p-6 relative font-pixel">
-          <div className="border-4 border-neon-red bg-slate-950/95 max-w-[500px] p-8 text-center shadow-[0_0_25px_rgba(239,68,68,0.5)] flex flex-col items-center gap-6">
-            <div className="w-16 h-16 rounded-full border-4 border-neon-red flex items-center justify-center text-neon-red text-3xl animate-bounce">
-              ⚠️
-            </div>
-            <h1 className="text-2xl font-bold tracking-tighter text-neon-red uppercase animate-pulse">
-              SECURITY VIOLATION
-            </h1>
-            <div className="h-1 w-full bg-gradient-to-r from-transparent via-neon-red to-transparent" />
-            <p className="text-[10px] text-slate-400 uppercase leading-relaxed tracking-wider">
+        <div className={styles.unauthorizedContainer}>
+          <div className={styles.violationCard}>
+            <div className={styles.violationIcon}>⚠️</div>
+            <h1 className={styles.violationTitle}>SECURITY VIOLATION</h1>
+            <div className={styles.violationDivider} />
+            <p className={styles.violationDesc}>
               UNAUTHORIZED ACCESS DETECTED. THIS TERMINAL IS RESTRICTED TO
               ADMINISTRATORS ONLY. YOUR ATTEMPT HAS BEEN LOGGED.
             </p>
             <Link
               href="/"
               onClick={() => playBeep(250, 0.1, "sawtooth")}
-              className="flex items-center gap-2 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-5 py-2.5 text-[9px] cursor-pointer transition-all duration-200 glow-blue uppercase tracking-widest mt-2"
+              className={styles.returnToArenaBtn}
             >
               ✕ RETURN TO ARENA
             </Link>
@@ -271,19 +268,14 @@ export default function SettingsPage() {
 
   return (
     <CRTOverlay>
-      <div
-        className="flex-grow flex flex-col justify-between"
-        onClick={initAudioFeedback}
-      >
+      <div className={styles.container} onClick={initAudioFeedback}>
         {/* Esports Header */}
-        <header className="border-b-4 border-neon-red bg-slate-950 py-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative">
-          <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red" />
+        <header className={styles.header}>
+          <div className={styles.headerBorderLine} />
 
-          <div className="flex flex-col items-center md:items-start text-center md:text-left select-none">
-            <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red">
-              HEROES OF MADNESS
-            </h1>
-            <p className="text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase glow-yellow">
+          <div className={styles.headerTitleContainer}>
+            <h1 className={styles.headerTitle}>HEROES OF MADNESS</h1>
+            <p className={styles.headerSubtitle}>
               RANK SYSTEM RULEBOOK SETTINGS
             </p>
           </div>
@@ -291,7 +283,7 @@ export default function SettingsPage() {
           <Link
             href="/"
             onClick={() => playBeep(250, 0.1, "sawtooth")}
-            className="flex items-center gap-1 border-2 border-neon-red bg-neon-red/10 text-neon-red hover:bg-neon-red hover:text-white px-3 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-red select-none"
+            className={styles.backBtn}
           >
             ✕ BACK TO ARENA
           </Link>
@@ -299,45 +291,37 @@ export default function SettingsPage() {
 
         {/* Settings Control Panel Form Container */}
         <main
-          className={`mx-auto w-full p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300 ${
-            settingsTab === "users" ? "max-w-[850px]" : "max-w-[650px]"
+          className={`${styles.main} ${
+            settingsTab === "users" ? styles.mainUsers : styles.mainRanksSeasons
           }`}
         >
-          <div
-            className="w-full bg-[#161622]/90 border-4 border-slate-700 p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 rounded-md"
-            style={{
-              boxShadow:
-                "0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.05)",
-            }}
-          >
+          <div className={styles.configPanel}>
             {/* Retro cabinet aesthetic rivets */}
-            <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
-            <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
-            <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
-            <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70" />
+            <div className={`${styles.rivet} ${styles.rivetTopLeft}`} />
+            <div className={`${styles.rivet} ${styles.rivetTopRight}`} />
+            <div className={`${styles.rivet} ${styles.rivetBottomLeft}`} />
+            <div className={`${styles.rivet} ${styles.rivetBottomRight}`} />
 
             {/* Cabinet Subheader */}
-            <div className="border-b-4 border-slate-700 pb-3 mb-1 flex items-center justify-between">
-              <h2 className="text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel glow-yellow select-none">
-                ⚙️ CONFIGURATION ENGINE
-              </h2>
-              <span className="font-pixel text-[8px] text-[#a0a0c0]">
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}>⚙️ CONFIGURATION ENGINE</h2>
+              <span className={styles.panelStatus}>
                 STATUS: SECURE_CONNECTED
               </span>
             </div>
 
             {/* Admin Page Tabs */}
-            <div className="flex border-b border-slate-700/50 pb-2 gap-4 select-none">
+            <div className={styles.tabsContainer}>
               <button
                 type="button"
                 onClick={() => {
                   playBeep(330, 0.1, "sawtooth");
                   setSettingsTab("ranks");
                 }}
-                className={`font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all ${
+                className={`${styles.tabBtn} ${
                   settingsTab === "ranks"
-                    ? "border-b-2 border-neon-yellow text-neon-yellow glow-yellow"
-                    : "text-slate-500 hover:text-slate-300"
+                    ? styles.tabBtnActive
+                    : styles.tabBtnInactive
                 }`}
               >
                 ⚙️ RANK RULES
@@ -348,10 +332,10 @@ export default function SettingsPage() {
                   playBeep(330, 0.1, "sawtooth");
                   setSettingsTab("users");
                 }}
-                className={`font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all ${
+                className={`${styles.tabBtn} ${
                   settingsTab === "users"
-                    ? "border-b-2 border-neon-yellow text-neon-yellow glow-yellow"
-                    : "text-slate-500 hover:text-slate-300"
+                    ? styles.tabBtnActive
+                    : styles.tabBtnInactive
                 }`}
               >
                 👥 USER MANAGEMENT
@@ -362,10 +346,10 @@ export default function SettingsPage() {
                   playBeep(330, 0.1, "sawtooth");
                   setSettingsTab("seasons");
                 }}
-                className={`font-pixel text-[9px] px-3 py-1 cursor-pointer transition-all ${
+                className={`${styles.tabBtn} ${
                   settingsTab === "seasons"
-                    ? "border-b-2 border-neon-yellow text-neon-yellow glow-yellow"
-                    : "text-slate-500 hover:text-slate-300"
+                    ? styles.tabBtnActive
+                    : styles.tabBtnInactive
                 }`}
               >
                 🏆 SEASON ENGINE
@@ -373,52 +357,48 @@ export default function SettingsPage() {
             </div>
 
             {rankConfig === null ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <span className="font-pixel text-[10px] text-neon-yellow uppercase tracking-widest mb-2 animate-pulse">
+              <div className={styles.panelLoading}>
+                <span className={styles.panelLoadingText}>
                   CONNECTING STORAGE...
                 </span>
               </div>
             ) : settingsTab === "ranks" ? (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <form onSubmit={handleSubmit} className={styles.form}>
                 {/* 1. Tiers Labels */}
-                <div className="flex flex-col gap-2">
-                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide border-b border-slate-800 pb-1">
-                    Rank Tier Titles
-                  </span>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-purple-400 font-pixel text-[7px] uppercase tracking-wide text-center block">
+                <div className={styles.formSection}>
+                  <span className={styles.sectionTitle}>Rank Tier Titles</span>
+                  <div className={styles.inputsGridThree}>
+                    <div className={styles.inputWrapper}>
+                      <label className={styles.inputLabelPurple}>
                         High Tier
                       </label>
                       <input
                         type="text"
                         value={highName}
                         onChange={(e) => setHighName(e.target.value)}
-                        className="bg-slate-950 border border-purple-500/30 text-purple-200 text-sm p-2 focus:outline-none focus:border-purple-500 font-sans text-center rounded-sm"
+                        className={styles.inputPurple}
                         disabled={loading}
                       />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-orange-400 font-pixel text-[7px] uppercase tracking-wide text-center block">
+                    <div className={styles.inputWrapper}>
+                      <label className={styles.inputLabelOrange}>
                         Normal Tier
                       </label>
                       <input
                         type="text"
                         value={normalName}
                         onChange={(e) => setNormalName(e.target.value)}
-                        className="bg-slate-950 border border-orange-500/30 text-orange-200 text-sm p-2 focus:outline-none focus:border-orange-500 font-sans text-center rounded-sm"
+                        className={styles.inputOrange}
                         disabled={loading}
                       />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-green-400 font-pixel text-[7px] uppercase tracking-wide text-center block">
-                        Low Tier
-                      </label>
+                    <div className={styles.inputWrapper}>
+                      <label className={styles.inputLabelGreen}>Low Tier</label>
                       <input
                         type="text"
                         value={lowName}
                         onChange={(e) => setLowName(e.target.value)}
-                        className="bg-slate-950 border border-green-500/30 text-green-200 text-sm p-2 focus:outline-none focus:border-green-500 font-sans text-center rounded-sm"
+                        className={styles.inputGreen}
                         disabled={loading}
                       />
                     </div>
@@ -426,15 +406,15 @@ export default function SettingsPage() {
                 </div>
 
                 {/* 2. Thresholds rules */}
-                <div className="flex flex-col gap-2 mt-2">
-                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide border-b border-slate-800 pb-1">
+                <div className={styles.formSectionEvaluation}>
+                  <span className={styles.sectionTitle}>
                     Evaluation Thresholds
                   </span>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-tech text-xs">
+                  <div className={styles.inputsGridThresholds}>
                     {/* Minimum Matches */}
-                    <div className="flex flex-col gap-1 sm:col-span-3">
-                      <label className="text-slate-400 font-pixel text-[7.5px] uppercase">
+                    <div className={styles.inputWrapperFull}>
+                      <label className={styles.inputLabel}>
                         Min Match Count to Qualify
                       </label>
                       <input
@@ -445,18 +425,18 @@ export default function SettingsPage() {
                             Math.max(1, parseInt(e.target.value) || 1),
                           )
                         }
-                        className="bg-slate-950 border border-slate-800 text-white p-2.5 focus:outline-none focus:border-neon-yellow rounded-sm"
+                        className={styles.inputDefault}
                         disabled={loading}
                       />
-                      <span className="text-[6.5px] text-slate-500 font-sans italic mt-0.5">
-                        Players with total games below this threshold will
-                        default to Normal rank.
+                      <span className={styles.inputHelpText}>
+                        Players with total games below this threshold will be
+                        Unranked.
                       </span>
                     </div>
 
                     {/* High Winrate threshold */}
-                    <div className="flex flex-col gap-1 sm:col-span-1.5">
-                      <label className="text-purple-400 font-pixel text-[7px] uppercase">
+                    <div className={styles.inputWrapperThreshold}>
+                      <label className={styles.inputLabelPurpleLeft}>
                         High Tier Winrate (&gt;= %)
                       </label>
                       <input
@@ -470,17 +450,17 @@ export default function SettingsPage() {
                             ),
                           )
                         }
-                        className="bg-slate-950 border border-purple-500/20 text-white p-2.5 focus:outline-none focus:border-purple-500 rounded-sm"
+                        className={styles.inputPurpleLeft}
                         disabled={loading}
                       />
-                      <span className="text-[6.5px] text-slate-500 font-sans italic mt-0.5">
+                      <span className={styles.inputHelpText}>
                         Qualifies for the high rank.
                       </span>
                     </div>
 
                     {/* Low Winrate threshold */}
-                    <div className="flex flex-col gap-1 sm:col-span-1.5">
-                      <label className="text-green-400 font-pixel text-[7px] uppercase">
+                    <div className={styles.inputWrapperThreshold}>
+                      <label className={styles.inputLabelGreenLeft}>
                         Low Tier Winrate (&lt;= %)
                       </label>
                       <input
@@ -494,10 +474,10 @@ export default function SettingsPage() {
                             ),
                           )
                         }
-                        className="bg-slate-950 border border-green-500/20 text-white p-2.5 focus:outline-none focus:border-green-500 rounded-sm"
+                        className={styles.inputGreenLeft}
                         disabled={loading}
                       />
-                      <span className="text-[6.5px] text-slate-500 font-sans italic mt-0.5">
+                      <span className={styles.inputHelpText}>
                         Relegates to the low rank.
                       </span>
                     </div>
@@ -506,24 +486,24 @@ export default function SettingsPage() {
 
                 {/* Status messages display */}
                 {error && (
-                  <div className="text-[8.5px] font-pixel text-neon-red glow-red uppercase mt-2">
+                  <div className={styles.statusError}>
                     ⚠️ RULES ERROR: {error}
                   </div>
                 )}
 
                 {success && (
-                  <div className="text-[8.5px] font-pixel text-neon-yellow glow-yellow uppercase mt-2">
+                  <div className={styles.statusSuccess}>
                     ✅ Rules Success: {success}
                   </div>
                 )}
 
                 {/* Actions bottom row */}
-                <div className="flex justify-between items-center border-t border-slate-800 pt-4 mt-2 select-none">
+                <div className={styles.formActions}>
                   <button
                     type="button"
                     onClick={handleReset}
                     disabled={loading}
-                    className="font-pixel text-[8.5px] text-slate-400 hover:text-white bg-slate-900 border border-slate-700 px-3 py-2 hover:bg-slate-800 transition-all cursor-pointer uppercase font-bold"
+                    className={styles.resetBtn}
                   >
                     RESET DEFAULT
                   </button>
@@ -531,7 +511,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="font-pixel text-[8.5px] text-black bg-neon-yellow border-2 border-white px-5 py-2 hover:bg-white transition-all cursor-pointer uppercase font-bold disabled:opacity-50"
+                    className={styles.applyBtn}
                   >
                     {loading ? "SAVING RULES..." : "APPLY SETTINGS"}
                   </button>
@@ -539,41 +519,46 @@ export default function SettingsPage() {
               </form>
             ) : settingsTab === "users" ? (
               /* User management UI */
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center select-none">
-                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide">
+              <div className={styles.usersSection}>
+                <div className={styles.usersHeader}>
+                  <span className={styles.usersHeaderTitle}>
                     Registered Cabinet Operators
                   </span>
                   <button
                     onClick={loadUsers}
                     disabled={usersLoading}
-                    className="font-pixel text-[7.5px] border border-slate-600 hover:border-neon-yellow text-slate-400 hover:text-neon-yellow px-2.5 py-1.5 cursor-pointer bg-slate-950 transition-all uppercase font-bold"
+                    className={styles.refreshBtn}
                   >
                     {usersLoading ? "LOADING..." : "🔄 REFRESH USERS"}
                   </button>
                 </div>
 
                 {usersLoading && users.length === 0 ? (
-                  <div className="flex justify-center py-12 select-none">
-                    <span className="font-pixel text-[8.5px] text-neon-yellow uppercase tracking-widest animate-pulse">
+                  <div className={styles.usersLoading}>
+                    <span className={styles.usersLoadingText}>
                       SCANNING RETINAL SIGNATURES...
                     </span>
                   </div>
                 ) : users.length === 0 ? (
-                  <div className="flex justify-center py-12 select-none">
-                    <span className="font-pixel text-[8.5px] text-slate-500 uppercase tracking-widest">
+                  <div className={styles.usersEmpty}>
+                    <span className={styles.usersEmptyText}>
                       NO REGISTERED USERS FOUND.
                     </span>
                   </div>
                 ) : (
-                  <div className="border border-slate-800 overflow-hidden bg-slate-950 rounded-sm">
-                    <table className="w-full text-left font-sans text-xs border-collapse">
+                  <div className={styles.usersTableContainer}>
+                    <table className={styles.usersTable}>
                       <thead>
-                        <tr className="bg-slate-900 border-b border-slate-800 font-pixel text-[7px] text-[#a0a0c0] uppercase select-none">
-                          <th className="p-3">Fighter</th>
-                          <th className="p-3">Email</th>
-                          <th className="p-3">Role</th>
-                          <th className="p-3 text-right">Actions</th>
+                        <tr className={styles.usersTableHeaderRow}>
+                          <th className={styles.tableHeaderCell}>Fighter</th>
+                          <th className={styles.tableHeaderCell}>Email</th>
+                          <th className={styles.tableHeaderCell}>Role</th>
+                          <th
+                            className={styles.tableHeaderCell}
+                            style={{ textAlign: "right" }}
+                          >
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -582,58 +567,56 @@ export default function SettingsPage() {
                           return (
                             <tr
                               key={u.uid}
-                              className="border-b border-slate-900/50 hover:bg-slate-900/20 transition-colors"
+                              className={styles.usersTableBodyRow}
                             >
-                              <td className="p-3 flex items-center gap-2.5">
-                                <div className="w-6 h-6 border border-slate-700 relative overflow-hidden">
+                              <td className={styles.userCell}>
+                                <div className={styles.userAvatarWrapper}>
                                   <img
                                     src={
                                       u.photoURL ||
                                       `https://api.dicebear.com/9.x/pixel-art/svg?seed=${u.uid}`
                                     }
                                     alt={u.name}
-                                    className="w-full h-full object-cover"
+                                    className={styles.userAvatar}
                                   />
                                 </div>
-                                <span className="font-semibold text-slate-200">
+                                <span className={styles.userName}>
                                   {u.name}{" "}
                                   {isSelf && (
-                                    <span className="text-[7px] font-pixel text-neon-yellow ml-1 border border-neon-yellow/30 bg-neon-yellow/5 px-1 py-0.5 select-none">
+                                    <span className={styles.currentUserBadge}>
                                       YOU
                                     </span>
                                   )}
                                 </span>
                               </td>
-                              <td className="p-3 text-slate-400 font-mono text-[10px]">
-                                {u.email}
-                              </td>
-                              <td className="p-3">
+                              <td className={styles.userEmail}>{u.email}</td>
+                              <td className={styles.userRoleWrapper}>
                                 <span
-                                  className={`text-[8.5px] font-pixel px-1.5 py-0.5 select-none ${
+                                  className={
                                     u.role === "admin"
-                                      ? "text-neon-yellow border border-neon-yellow/20 bg-neon-yellow/5"
-                                      : "text-neon-blue border border-neon-blue/20 bg-neon-blue/5"
-                                  }`}
+                                      ? styles.roleBadgeAdmin
+                                      : styles.roleBadgeUser
+                                  }
                                 >
                                   {u.role.toUpperCase()}
                                 </span>
                               </td>
-                              <td className="p-3 text-right">
+                              <td className={styles.userActionsCell}>
                                 {!isSelf ? (
                                   <button
                                     onClick={() => handleToggleUserRole(u)}
-                                    className={`font-pixel text-[7px] px-2.5 py-1.5 cursor-pointer transition-all duration-150 uppercase border font-bold ${
+                                    className={
                                       u.role === "admin"
-                                        ? "border-neon-red/30 hover:border-neon-red text-neon-red/70 hover:text-neon-red hover:bg-neon-red/5"
-                                        : "border-neon-yellow/30 hover:border-neon-yellow text-neon-yellow/70 hover:text-neon-yellow hover:bg-neon-yellow/5"
-                                    }`}
+                                        ? styles.demoteBtn
+                                        : styles.promoteBtn
+                                    }
                                   >
                                     {u.role === "admin"
                                       ? "✕ DEMOTE"
                                       : "👑 PROMOTE"}
                                   </button>
                                 ) : (
-                                  <span className="text-[7.5px] font-pixel text-slate-600 uppercase select-none italic mr-1">
+                                  <span className={styles.lockedText}>
                                     SYS_LOCKED
                                   </span>
                                 )}
@@ -648,34 +631,32 @@ export default function SettingsPage() {
               </div>
             ) : (
               /* Season Engine UI */
-              <div className="flex flex-col gap-5">
-                <div className="flex flex-col gap-2">
-                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase tracking-wide border-b border-slate-800 pb-1">
-                    🏆 Season Engine
-                  </span>
+              <div className={styles.seasonEngineContainer}>
+                <div className={styles.formSection}>
+                  <span className={styles.sectionTitle}>🏆 Season Engine</span>
 
-                  <div className="bg-slate-950 p-4 border border-slate-800 rounded-sm flex flex-col gap-4 font-pixel text-xs text-slate-300">
-                    <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-                      <span className="text-[9px] text-[#a0a0c0]">
+                  <div className={styles.seasonEngineDetails}>
+                    <div className={styles.seasonEngineDetailRow}>
+                      <span className={styles.seasonEngineDetailLabel}>
                         ACTIVE SEASON ID
                       </span>
-                      <span className="text-neon-yellow glow-yellow text-sm font-bold">
+                      <span className={styles.seasonEngineActiveVal}>
                         SEASON {seasonConfig?.activeSeasonId || 1}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-                      <span className="text-[9px] text-[#a0a0c0]">
+                    <div className={styles.seasonEngineDetailRow}>
+                      <span className={styles.seasonEngineDetailLabel}>
                         START DATE
                       </span>
-                      <span className="text-slate-400 text-[10px] font-sans">
+                      <span className={styles.seasonEngineDateVal}>
                         {seasonConfig?.seasonStart
                           ? new Date(seasonConfig.seasonStart).toLocaleString()
                           : "UNKNOWN"}
                       </span>
                     </div>
 
-                    <p className="font-sans text-[10px] text-slate-400 leading-relaxed uppercase mt-2">
+                    <p className={styles.seasonEngineDesc}>
                       Ending the season finalizes fighter ratings, freezes the
                       leaderboard records, determines the Top 3 and Last Place
                       performers, and archives them. Current season wins,
@@ -685,15 +666,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center border-t border-slate-800 pt-6 mt-4">
+                <div className={styles.seasonEngineActionWrapper}>
                   <button
                     type="button"
                     onClick={handleEndSeason}
                     disabled={seasonEnding || !seasonConfig}
-                    className="font-pixel text-[10px] text-white bg-neon-red hover:bg-red-600 border-2 border-white px-6 py-3 cursor-pointer transition-all duration-200 glow-red select-none uppercase font-bold disabled:opacity-50"
-                    style={{
-                      boxShadow: "0 0 15px rgba(239, 68, 68, 0.4)",
-                    }}
+                    className={styles.endSeasonBtn}
                   >
                     {seasonEnding
                       ? "ROLLING OVER SEASON..."
@@ -706,7 +684,7 @@ export default function SettingsPage() {
         </main>
 
         {/* Footer banner */}
-        <footer className="border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none">
+        <footer className={styles.footer}>
           <span>
             HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`
           </span>

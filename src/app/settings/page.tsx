@@ -439,8 +439,7 @@ export default function SettingsPage() {
                         disabled={loading}
                       />
                       <span className={styles.inputHelpText}>
-                        Players with total games below this threshold will
-                        default to Normal rank.
+                        Players with total games below this threshold will be Unranked.
                       </span>
                     </div>
 

@@ -51,17 +51,27 @@ export default function PodiumStandings({
         {firstPlace && (
           <div className={styles.podiumHeader}>
             <div className={styles.crownEmoji}>👑</div>
-            <div className={styles.firstPlaceAvatarWrapper}>
-              <Image
-                src={
-                  firstPlace.avatar ||
-                  `https://api.dicebear.com/9.x/pixel-art/svg?seed=${firstPlace.name.toLowerCase()}`
-                }
-                alt={firstPlace.name}
-                fill
-                className={styles.avatarImage}
-                unoptimized
-              />
+            <div className="relative">
+              {/* Fire Effect */}
+              <div className={styles.fireContainer}>
+                <div className={styles.flame}></div>
+                <div className={styles.flame}></div>
+                <div className={styles.flame}></div>
+                <div className={styles.flame}></div>
+                <div className={styles.flame}></div>
+              </div>
+              <div className={styles.firstPlaceAvatarWrapper}>
+                <Image
+                  src={
+                    firstPlace.avatar ||
+                    `https://api.dicebear.com/9.x/pixel-art/svg?seed=${firstPlace.name.toLowerCase()}`
+                  }
+                  alt={firstPlace.name}
+                  fill
+                  className={styles.avatarImage}
+                  unoptimized
+                />
+              </div>
             </div>
             <span className={styles.championName}>{firstPlace.name}</span>
             <span className={styles.championSub}>
@@ -126,7 +136,7 @@ export default function PodiumStandings({
           </div>
         )}
         <div className={styles.spoonPedestal}>
-          <span className={styles.spoonEmoji}>🥄</span>
+          <span className={styles.spoonEmoji}>💩</span>
           <span className={styles.spoonPedestalLabel}>WOODEN SPOON</span>
         </div>
       </div>

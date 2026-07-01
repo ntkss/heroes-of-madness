@@ -227,14 +227,19 @@ export default function HistoryDashboard({
   const podiumData = React.useMemo(() => {
     const mapToSeasonPlayerStat = (stat: typeof playerStats[0]): SeasonPlayerStat => {
       const isSeason = statsSubTab === "season";
+      const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
+      const currentRank = stat.dbPlayer
+        ? stat.dbPlayer.current_rank
+        : (totalMatches >= rankConfig.minMatches ? "Normal" : "Unranked");
+
       return {
         id: stat.dbPlayer?.id || stat.name.toLowerCase(),
         name: stat.name,
         alias: stat.dbPlayer?.alias || "",
         avatar: stat.dbPlayer?.avatar || "",
         winrate: Math.round(isSeason ? stat.winrate : stat.allTimeWinrate),
-        total_match_played: isSeason ? stat.matches : stat.allTimeMatches,
-        current_rank: stat.dbPlayer?.current_rank || "Normal",
+        total_match_played: totalMatches,
+        current_rank: currentRank,
       };
     };
 

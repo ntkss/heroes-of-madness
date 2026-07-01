@@ -405,8 +405,8 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           avatar: avatarVal,
           imageURL: avatarVal,
           winrate: 0,
-          current_rank: "Legend",
-          highest_rank: "Legend",
+          current_rank: "Unranked",
+          highest_rank: "Unranked",
           total_match_played: 0,
           role: "ALL-ROUNDER",
           createdAt: Date.now(),
@@ -472,8 +472,8 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
         avatar: avatarVal,
         imageURL: avatarVal,
         winrate: 0,
-        current_rank: "Legend",
-        highest_rank: "Legend",
+        current_rank: "Unranked",
+        highest_rank: "Unranked",
         total_match_played: 0,
         role: "ALL-ROUNDER",
         createdAt: Date.now(),
@@ -899,8 +899,8 @@ export async function endCurrentSeason(): Promise<boolean> {
         batch.update(docSnap.ref, {
           total_match_played: 0,
           winrate: 0,
-          current_rank: config.tiers.normal,
-          highest_rank: config.tiers.normal,
+          current_rank: "Unranked",
+          highest_rank: "Unranked",
         });
       });
       await batch.commit();
@@ -913,8 +913,8 @@ export async function endCurrentSeason(): Promise<boolean> {
             ...p,
             total_match_played: 0,
             winrate: 0,
-            current_rank: config.tiers.normal,
-            highest_rank: config.tiers.normal,
+            current_rank: "Unranked",
+            highest_rank: "Unranked",
           }));
           localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(resetList));
         }
@@ -943,6 +943,7 @@ export async function recalculateRanks(
     const matches = await fetchAllMatches(); // Fetch ALL matches to compute correct stats
 
     const getTierPriority = (rankName: string, cfg: RankConfig): number => {
+      if (rankName === "Unranked") return 0;
       if (rankName === cfg.tiers.high) return 3;
       if (rankName === cfg.tiers.normal) return 2;
       if (rankName === cfg.tiers.low) return 1;
@@ -1026,12 +1027,14 @@ export async function recalculateRanks(
         const winrate =
           totalMatches > 0 ? Math.round((sStats.wins / totalMatches) * 100) : 0;
 
-        let newRank = config.tiers.normal;
+        let newRank = "Unranked";
         if (totalMatches >= config.minMatches) {
           if (winrate >= config.highTierWinrate) {
             newRank = config.tiers.high;
           } else if (winrate <= config.lowTierWinrate) {
             newRank = config.tiers.low;
+          } else {
+            newRank = config.tiers.normal;
           }
         }
 

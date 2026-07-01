@@ -175,10 +175,7 @@ export default function SeasonsPage() {
                 SEASON IN SETTINGS, ITS ARCHIVES WILL RECORD HERE!
               </p>
 
-              <button
-                onClick={handleSeedMockData}
-                className={styles.seedBtn}
-              >
+              <button onClick={handleSeedMockData} className={styles.seedBtn}>
                 🛠️ SEED SEASONS MOCK DATA
               </button>
 
@@ -298,13 +295,8 @@ export default function SeasonsPage() {
                               b.total_match_played - a.total_match_played,
                           )
                           .map((stat, idx) => (
-                            <tr
-                              key={stat.id}
-                              className={styles.tableBodyRow}
-                            >
-                              <td className={styles.rankCell}>
-                                #{idx + 1}
-                              </td>
+                            <tr key={stat.id} className={styles.tableBodyRow}>
+                              <td className={styles.rankCell}>#{idx + 1}</td>
                               <td className={styles.fighterCell}>
                                 <div className={styles.miniAvatarWrapper}>
                                   <Image
@@ -357,10 +349,7 @@ export default function SeasonsPage() {
                   ) : (
                     <div className={styles.battleLogList}>
                       {seasonMatches.map((match) => (
-                        <div
-                          key={match.id}
-                          className={styles.battleLogCard}
-                        >
+                        <div key={match.id} className={styles.battleLogCard}>
                           <div className={styles.battleLogDetails}>
                             <div className={styles.battleLogMetaRow}>
                               <span className={styles.battleLogRecordTag}>

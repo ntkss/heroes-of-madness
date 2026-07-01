@@ -246,12 +246,8 @@ export default function SettingsPage() {
       <CRTOverlay>
         <div className={styles.unauthorizedContainer}>
           <div className={styles.violationCard}>
-            <div className={styles.violationIcon}>
-              ⚠️
-            </div>
-            <h1 className={styles.violationTitle}>
-              SECURITY VIOLATION
-            </h1>
+            <div className={styles.violationIcon}>⚠️</div>
+            <h1 className={styles.violationTitle}>SECURITY VIOLATION</h1>
             <div className={styles.violationDivider} />
             <p className={styles.violationDesc}>
               UNAUTHORIZED ACCESS DETECTED. THIS TERMINAL IS RESTRICTED TO
@@ -308,9 +304,7 @@ export default function SettingsPage() {
 
             {/* Cabinet Subheader */}
             <div className={styles.panelHeader}>
-              <h2 className={styles.panelTitle}>
-                ⚙️ CONFIGURATION ENGINE
-              </h2>
+              <h2 className={styles.panelTitle}>⚙️ CONFIGURATION ENGINE</h2>
               <span className={styles.panelStatus}>
                 STATUS: SECURE_CONNECTED
               </span>
@@ -372,9 +366,7 @@ export default function SettingsPage() {
               <form onSubmit={handleSubmit} className={styles.form}>
                 {/* 1. Tiers Labels */}
                 <div className={styles.formSection}>
-                  <span className={styles.sectionTitle}>
-                    Rank Tier Titles
-                  </span>
+                  <span className={styles.sectionTitle}>Rank Tier Titles</span>
                   <div className={styles.inputsGridThree}>
                     <div className={styles.inputWrapper}>
                       <label className={styles.inputLabelPurple}>
@@ -401,9 +393,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className={styles.inputWrapper}>
-                      <label className={styles.inputLabelGreen}>
-                        Low Tier
-                      </label>
+                      <label className={styles.inputLabelGreen}>Low Tier</label>
                       <input
                         type="text"
                         value={lowName}
@@ -439,7 +429,8 @@ export default function SettingsPage() {
                         disabled={loading}
                       />
                       <span className={styles.inputHelpText}>
-                        Players with total games below this threshold will be Unranked.
+                        Players with total games below this threshold will be
+                        Unranked.
                       </span>
                     </div>
 
@@ -562,7 +553,12 @@ export default function SettingsPage() {
                           <th className={styles.tableHeaderCell}>Fighter</th>
                           <th className={styles.tableHeaderCell}>Email</th>
                           <th className={styles.tableHeaderCell}>Role</th>
-                          <th className={styles.tableHeaderCell} style={{ textAlign: "right" }}>Actions</th>
+                          <th
+                            className={styles.tableHeaderCell}
+                            style={{ textAlign: "right" }}
+                          >
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -593,9 +589,7 @@ export default function SettingsPage() {
                                   )}
                                 </span>
                               </td>
-                              <td className={styles.userEmail}>
-                                {u.email}
-                              </td>
+                              <td className={styles.userEmail}>{u.email}</td>
                               <td className={styles.userRoleWrapper}>
                                 <span
                                   className={
@@ -639,9 +633,7 @@ export default function SettingsPage() {
               /* Season Engine UI */
               <div className={styles.seasonEngineContainer}>
                 <div className={styles.formSection}>
-                  <span className={styles.sectionTitle}>
-                    🏆 Season Engine
-                  </span>
+                  <span className={styles.sectionTitle}>🏆 Season Engine</span>
 
                   <div className={styles.seasonEngineDetails}>
                     <div className={styles.seasonEngineDetailRow}>

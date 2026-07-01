@@ -2,7 +2,12 @@
 
 import React from "react";
 import Image from "next/image";
-import { Match, DbPlayer, RankConfig, SeasonPlayerStat } from "@/utils/firebase";
+import {
+  Match,
+  DbPlayer,
+  RankConfig,
+  SeasonPlayerStat,
+} from "@/utils/firebase";
 import styles from "./styles.module.css";
 import { playBeep, playWin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
@@ -225,12 +230,16 @@ export default function HistoryDashboard({
 
   // Dynamically compute podium positions for the winrates tab based on statsSubTab selection
   const podiumData = React.useMemo(() => {
-    const mapToSeasonPlayerStat = (stat: typeof playerStats[0]): SeasonPlayerStat => {
+    const mapToSeasonPlayerStat = (
+      stat: (typeof playerStats)[0],
+    ): SeasonPlayerStat => {
       const isSeason = statsSubTab === "season";
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
       const currentRank = stat.dbPlayer
         ? stat.dbPlayer.current_rank
-        : (totalMatches >= rankConfig.minMatches ? "Normal" : "Unranked");
+        : totalMatches >= rankConfig.minMatches
+          ? "Normal"
+          : "Unranked";
 
       return {
         id: stat.dbPlayer?.id || stat.name.toLowerCase(),
@@ -245,11 +254,16 @@ export default function HistoryDashboard({
 
     return {
       firstPlace: playerStats[0] ? mapToSeasonPlayerStat(playerStats[0]) : null,
-      secondPlace: playerStats[1] ? mapToSeasonPlayerStat(playerStats[1]) : null,
+      secondPlace: playerStats[1]
+        ? mapToSeasonPlayerStat(playerStats[1])
+        : null,
       thirdPlace: playerStats[2] ? mapToSeasonPlayerStat(playerStats[2]) : null,
-      lastPlace: playerStats.length > 3 ? mapToSeasonPlayerStat(playerStats[playerStats.length - 1]) : null,
+      lastPlace:
+        playerStats.length > 3
+          ? mapToSeasonPlayerStat(playerStats[playerStats.length - 1])
+          : null,
     };
-  }, [playerStats, statsSubTab]);
+  }, [playerStats, statsSubTab, rankConfig]);
 
   const renderRankInfo = (dbPlayer: DbPlayer | undefined) => {
     if (!dbPlayer) return null;

@@ -166,7 +166,7 @@
 }
 
 .pendingBtnGrid {
-  @apply flex gap-2 w-full font-pixel mt-1;
+  @apply flex flex-col gap-2 w-full font-pixel mt-1;
 }
 
 .pendingBtnBlue {
@@ -337,4 +337,12 @@
     0 0 8px var(--color-neon-red),
     0 0 15px rgba(255, 42, 95, 0.4);
   box-shadow: 0 0 10px rgba(255, 42, 95, 0.2);
+}
+
+.editWinnerBtn {
+  @apply font-pixel text-[8px] text-slate-500 hover:text-neon-yellow border border-transparent hover:border-neon-yellow/30 bg-transparent px-2.5 py-1 mt-2.5 transition-all cursor-pointer uppercase flex items-center justify-center gap-1 select-none rounded-sm;
+}
+
+.cancelBtn {
+  @apply flex-grow font-pixel text-[8px] text-slate-500 bg-slate-900/50 border border-slate-700/50 py-1.5 px-2 hover:bg-slate-700 hover:text-white transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 rounded-sm;
 }

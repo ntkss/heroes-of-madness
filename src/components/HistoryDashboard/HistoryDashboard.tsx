@@ -37,6 +37,9 @@ export default function HistoryDashboard({
   const [statsSubTab, setStatsSubTab] = React.useState<"season" | "alltime">(
     "season",
   );
+  const [editingMatchId, setEditingMatchId] = React.useState<string | null>(
+    null,
+  );
   const handlePurgeAllClick = () => {
     playBeep(220, 0.1, "sawtooth");
     const confirmDelete = window.confirm(
@@ -65,8 +68,15 @@ export default function HistoryDashboard({
   };
 
   const handleWinnerChange = (id: string, winner: "teamA" | "teamB") => {
-    playWin();
-    onUpdateWinner(id, winner);
+    const teamName = winner === "teamA" ? "BLUE TEAM" : "RED TEAM";
+    const confirmSet = window.confirm(
+      `🏆 CONFIRM OUTCOME: Are you sure you want to declare ${teamName} as the winner of this match?`,
+    );
+    if (confirmSet) {
+      playWin();
+      onUpdateWinner(id, winner);
+      setEditingMatchId(null);
+    }
   };
 
   const getPlayerDisplayName = (idOrName: string) => {
@@ -405,7 +415,7 @@ export default function HistoryDashboard({
                 {/* Action column */}
                 <div className={styles.matchActionsCol}>
                   {/* Winner tag */}
-                  {match.winner ? (
+                  {match.winner && editingMatchId !== match.id ? (
                     <div className={styles.winnerWrapper}>
                       <span className={styles.winnerLabel}>WINNER</span>
                       <span
@@ -417,30 +427,57 @@ export default function HistoryDashboard({
                       >
                         {match.winner === "teamA" ? "BLUE TEAM" : "RED TEAM"}
                       </span>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            playBeep(200, 0.1, "sine");
+                            setEditingMatchId(match.id);
+                          }}
+                          className={styles.editWinnerBtn}
+                          title="Edit match result"
+                        >
+                          ✎ EDIT RESULT
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className={styles.pendingWrapper}>
                       <span className={styles.pendingLabel}>
-                        PENDING OUTCOME
+                        {editingMatchId === match.id
+                          ? "EDIT OUTCOME"
+                          : "PENDING OUTCOME"}
                       </span>
                       {isAdmin && (
                         <div className={styles.pendingBtnGrid}>
-                          <button
-                            onClick={() =>
-                              handleWinnerChange(match.id, "teamA")
-                            }
-                            className={styles.pendingBtnBlue}
-                          >
-                            👑 BLUE WIN
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleWinnerChange(match.id, "teamB")
-                            }
-                            className={styles.pendingBtnRed}
-                          >
-                            👑 RED WIN
-                          </button>
+                          <div className="flex gap-2 w-full">
+                            <button
+                              onClick={() =>
+                                handleWinnerChange(match.id, "teamA")
+                              }
+                              className={styles.pendingBtnBlue}
+                            >
+                              👑 BLUE WIN
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleWinnerChange(match.id, "teamB")
+                              }
+                              className={styles.pendingBtnRed}
+                            >
+                              👑 RED WIN
+                            </button>
+                          </div>
+                          {editingMatchId === match.id && (
+                            <button
+                              onClick={() => {
+                                playBeep(150, 0.1, "sine");
+                                setEditingMatchId(null);
+                              }}
+                              className={styles.cancelBtn}
+                            >
+                              ✕ CANCEL
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

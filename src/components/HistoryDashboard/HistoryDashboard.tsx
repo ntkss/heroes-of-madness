@@ -70,7 +70,7 @@ export default function HistoryDashboard({
   const handleWinnerChange = (id: string, winner: "teamA" | "teamB") => {
     const teamName = winner === "teamA" ? "BLUE TEAM" : "RED TEAM";
     const confirmSet = window.confirm(
-      `🏆 CONFIRM OUTCOME: Are you sure you want to declare ${teamName} as the winner of this match?`
+      `🏆 CONFIRM OUTCOME: Are you sure you want to declare ${teamName} as the winner of this match?`,
     );
     if (confirmSet) {
       playWin();
@@ -443,19 +443,25 @@ export default function HistoryDashboard({
                   ) : (
                     <div className={styles.pendingWrapper}>
                       <span className={styles.pendingLabel}>
-                        {editingMatchId === match.id ? "EDIT OUTCOME" : "PENDING OUTCOME"}
+                        {editingMatchId === match.id
+                          ? "EDIT OUTCOME"
+                          : "PENDING OUTCOME"}
                       </span>
                       {isAdmin && (
                         <div className={styles.pendingBtnGrid}>
                           <div className="flex gap-2 w-full">
                             <button
-                              onClick={() => handleWinnerChange(match.id, "teamA")}
+                              onClick={() =>
+                                handleWinnerChange(match.id, "teamA")
+                              }
                               className={styles.pendingBtnBlue}
                             >
                               👑 BLUE WIN
                             </button>
                             <button
-                              onClick={() => handleWinnerChange(match.id, "teamB")}
+                              onClick={() =>
+                                handleWinnerChange(match.id, "teamB")
+                              }
                               className={styles.pendingBtnRed}
                             >
                               👑 RED WIN

@@ -68,8 +68,15 @@ export default function HistoryDashboard({
   };
 
   const handleWinnerChange = (id: string, winner: "teamA" | "teamB") => {
-    playWin();
-    onUpdateWinner(id, winner);
+    const teamName = winner === "teamA" ? "BLUE TEAM" : "RED TEAM";
+    const confirmSet = window.confirm(
+      `🏆 CONFIRM OUTCOME: Are you sure you want to declare ${teamName} as the winner of this match?`
+    );
+    if (confirmSet) {
+      playWin();
+      onUpdateWinner(id, winner);
+      setEditingMatchId(null);
+    }
   };
 
   const getPlayerDisplayName = (idOrName: string) => {
@@ -442,19 +449,13 @@ export default function HistoryDashboard({
                         <div className={styles.pendingBtnGrid}>
                           <div className="flex gap-2 w-full">
                             <button
-                              onClick={() => {
-                                handleWinnerChange(match.id, "teamA");
-                                setEditingMatchId(null);
-                              }}
+                              onClick={() => handleWinnerChange(match.id, "teamA")}
                               className={styles.pendingBtnBlue}
                             >
                               👑 BLUE WIN
                             </button>
                             <button
-                              onClick={() => {
-                                handleWinnerChange(match.id, "teamB");
-                                setEditingMatchId(null);
-                              }}
+                              onClick={() => handleWinnerChange(match.id, "teamB")}
                               className={styles.pendingBtnRed}
                             >
                               👑 RED WIN

@@ -291,10 +291,20 @@ export default function SeasonsPage() {
                       <tbody>
                         {[...selectedSeason.fighterStats]
                           .sort((a, b) => {
-                            const aWins = Math.round((a.winrate / 100) * a.total_match_played);
-                            const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-                            const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-                            const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+                            const aWins = Math.round(
+                              (a.winrate / 100) * a.total_match_played,
+                            );
+                            const bWins = Math.round(
+                              (b.winrate / 100) * b.total_match_played,
+                            );
+                            const aWeighted = getWeightedWinrate(
+                              aWins,
+                              a.total_match_played,
+                            );
+                            const bWeighted = getWeightedWinrate(
+                              bWins,
+                              b.total_match_played,
+                            );
 
                             if (bWeighted !== aWeighted) {
                               return bWeighted - aWeighted;

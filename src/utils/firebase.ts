@@ -1649,7 +1649,11 @@ export async function clearMockSeasons(): Promise<boolean> {
  * Formula: (Wins + C * prior) / (Total Matches + C) * 100
  * where C is a smoothing constant (default: 5) and prior is the baseline win rate (default: 50% / 0.5).
  */
-export function getWeightedWinrate(wins: number, totalMatches: number, C: number = 5): number {
+export function getWeightedWinrate(
+  wins: number,
+  totalMatches: number,
+  C: number = 5,
+): number {
   if (totalMatches === 0) return 0;
   const prior = 0.5;
   return ((wins + C * prior) / (totalMatches + C)) * 100;

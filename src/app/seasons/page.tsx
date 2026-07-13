@@ -14,6 +14,7 @@ import {
   fetchAllMatches,
   seedMockSeasons,
   clearMockSeasons,
+  getWeightedWinrate,
 } from "@/utils/firebase";
 import { playBeep, playWin } from "@/utils/audio";
 
@@ -288,12 +289,28 @@ export default function SeasonsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedSeason.fighterStats
-                          .sort(
-                            (a, b) =>
-                              b.winrate - a.winrate ||
-                              b.total_match_played - a.total_match_played,
-                          )
+                        {[...selectedSeason.fighterStats]
+                          .sort((a, b) => {
+                            const aWins = Math.round(
+                              (a.winrate / 100) * a.total_match_played,
+                            );
+                            const bWins = Math.round(
+                              (b.winrate / 100) * b.total_match_played,
+                            );
+                            const aWeighted = getWeightedWinrate(
+                              aWins,
+                              a.total_match_played,
+                            );
+                            const bWeighted = getWeightedWinrate(
+                              bWins,
+                              b.total_match_played,
+                            );
+
+                            if (bWeighted !== aWeighted) {
+                              return bWeighted - aWeighted;
+                            }
+                            return b.total_match_played - a.total_match_played;
+                          })
                           .map((stat, idx) => (
                             <tr key={stat.id} className={styles.tableBodyRow}>
                               <td className={styles.rankCell}>#{idx + 1}</td>

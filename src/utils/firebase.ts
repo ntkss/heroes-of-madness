@@ -792,8 +792,13 @@ export async function endCurrentSeason(): Promise<boolean> {
     const qualifiedPlayers = players
       .filter((p) => p.total_match_played >= config.minMatches)
       .sort((a, b) => {
-        if (b.winrate !== a.winrate) {
-          return b.winrate - a.winrate;
+        const aWins = Math.round((a.winrate / 100) * a.total_match_played);
+        const bWins = Math.round((b.winrate / 100) * b.total_match_played);
+        const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
+        const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+
+        if (bWeighted !== aWeighted) {
+          return bWeighted - aWeighted;
         }
         return b.total_match_played - a.total_match_played;
       });
@@ -816,8 +821,13 @@ export async function endCurrentSeason(): Promise<boolean> {
     let lastPlace: SeasonPlayerStat | null = null;
     if (activePlayers.length > 0) {
       const sortedWorst = [...activePlayers].sort((a, b) => {
-        if (a.winrate !== b.winrate) {
-          return a.winrate - b.winrate;
+        const aWins = Math.round((a.winrate / 100) * a.total_match_played);
+        const bWins = Math.round((b.winrate / 100) * b.total_match_played);
+        const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
+        const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+
+        if (aWeighted !== bWeighted) {
+          return aWeighted - bWeighted;
         }
         return a.total_match_played - b.total_match_played;
       });
@@ -1631,4 +1641,20 @@ export async function clearMockSeasons(): Promise<boolean> {
     console.error("Error clearing mock seasons:", e);
     return false;
   }
+}
+
+/**
+ * Calculates a weighted win rate using Laplace smoothing (Bayesian average)
+ * to prevent small sample sizes from dominating the rankings.
+ * Formula: (Wins + C * prior) / (Total Matches + C) * 100
+ * where C is a smoothing constant (default: 5) and prior is the baseline win rate (default: 50% / 0.5).
+ */
+export function getWeightedWinrate(
+  wins: number,
+  totalMatches: number,
+  C: number = 5,
+): number {
+  if (totalMatches === 0) return 0;
+  const prior = 0.5;
+  return ((wins + C * prior) / (totalMatches + C)) * 100;
 }

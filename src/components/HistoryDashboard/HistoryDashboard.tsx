@@ -7,6 +7,7 @@ import {
   DbPlayer,
   RankConfig,
   SeasonPlayerStat,
+  getWeightedWinrate,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
 import { playBeep, playWin } from "@/utils/audio";
@@ -221,18 +222,22 @@ export default function HistoryDashboard({
       };
     });
 
-    // Sort based on the selected sub-tab
+    // Sort based on the selected sub-tab using fair weighted win rate (consider sample size)
     return statsList.sort((a, b) => {
-      const aWR = statsSubTab === "season" ? a.winrate : a.allTimeWinrate;
-      const bWR = statsSubTab === "season" ? b.winrate : b.allTimeWinrate;
-      const aM = statsSubTab === "season" ? a.matches : a.allTimeMatches;
-      const bM = statsSubTab === "season" ? b.matches : b.allTimeMatches;
+      const isSeason = statsSubTab === "season";
+      const aWins = isSeason ? a.wins : a.allTimeWins;
+      const bWins = isSeason ? b.wins : b.allTimeWins;
+      const aMatches = isSeason ? a.matches : a.allTimeMatches;
+      const bMatches = isSeason ? b.matches : b.allTimeMatches;
 
-      if (bWR !== aWR) {
-        return bWR - aWR;
+      const aWeighted = getWeightedWinrate(aWins, aMatches);
+      const bWeighted = getWeightedWinrate(bWins, bMatches);
+
+      if (bWeighted !== aWeighted) {
+        return bWeighted - aWeighted;
       }
-      if (bM !== aM) {
-        return bM - aM;
+      if (bMatches !== aMatches) {
+        return bMatches - aMatches;
       }
       return a.name.localeCompare(b.name);
     });

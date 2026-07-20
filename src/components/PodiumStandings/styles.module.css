@@ -1,7 +1,7 @@
 @reference "../../app/globals.css";
 
 .podiumGrid {
-  @apply grid grid-cols-1 md:grid-cols-4 gap-4 items-end select-none;
+  @apply grid grid-cols-4 gap-4 items-end select-none;
 }
 
 .podiumColumn {
@@ -203,7 +203,7 @@
 }
 
 .spoonPedestalLabel {
-  @apply font-pixel text-neon-red text-[6px] tracking-widest mt-1 uppercase;
+  @apply font-pixel text-sm! text-neon-red text-[6px] tracking-widest mt-1 uppercase;
   text-shadow:
     0 0 10px var(--color-neon-red),
     0 0 20px rgba(255, 42, 95, 0.4);

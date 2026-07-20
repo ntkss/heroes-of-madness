@@ -1,16 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Match,
   DbPlayer,
   RankConfig,
   SeasonPlayerStat,
   getWeightedWinrate,
+  MatchComment,
+  fetchComments,
+  saveComment,
+  incrementPlayerFeedback,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
-import { playBeep, playWin } from "@/utils/audio";
+import { playBeep, playWin, playCoin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
 
 interface HistoryDashboardProps {
@@ -21,6 +26,326 @@ interface HistoryDashboardProps {
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
   isAdmin?: boolean;
+}
+
+interface MatchCardProps {
+  match: Match;
+  availablePlayers: DbPlayer[];
+  isAdmin: boolean;
+  getPlayerDisplayName: (idOrName: string) => string;
+  getPlayerKey: (idOrName: string) => string;
+  formatDate: (timestamp: number) => string;
+  editingMatchId: string | null;
+  setEditingMatchId: (id: string | null) => void;
+  handleWinnerChange: (id: string, winner: "teamA" | "teamB") => void;
+  handleDelete: (id: string) => void;
+}
+
+function MatchCardComponent({
+  match,
+  availablePlayers,
+  isAdmin,
+  getPlayerDisplayName,
+  getPlayerKey,
+  formatDate,
+  editingMatchId,
+  setEditingMatchId,
+  handleWinnerChange,
+  handleDelete,
+}: MatchCardProps) {
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<MatchComment[]>([]);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [prevFeedback, setPrevFeedback] = useState(match.feedback);
+  const [localFeedback, setLocalFeedback] = useState<{
+    [playerKey: string]: { likes: number; dislikes: number };
+  }>(match.feedback || {});
+
+  // Sync localFeedback if match updates
+  if (match.feedback !== prevFeedback) {
+    setPrevFeedback(match.feedback);
+    setLocalFeedback(match.feedback || {});
+  }
+
+  useEffect(() => {
+    if (showComments) {
+      const loadComments = async () => {
+        setLoadingComments(true);
+        const list = await fetchComments(match.id);
+        setComments(list);
+        setLoadingComments(false);
+      };
+      loadComments();
+    }
+  }, [showComments, match.id]);
+
+  const handleFeedbackClick = async (
+    playerKey: string,
+    type: "likes" | "dislikes",
+  ) => {
+    playBeep(440, 0.05, "sine", 0.1);
+    const success = await incrementPlayerFeedback(match.id, playerKey, type);
+    if (success) {
+      setLocalFeedback((prev) => {
+        const playerFeedback = prev[playerKey] || { likes: 0, dislikes: 0 };
+        return {
+          ...prev,
+          [playerKey]: {
+            ...playerFeedback,
+            [type]: playerFeedback[type] + 1,
+          },
+        };
+      });
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+    playCoin();
+    const saved = await saveComment(match.id, newCommentText.trim());
+    setComments((prev) => [...prev, saved]);
+    setNewCommentText("");
+  };
+
+  const renderRoster = (team: string[], lanes: string[] | undefined) => {
+    const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
+    return (
+      <div className={styles.rosterList}>
+        {team.map((playerNameOrId, idx) => {
+          const pKey = getPlayerKey(playerNameOrId);
+          const name = getPlayerDisplayName(playerNameOrId);
+          const dbPlayer = availablePlayers.find((p) => p.id === pKey);
+          const lane = lanes ? lanes[idx] : defaultLanes[idx];
+          const feedback = localFeedback[pKey] || { likes: 0, dislikes: 0 };
+
+          return (
+            <div key={idx} className={styles.rosterRow}>
+              <div className={styles.rosterPlayerInfo}>
+                <div className={styles.miniAvatar}>
+                  <img
+                    src={
+                      dbPlayer?.avatar ||
+                      `https://api.dicebear.com/9.x/pixel-art/svg?seed=${pKey}&backgroundColor=1a1a2e`
+                    }
+                    alt={name}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <div className={styles.playerMeta}>
+                  <span className={styles.playerName}>{name}</span>
+                  <span className={styles.playerLaneBadge}>{lane}</span>
+                </div>
+              </div>
+
+              <div className={styles.playerActions}>
+                <Link
+                  href={`/players/${pKey}`}
+                  onClick={() => playBeep(300, 0.1, "sine")}
+                  className={styles.profileLinkBtn}
+                >
+                  PROFILE 👤
+                </Link>
+
+                <div className={styles.feedbackContainer}>
+                  <button
+                    onClick={() => handleFeedbackClick(pKey, "likes")}
+                    className={styles.likeBtn}
+                    title="Like performance"
+                  >
+                    👍{" "}
+                    <span className={styles.feedbackCount}>
+                      {feedback.likes}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleFeedbackClick(pKey, "dislikes")}
+                    className={styles.dislikeBtn}
+                    title="Dislike performance"
+                  >
+                    👎{" "}
+                    <span className={styles.feedbackCount}>
+                      {feedback.dislikes}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className={styles.matchCardContainer}>
+      <div className={styles.matchCard}>
+        {/* Match Details */}
+        <div className={styles.matchDetails}>
+          {/* Header labels */}
+          <div className={styles.matchDetailsHeader}>
+            <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
+            <span className={styles.matchDetailsHeaderDate}>
+              {formatDate(match.createdAt)}
+            </span>
+          </div>
+
+          {/* Team roster grid */}
+          <div className={styles.rosterGrid}>
+            {/* Blue */}
+            <div className={styles.rosterCol}>
+              <span className={styles.rosterLabelBlue}>BLUE TEAM</span>
+              {renderRoster(match.teamA, match.teamALanes)}
+            </div>
+            {/* Red */}
+            <div className={styles.rosterCol}>
+              <span className={styles.rosterLabelRed}>RED TEAM</span>
+              {renderRoster(match.teamB, match.teamBLanes)}
+            </div>
+          </div>
+        </div>
+
+        {/* Action column */}
+        <div className={styles.matchActionsCol}>
+          {/* Winner tag */}
+          {match.winner && editingMatchId !== match.id ? (
+            <div className={styles.winnerWrapper}>
+              <span className={styles.winnerLabel}>WINNER</span>
+              <span
+                className={`${styles.winnerTag} ${
+                  match.winner === "teamA"
+                    ? styles.winnerTagBlue
+                    : styles.winnerTagRed
+                }`}
+              >
+                {match.winner === "teamA" ? "BLUE TEAM" : "RED TEAM"}
+              </span>
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    playBeep(200, 0.1, "sine");
+                    setEditingMatchId(match.id);
+                  }}
+                  className={styles.editWinnerBtn}
+                  title="Edit match result"
+                >
+                  ✎ EDIT RESULT
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className={styles.pendingWrapper}>
+              <span className={styles.pendingLabel}>
+                {editingMatchId === match.id
+                  ? "EDIT OUTCOME"
+                  : "PENDING OUTCOME"}
+              </span>
+              {isAdmin && (
+                <div className={styles.pendingBtnGrid}>
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => handleWinnerChange(match.id, "teamA")}
+                      className={styles.pendingBtnBlue}
+                    >
+                      👑 BLUE WIN
+                    </button>
+                    <button
+                      onClick={() => handleWinnerChange(match.id, "teamB")}
+                      className={styles.pendingBtnRed}
+                    >
+                      👑 RED WIN
+                    </button>
+                  </div>
+                  {editingMatchId === match.id && (
+                    <button
+                      onClick={() => {
+                        playBeep(150, 0.1, "sine");
+                        setEditingMatchId(null);
+                      }}
+                      className={styles.cancelBtn}
+                    >
+                      ✕ CANCEL
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Toggle comments button */}
+          <button
+            onClick={() => {
+              playBeep(330, 0.1, "sine");
+              setShowComments(!showComments);
+            }}
+            className={styles.commentsToggleBtn}
+          >
+            💬 COMMENTS {comments.length > 0 ? `(${comments.length})` : ""}
+          </button>
+
+          {/* Delete button */}
+          {isAdmin && (
+            <button
+              onClick={() => handleDelete(match.id)}
+              className={styles.deleteBtn}
+              title="Purge record"
+            >
+              <svg className={styles.deleteIcon} viewBox="0 0 24 24">
+                <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9m2 2h2v1h-2V5m-3 3h2v10H8V8m4 0h2v10h-2V8m4 0h2v10h-2V8z" />
+              </svg>
+              PURGE
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Expanded Comments Section */}
+      {showComments && (
+        <div className={styles.commentsSection}>
+          <h4 className={styles.commentsTitle}>ANONYMOUS COMMENTS</h4>
+
+          <div className={styles.commentsList}>
+            {loadingComments ? (
+              <div className={styles.loadingComments}>
+                LOADING TRANSMISSIONS...
+              </div>
+            ) : comments.length === 0 ? (
+              <div className={styles.noComments}>
+                NO TRANSMISSIONS YET. POST A COMMENT BELOW!
+              </div>
+            ) : (
+              comments.map((comment) => (
+                <div key={comment.id} className={styles.commentItem}>
+                  <div className={styles.commentHeader}>
+                    <span className={styles.anonymousUser}>GUEST_USER</span>
+                    <span className={styles.commentTime}>
+                      {formatDate(comment.createdAt)}
+                    </span>
+                  </div>
+                  <p className={styles.commentText}>{comment.text}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <form onSubmit={handleAddComment} className={styles.commentForm}>
+            <input
+              type="text"
+              placeholder="ENTER ANONYMOUS RESPONSE..."
+              value={newCommentText}
+              onChange={(e) => setNewCommentText(e.target.value)}
+              className={styles.commentInput}
+              maxLength={200}
+            />
+            <button type="submit" className={styles.commentSubmitBtn}>
+              SEND 💬
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function HistoryDashboard({
@@ -40,6 +365,17 @@ export default function HistoryDashboard({
   );
   const [editingMatchId, setEditingMatchId] = React.useState<string | null>(
     null,
+  );
+  const getPlayerKey = React.useCallback(
+    (nameOrId: string) => {
+      const found = availablePlayers.find(
+        (p) =>
+          p.id === nameOrId.toLowerCase() ||
+          p.name.toLowerCase() === nameOrId.toLowerCase(),
+      );
+      return found ? found.id : nameOrId.toLowerCase();
+    },
+    [availablePlayers],
   );
   const handlePurgeAllClick = () => {
     playBeep(220, 0.1, "sawtooth");
@@ -383,126 +719,19 @@ export default function HistoryDashboard({
         ) : (
           <div className={styles.historyList}>
             {matches.map((match) => (
-              <div key={match.id} className={styles.matchCard}>
-                {/* Match Details */}
-                <div className={styles.matchDetails}>
-                  {/* Header labels */}
-                  <div className={styles.matchDetailsHeader}>
-                    <span className={styles.matchDetailsHeaderTag}>
-                      MATCH LOG
-                    </span>
-                    <span className={styles.matchDetailsHeaderDate}>
-                      {formatDate(match.createdAt)}
-                    </span>
-                  </div>
-
-                  {/* Team roster names grid */}
-                  <div className={styles.rosterGrid}>
-                    {/* Blue */}
-                    <div className={styles.rosterCol}>
-                      <span className={styles.rosterLabelBlue}>BLUE TEAM</span>
-                      <span className={styles.rosterText}>
-                        {match.teamA.map(getPlayerDisplayName).join(" • ") ||
-                          "EMPTY"}
-                      </span>
-                    </div>
-                    {/* Red */}
-                    <div className={styles.rosterCol}>
-                      <span className={styles.rosterLabelRed}>RED TEAM</span>
-                      <span className={styles.rosterText}>
-                        {match.teamB.map(getPlayerDisplayName).join(" • ") ||
-                          "EMPTY"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action column */}
-                <div className={styles.matchActionsCol}>
-                  {/* Winner tag */}
-                  {match.winner && editingMatchId !== match.id ? (
-                    <div className={styles.winnerWrapper}>
-                      <span className={styles.winnerLabel}>WINNER</span>
-                      <span
-                        className={`${styles.winnerTag} ${
-                          match.winner === "teamA"
-                            ? styles.winnerTagBlue
-                            : styles.winnerTagRed
-                        }`}
-                      >
-                        {match.winner === "teamA" ? "BLUE TEAM" : "RED TEAM"}
-                      </span>
-                      {isAdmin && (
-                        <button
-                          onClick={() => {
-                            playBeep(200, 0.1, "sine");
-                            setEditingMatchId(match.id);
-                          }}
-                          className={styles.editWinnerBtn}
-                          title="Edit match result"
-                        >
-                          ✎ EDIT RESULT
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className={styles.pendingWrapper}>
-                      <span className={styles.pendingLabel}>
-                        {editingMatchId === match.id
-                          ? "EDIT OUTCOME"
-                          : "PENDING OUTCOME"}
-                      </span>
-                      {isAdmin && (
-                        <div className={styles.pendingBtnGrid}>
-                          <div className="flex gap-2 w-full">
-                            <button
-                              onClick={() =>
-                                handleWinnerChange(match.id, "teamA")
-                              }
-                              className={styles.pendingBtnBlue}
-                            >
-                              👑 BLUE WIN
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleWinnerChange(match.id, "teamB")
-                              }
-                              className={styles.pendingBtnRed}
-                            >
-                              👑 RED WIN
-                            </button>
-                          </div>
-                          {editingMatchId === match.id && (
-                            <button
-                              onClick={() => {
-                                playBeep(150, 0.1, "sine");
-                                setEditingMatchId(null);
-                              }}
-                              className={styles.cancelBtn}
-                            >
-                              ✕ CANCEL
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Delete button */}
-                  {isAdmin && (
-                    <button
-                      onClick={() => handleDelete(match.id)}
-                      className={styles.deleteBtn}
-                      title="Purge record"
-                    >
-                      <svg className={styles.deleteIcon} viewBox="0 0 24 24">
-                        <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9m2 2h2v1h-2V5m-3 3h2v10H8V8m4 0h2v10h-2V8m4 0h2v10h-2V8z" />
-                      </svg>
-                      PURGE
-                    </button>
-                  )}
-                </div>
-              </div>
+              <MatchCardComponent
+                key={match.id}
+                match={match}
+                availablePlayers={availablePlayers}
+                isAdmin={isAdmin}
+                getPlayerDisplayName={getPlayerDisplayName}
+                getPlayerKey={getPlayerKey}
+                formatDate={formatDate}
+                editingMatchId={editingMatchId}
+                setEditingMatchId={setEditingMatchId}
+                handleWinnerChange={handleWinnerChange}
+                handleDelete={handleDelete}
+              />
             ))}
           </div>
         ))}
@@ -619,15 +848,24 @@ export default function HistoryDashboard({
                         />
                       </div>
                       <div className={styles.fighterTextContainer}>
-                        <span
-                          className={`${styles.fighterName} ${
-                            /[\u0E00-\u0E7F]/.test(stats.name)
-                              ? styles.fighterNameThai
-                              : styles.fighterNameEnglish
-                          }`}
-                        >
-                          {stats.name}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`${styles.fighterName} ${
+                              /[\u0E00-\u0E7F]/.test(stats.name)
+                                ? styles.fighterNameThai
+                                : styles.fighterNameEnglish
+                            }`}
+                          >
+                            {stats.name}
+                          </span>
+                          <Link
+                            href={`/players/${stats.dbPlayer?.id || stats.name.toLowerCase()}`}
+                            onClick={() => playBeep(300, 0.1, "sine")}
+                            className="font-pixel text-[7.5px] border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue px-2 py-0.5 hover:bg-neon-blue/10 transition-all rounded-none uppercase select-none cursor-pointer"
+                          >
+                            PROFILE 👤
+                          </Link>
+                        </div>
                         {renderRankInfo(stats.dbPlayer)}
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { SeasonPlayerStat } from "@/utils/firebase";
 import styles from "./styles.module.css";
 
@@ -34,7 +35,12 @@ export default function PodiumStandings({
                 unoptimized
               />
             </div>
-            <span className={styles.podiumName}>{secondPlace.name}</span>
+            <Link
+              href={`/players/${secondPlace.id}`}
+              className={`${styles.podiumName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
+            >
+              {secondPlace.name}
+            </Link>
             <span className={styles.podiumSub}>
               {secondPlace.winrate}% WR ({secondPlace.total_match_played}M)
             </span>
@@ -73,7 +79,12 @@ export default function PodiumStandings({
                 />
               </div>
             </div>
-            <span className={styles.championName}>{firstPlace.name}</span>
+            <Link
+              href={`/players/${firstPlace.id}`}
+              className={`${styles.championName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
+            >
+              {firstPlace.name}
+            </Link>
             <span className={styles.championSub}>
               {firstPlace.winrate}% WR ({firstPlace.total_match_played}M)
             </span>
@@ -101,7 +112,12 @@ export default function PodiumStandings({
                 unoptimized
               />
             </div>
-            <span className={styles.podiumName}>{thirdPlace.name}</span>
+            <Link
+              href={`/players/${thirdPlace.id}`}
+              className={`${styles.podiumName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
+            >
+              {thirdPlace.name}
+            </Link>
             <span className={styles.podiumSub}>
               {thirdPlace.winrate}% WR ({thirdPlace.total_match_played}M)
             </span>
@@ -129,7 +145,12 @@ export default function PodiumStandings({
                 unoptimized
               />
             </div>
-            <span className={styles.spoonName}>{lastPlace.name}</span>
+            <Link
+              href={`/players/${lastPlace.id}`}
+              className={`${styles.spoonName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
+            >
+              {lastPlace.name}
+            </Link>
             <span className={styles.spoonSub}>
               {lastPlace.winrate}% WR ({lastPlace.total_match_played}M)
             </span>

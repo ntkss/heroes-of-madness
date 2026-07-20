@@ -26,6 +26,14 @@ import {
   User,
 } from "firebase/auth";
 
+export interface PlayerFeedback {
+  likes: number;
+  dislikes: number;
+  userVotes?: {
+    [userId: string]: "likes" | "dislikes";
+  };
+}
+
 export interface Match {
   id: string;
   createdAt: number;
@@ -36,10 +44,7 @@ export interface Match {
   winner: "teamA" | "teamB" | null;
   seasonId?: number;
   feedback?: {
-    [playerKey: string]: {
-      likes: number;
-      dislikes: number;
-    };
+    [playerKey: string]: PlayerFeedback;
   };
 }
 
@@ -48,6 +53,9 @@ export interface MatchComment {
   matchId: string;
   text: string;
   createdAt: number;
+  userId?: string;
+  authorName?: string;
+  authorAvatar?: string;
 }
 
 export interface DbPlayer {
@@ -1689,7 +1697,121 @@ export function getWeightedWinrate(
   return ((wins + C * prior) / (totalMatches + C)) * 100;
 }
 
-// Increment player feedback (Likes/Dislikes) in a match
+// Toggle player feedback (Likes/Dislikes) in a match for an authenticated user
+export async function togglePlayerFeedback(
+  matchId: string,
+  playerKey: string,
+  targetType: "likes" | "dislikes",
+  userId: string,
+): Promise<PlayerFeedback | null> {
+  const playerKeyLower = playerKey.toLowerCase();
+
+  const computeNewFeedback = (currentFb?: PlayerFeedback): PlayerFeedback => {
+    const likes = currentFb?.likes || 0;
+    const dislikes = currentFb?.dislikes || 0;
+    const userVotes: { [uid: string]: "likes" | "dislikes" } =
+      currentFb?.userVotes ? { ...currentFb.userVotes } : {};
+    const currentVote = userVotes[userId] || null;
+
+    let newLikes = likes;
+    let newDislikes = dislikes;
+    let newVote: "likes" | "dislikes" | null = targetType;
+
+    if (currentVote === targetType) {
+      newVote = null;
+    }
+
+    if (currentVote === "likes") newLikes = Math.max(0, newLikes - 1);
+    if (currentVote === "dislikes") newDislikes = Math.max(0, newDislikes - 1);
+
+    if (newVote === "likes") newLikes += 1;
+    if (newVote === "dislikes") newDislikes += 1;
+
+    if (newVote) {
+      userVotes[userId] = newVote;
+    } else {
+      delete userVotes[userId];
+    }
+
+    return {
+      likes: newLikes,
+      dislikes: newDislikes,
+      userVotes,
+    };
+  };
+
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const { runTransaction, doc } = await import("firebase/firestore");
+      const docRef = doc(db, "matches", matchId);
+
+      const result = await runTransaction(db, async (transaction) => {
+        const sfDoc = await transaction.get(docRef);
+        if (!sfDoc.exists()) {
+          throw new Error("Match doc does not exist");
+        }
+
+        const matchData = sfDoc.data() as Match;
+        const currentFb = matchData.feedback?.[playerKeyLower];
+        const newFb = computeNewFeedback(currentFb);
+
+        transaction.update(docRef, {
+          [`feedback.${playerKeyLower}`]: newFb,
+        });
+
+        return newFb;
+      });
+
+      // Sync local storage
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (stored) {
+          try {
+            const list = JSON.parse(stored) as Match[];
+            const idx = list.findIndex((m) => m.id === matchId);
+            if (idx !== -1) {
+              if (!list[idx].feedback) list[idx].feedback = {};
+              list[idx].feedback![playerKeyLower] = result;
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+            }
+          } catch (e) {
+            console.error("Error syncing local storage:", e);
+          }
+        }
+      }
+
+      return result;
+    } catch (e) {
+      console.error("Error updating player feedback on Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as Match[];
+        const idx = list.findIndex((m) => m.id === matchId);
+        if (idx !== -1) {
+          const match = list[idx];
+          if (!match.feedback) match.feedback = {};
+          const currentFb = match.feedback[playerKeyLower];
+          const newFb = computeNewFeedback(currentFb);
+          match.feedback[playerKeyLower] = newFb;
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          return newFb;
+        }
+      } catch (e) {
+        console.error("Error updating player feedback in LocalStorage:", e);
+      }
+    }
+  }
+
+  return null;
+}
+
+// Increment player feedback (Likes/Dislikes) in a match (Legacy / Fallback)
 export async function incrementPlayerFeedback(
   matchId: string,
   playerKey: string,
@@ -1745,16 +1867,30 @@ export async function fetchComments(matchId: string): Promise<MatchComment[]> {
       const list: MatchComment[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        const rawCreatedAt = data.createdAt;
+        const createdAt =
+          typeof rawCreatedAt === "number"
+            ? rawCreatedAt
+            : rawCreatedAt?.toMillis
+              ? rawCreatedAt.toMillis()
+              : Date.now();
+
         list.push({
           id: docSnap.id,
           matchId,
           text: data.text || "",
-          createdAt: data.createdAt || Date.now(),
+          createdAt,
+          userId: data.userId,
+          authorName: data.authorName,
+          authorAvatar: data.authorAvatar,
         });
       });
       return list;
     } catch (e) {
-      console.error(`Error fetching comments for match ${matchId}:`, e);
+      console.error(
+        `[Firestore Error] Error fetching comments for match ${matchId}:`,
+        e,
+      );
     }
   }
 
@@ -1769,14 +1905,20 @@ export async function fetchComments(matchId: string): Promise<MatchComment[]> {
   }
 }
 
-// Save an anonymous comment for a match
+// Save an anonymous or authenticated comment for a match
 export async function saveComment(
   matchId: string,
   text: string,
+  authorInfo?: { userId?: string; authorName?: string; authorAvatar?: string },
 ): Promise<MatchComment> {
   const newComment = {
     text,
     createdAt: Date.now(),
+    ...(authorInfo?.userId ? { userId: authorInfo.userId } : {}),
+    ...(authorInfo?.authorName ? { authorName: authorInfo.authorName } : {}),
+    ...(authorInfo?.authorAvatar
+      ? { authorAvatar: authorInfo.authorAvatar }
+      : {}),
   };
 
   if (db && !matchId.startsWith("local_")) {
@@ -1789,7 +1931,10 @@ export async function saveComment(
         matchId,
       };
     } catch (e) {
-      console.error(`Error saving comment for match ${matchId}:`, e);
+      console.error(
+        `[Firestore Error] Error saving comment for match ${matchId}:`,
+        e,
+      );
     }
   }
 

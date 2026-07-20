@@ -12,11 +12,13 @@ import {
   MatchComment,
   fetchComments,
   saveComment,
-  incrementPlayerFeedback,
+  togglePlayerFeedback,
+  PlayerFeedback,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
 import { playBeep, playWin, playCoin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
+import { useAuth } from "@/utils/AuthContext";
 
 interface HistoryDashboardProps {
   matches: Match[];
@@ -53,13 +55,14 @@ function MatchCardComponent({
   handleWinnerChange,
   handleDelete,
 }: MatchCardProps) {
+  const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<MatchComment[]>([]);
   const [newCommentText, setNewCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [prevFeedback, setPrevFeedback] = useState(match.feedback);
   const [localFeedback, setLocalFeedback] = useState<{
-    [playerKey: string]: { likes: number; dislikes: number };
+    [playerKey: string]: PlayerFeedback;
   }>(match.feedback || {});
 
   // Sync localFeedback if match updates
@@ -84,17 +87,27 @@ function MatchCardComponent({
     playerKey: string,
     type: "likes" | "dislikes",
   ) => {
+    if (!user) {
+      playBeep(200, 0.1, "sine");
+      alert("Please log in to rate player performance.");
+      return;
+    }
+
     playBeep(440, 0.05, "sine", 0.1);
-    const success = await incrementPlayerFeedback(match.id, playerKey, type);
-    if (success) {
+    const updatedFb = await togglePlayerFeedback(
+      match.id,
+      playerKey,
+      type,
+      user.uid,
+    );
+
+    if (updatedFb) {
       setLocalFeedback((prev) => {
-        const playerFeedback = prev[playerKey] || { likes: 0, dislikes: 0 };
+        const pKeyLower = playerKey.toLowerCase();
         return {
           ...prev,
-          [playerKey]: {
-            ...playerFeedback,
-            [type]: playerFeedback[type] + 1,
-          },
+          [playerKey]: updatedFb,
+          [pKeyLower]: updatedFb,
         };
       });
     }
@@ -104,7 +117,20 @@ function MatchCardComponent({
     e.preventDefault();
     if (!newCommentText.trim()) return;
     playCoin();
-    const saved = await saveComment(match.id, newCommentText.trim());
+    const authorInfo = user
+      ? {
+          userId: user.uid,
+          authorName:
+            user.displayName || user.email?.split("@")[0] || "GUEST_USER",
+          authorAvatar: user.photoURL || undefined,
+        }
+      : undefined;
+
+    const saved = await saveComment(
+      match.id,
+      newCommentText.trim(),
+      authorInfo,
+    );
     setComments((prev) => [...prev, saved]);
     setNewCommentText("");
   };
@@ -118,7 +144,12 @@ function MatchCardComponent({
           const name = getPlayerDisplayName(playerNameOrId);
           const dbPlayer = availablePlayers.find((p) => p.id === pKey);
           const lane = lanes ? lanes[idx] : defaultLanes[idx];
-          const feedback = localFeedback[pKey] || { likes: 0, dislikes: 0 };
+          const feedback = localFeedback[pKey] ||
+            localFeedback[pKey.toLowerCase()] || { likes: 0, dislikes: 0 };
+          const userVote =
+            user && feedback.userVotes ? feedback.userVotes[user.uid] : null;
+          const isLiked = userVote === "likes";
+          const isDisliked = userVote === "dislikes";
 
           return (
             <div key={idx} className={styles.rosterRow}>
@@ -151,8 +182,14 @@ function MatchCardComponent({
                 <div className={styles.feedbackContainer}>
                   <button
                     onClick={() => handleFeedbackClick(pKey, "likes")}
-                    className={styles.likeBtn}
-                    title="Like performance"
+                    className={`${styles.likeBtn} ${isLiked ? styles.activeLikeBtn : ""} ${!user ? styles.disabledFeedbackBtn : ""}`}
+                    title={
+                      !user
+                        ? "Log in to rate performance"
+                        : isLiked
+                          ? "Click to remove like"
+                          : "Like performance"
+                    }
                   >
                     👍{" "}
                     <span className={styles.feedbackCount}>
@@ -161,8 +198,14 @@ function MatchCardComponent({
                   </button>
                   <button
                     onClick={() => handleFeedbackClick(pKey, "dislikes")}
-                    className={styles.dislikeBtn}
-                    title="Dislike performance"
+                    className={`${styles.dislikeBtn} ${isDisliked ? styles.activeDislikeBtn : ""} ${!user ? styles.disabledFeedbackBtn : ""}`}
+                    title={
+                      !user
+                        ? "Log in to rate performance"
+                        : isDisliked
+                          ? "Click to remove dislike"
+                          : "Dislike performance"
+                    }
                   >
                     👎{" "}
                     <span className={styles.feedbackCount}>
@@ -318,7 +361,9 @@ function MatchCardComponent({
               comments.map((comment) => (
                 <div key={comment.id} className={styles.commentItem}>
                   <div className={styles.commentHeader}>
-                    <span className={styles.anonymousUser}>GUEST_USER</span>
+                    <span className={styles.anonymousUser}>
+                      {comment.authorName || "GUEST_USER"}
+                    </span>
                     <span className={styles.commentTime}>
                       {formatDate(comment.createdAt)}
                     </span>

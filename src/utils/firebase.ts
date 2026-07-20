@@ -39,7 +39,7 @@ export interface Match {
     [playerKey: string]: {
       likes: number;
       dislikes: number;
-    }
+    };
   };
 }
 
@@ -1693,7 +1693,7 @@ export function getWeightedWinrate(
 export async function incrementPlayerFeedback(
   matchId: string,
   playerKey: string,
-  type: "likes" | "dislikes"
+  type: "likes" | "dislikes",
 ): Promise<boolean> {
   const playerKeyLower = playerKey.toLowerCase();
 
@@ -1702,7 +1702,7 @@ export async function incrementPlayerFeedback(
       const docRef = doc(db, "matches", matchId);
       const { increment } = await import("firebase/firestore");
       await updateDoc(docRef, {
-        [`feedback.${playerKeyLower}.${type}`]: increment(1)
+        [`feedback.${playerKeyLower}.${type}`]: increment(1),
       });
       return true;
     } catch (e) {
@@ -1772,7 +1772,7 @@ export async function fetchComments(matchId: string): Promise<MatchComment[]> {
 // Save an anonymous comment for a match
 export async function saveComment(
   matchId: string,
-  text: string
+  text: string,
 ): Promise<MatchComment> {
   const newComment = {
     text,

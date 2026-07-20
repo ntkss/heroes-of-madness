@@ -80,18 +80,21 @@ function MatchCardComponent({
     }
   }, [showComments, match.id]);
 
-  const handleFeedbackClick = async (playerKey: string, type: "likes" | "dislikes") => {
+  const handleFeedbackClick = async (
+    playerKey: string,
+    type: "likes" | "dislikes",
+  ) => {
     playBeep(440, 0.05, "sine", 0.1);
     const success = await incrementPlayerFeedback(match.id, playerKey, type);
     if (success) {
-      setLocalFeedback(prev => {
+      setLocalFeedback((prev) => {
         const playerFeedback = prev[playerKey] || { likes: 0, dislikes: 0 };
         return {
           ...prev,
           [playerKey]: {
             ...playerFeedback,
-            [type]: playerFeedback[type] + 1
-          }
+            [type]: playerFeedback[type] + 1,
+          },
         };
       });
     }
@@ -102,7 +105,7 @@ function MatchCardComponent({
     if (!newCommentText.trim()) return;
     playCoin();
     const saved = await saveComment(match.id, newCommentText.trim());
-    setComments(prev => [...prev, saved]);
+    setComments((prev) => [...prev, saved]);
     setNewCommentText("");
   };
 
@@ -151,14 +154,20 @@ function MatchCardComponent({
                     className={styles.likeBtn}
                     title="Like performance"
                   >
-                    👍 <span className={styles.feedbackCount}>{feedback.likes}</span>
+                    👍{" "}
+                    <span className={styles.feedbackCount}>
+                      {feedback.likes}
+                    </span>
                   </button>
                   <button
                     onClick={() => handleFeedbackClick(pKey, "dislikes")}
                     className={styles.dislikeBtn}
                     title="Dislike performance"
                   >
-                    👎 <span className={styles.feedbackCount}>{feedback.dislikes}</span>
+                    👎{" "}
+                    <span className={styles.feedbackCount}>
+                      {feedback.dislikes}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -177,7 +186,9 @@ function MatchCardComponent({
           {/* Header labels */}
           <div className={styles.matchDetailsHeader}>
             <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
-            <span className={styles.matchDetailsHeaderDate}>{formatDate(match.createdAt)}</span>
+            <span className={styles.matchDetailsHeaderDate}>
+              {formatDate(match.createdAt)}
+            </span>
           </div>
 
           {/* Team roster grid */}
@@ -203,7 +214,9 @@ function MatchCardComponent({
               <span className={styles.winnerLabel}>WINNER</span>
               <span
                 className={`${styles.winnerTag} ${
-                  match.winner === "teamA" ? styles.winnerTagBlue : styles.winnerTagRed
+                  match.winner === "teamA"
+                    ? styles.winnerTagBlue
+                    : styles.winnerTagRed
                 }`}
               >
                 {match.winner === "teamA" ? "BLUE TEAM" : "RED TEAM"}
@@ -224,7 +237,9 @@ function MatchCardComponent({
           ) : (
             <div className={styles.pendingWrapper}>
               <span className={styles.pendingLabel}>
-                {editingMatchId === match.id ? "EDIT OUTCOME" : "PENDING OUTCOME"}
+                {editingMatchId === match.id
+                  ? "EDIT OUTCOME"
+                  : "PENDING OUTCOME"}
               </span>
               {isAdmin && (
                 <div className={styles.pendingBtnGrid}>
@@ -289,18 +304,24 @@ function MatchCardComponent({
       {showComments && (
         <div className={styles.commentsSection}>
           <h4 className={styles.commentsTitle}>ANONYMOUS COMMENTS</h4>
-          
+
           <div className={styles.commentsList}>
             {loadingComments ? (
-              <div className={styles.loadingComments}>LOADING TRANSMISSIONS...</div>
+              <div className={styles.loadingComments}>
+                LOADING TRANSMISSIONS...
+              </div>
             ) : comments.length === 0 ? (
-              <div className={styles.noComments}>NO TRANSMISSIONS YET. POST A COMMENT BELOW!</div>
+              <div className={styles.noComments}>
+                NO TRANSMISSIONS YET. POST A COMMENT BELOW!
+              </div>
             ) : (
               comments.map((comment) => (
                 <div key={comment.id} className={styles.commentItem}>
                   <div className={styles.commentHeader}>
                     <span className={styles.anonymousUser}>GUEST_USER</span>
-                    <span className={styles.commentTime}>{formatDate(comment.createdAt)}</span>
+                    <span className={styles.commentTime}>
+                      {formatDate(comment.createdAt)}
+                    </span>
                   </div>
                   <p className={styles.commentText}>{comment.text}</p>
                 </div>
@@ -345,14 +366,17 @@ export default function HistoryDashboard({
   const [editingMatchId, setEditingMatchId] = React.useState<string | null>(
     null,
   );
-  const getPlayerKey = React.useCallback((nameOrId: string) => {
-    const found = availablePlayers.find(
-      (p) =>
-        p.id === nameOrId.toLowerCase() ||
-        p.name.toLowerCase() === nameOrId.toLowerCase(),
-    );
-    return found ? found.id : nameOrId.toLowerCase();
-  }, [availablePlayers]);
+  const getPlayerKey = React.useCallback(
+    (nameOrId: string) => {
+      const found = availablePlayers.find(
+        (p) =>
+          p.id === nameOrId.toLowerCase() ||
+          p.name.toLowerCase() === nameOrId.toLowerCase(),
+      );
+      return found ? found.id : nameOrId.toLowerCase();
+    },
+    [availablePlayers],
+  );
   const handlePurgeAllClick = () => {
     playBeep(220, 0.1, "sawtooth");
     const confirmDelete = window.confirm(

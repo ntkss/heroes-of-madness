@@ -420,7 +420,8 @@
   @apply flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-1;
 }
 
-.loadingComments, .noComments {
+.loadingComments,
+.noComments {
   @apply font-pixel text-[7.5px] text-slate-600 uppercase py-2;
 }
 

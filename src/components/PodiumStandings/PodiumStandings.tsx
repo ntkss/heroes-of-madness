@@ -137,7 +137,7 @@ export default function PodiumStandings({
         )}
         <div className={styles.spoonPedestal}>
           <span className={styles.spoonEmoji}>💩</span>
-          <span className={styles.spoonPedestalLabel}>WOODEN SPOON</span>
+          <span className={styles.spoonPedestalLabel}>ที่โหล่</span>
         </div>
       </div>
     </div>

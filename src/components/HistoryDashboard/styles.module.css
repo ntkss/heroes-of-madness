@@ -84,8 +84,12 @@
   @apply flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2;
 }
 
+.matchCardContainer {
+  @apply bg-black/60 border-2 border-slate-800 flex flex-col hover:border-slate-500 transition-colors relative;
+}
+
 .matchCard {
-  @apply bg-black/60 border-2 border-slate-800 p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hover:border-slate-500 transition-colors relative;
+  @apply p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 relative;
 }
 
 .matchDetails {
@@ -345,4 +349,109 @@
 
 .cancelBtn {
   @apply flex-grow font-pixel text-[8px] text-slate-500 bg-slate-900/50 border border-slate-700/50 py-1.5 px-2 hover:bg-slate-700 hover:text-white transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 rounded-sm;
+}
+
+.rosterList {
+  @apply flex flex-col gap-2 w-full mt-2;
+}
+
+.rosterRow {
+  @apply flex items-center justify-between bg-slate-950/40 hover:bg-slate-900/40 p-2 border border-slate-800/60 transition-all gap-3 rounded-none;
+}
+
+.rosterPlayerInfo {
+  @apply flex items-center gap-2 min-w-0;
+}
+
+.miniAvatar {
+  @apply w-6 h-6 relative overflow-hidden rounded-none border border-slate-700 bg-slate-800 shrink-0;
+}
+
+.playerMeta {
+  @apply flex flex-col min-w-0 leading-tight;
+}
+
+.playerName {
+  @apply text-[11px] text-slate-100 font-mono font-bold truncate;
+}
+
+.playerLaneBadge {
+  @apply text-[8px] text-neon-yellow font-pixel uppercase tracking-widest mt-0.5;
+}
+
+.playerActions {
+  @apply flex items-center gap-2 shrink-0;
+}
+
+.profileLinkBtn {
+  @apply text-[8px] font-pixel border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue hover:bg-neon-blue/10 px-2 py-1 transition-all rounded-none uppercase cursor-pointer select-none leading-none;
+}
+
+.feedbackContainer {
+  @apply flex items-center gap-1;
+}
+
+.likeBtn {
+  @apply text-[9px] hover:scale-110 active:scale-95 transition-transform bg-slate-900/80 border border-slate-800 hover:border-slate-600 px-2 py-1 rounded-none flex items-center gap-1 text-emerald-400 font-mono cursor-pointer;
+}
+
+.dislikeBtn {
+  @apply text-[9px] hover:scale-110 active:scale-95 transition-transform bg-slate-900/80 border border-slate-800 hover:border-slate-600 px-2 py-1 rounded-none flex items-center gap-1 text-rose-500 font-mono cursor-pointer;
+}
+
+.feedbackCount {
+  @apply font-mono text-[9px] font-bold text-slate-300;
+}
+
+.commentsToggleBtn {
+  @apply font-pixel text-[8px] border border-slate-800 bg-black/40 hover:bg-slate-800 hover:text-neon-yellow hover:border-neon-yellow/30 px-3 py-1.5 mt-2 transition-all cursor-pointer uppercase flex items-center justify-center gap-1 select-none rounded-none w-full text-slate-400 font-bold;
+}
+
+.commentsSection {
+  @apply border-t border-slate-800 bg-slate-950/60 p-4 flex flex-col gap-3 transition-all duration-200;
+}
+
+.commentsTitle {
+  @apply font-pixel text-[8.5px] text-neon-yellow tracking-widest uppercase;
+  text-shadow: 0 0 6px rgba(255, 210, 0, 0.3);
+}
+
+.commentsList {
+  @apply flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-1;
+}
+
+.loadingComments, .noComments {
+  @apply font-pixel text-[7.5px] text-slate-600 uppercase py-2;
+}
+
+.commentItem {
+  @apply border border-slate-900 bg-slate-900/20 p-2 rounded-none flex flex-col gap-1;
+}
+
+.commentHeader {
+  @apply flex items-center justify-between text-[8px];
+}
+
+.anonymousUser {
+  @apply font-pixel text-neon-blue uppercase;
+}
+
+.commentTime {
+  @apply font-mono text-slate-500;
+}
+
+.commentText {
+  @apply text-xs text-slate-300 font-mono break-words leading-relaxed;
+}
+
+.commentForm {
+  @apply flex items-center gap-2 mt-1;
+}
+
+.commentInput {
+  @apply flex-grow bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-blue font-mono rounded-none;
+}
+
+.commentSubmitBtn {
+  @apply font-pixel text-[8.5px] border border-neon-blue bg-neon-blue/10 hover:bg-neon-blue hover:text-black px-3.5 py-2.5 cursor-pointer transition-all duration-150 uppercase shrink-0 rounded-none font-bold;
 }

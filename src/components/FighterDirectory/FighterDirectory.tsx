@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { DbPlayer } from "@/utils/firebase";
 import { playBeep, playCoin } from "@/utils/audio";
 import EditFighterForm from "@/components/EditFighterForm";

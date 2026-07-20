@@ -27,7 +27,14 @@ service cloud.firestore {
     match /matches/{matchId} {
       allow read: if true;
       allow create: if true;
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback']));
+      allow delete: if isAdmin();
+
+      // Comments
+      match /comments/{commentId} {
+        allow read, create: if true;
+        allow update, delete: if isAdmin();
+      }
     }
 
     // Seasons

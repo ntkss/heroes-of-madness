@@ -31,8 +31,23 @@ export interface Match {
   createdAt: number;
   teamA: string[];
   teamB: string[];
+  teamALanes?: string[];
+  teamBLanes?: string[];
   winner: "teamA" | "teamB" | null;
   seasonId?: number;
+  feedback?: {
+    [playerKey: string]: {
+      likes: number;
+      dislikes: number;
+    }
+  };
+}
+
+export interface MatchComment {
+  id: string;
+  matchId: string;
+  text: string;
+  createdAt: number;
 }
 
 export interface DbPlayer {
@@ -173,8 +188,11 @@ export async function fetchMatches(): Promise<Match[]> {
           createdAt: data.createdAt || Date.now(),
           teamA: data.teamA || [],
           teamB: data.teamB || [],
+          teamALanes: data.teamALanes,
+          teamBLanes: data.teamBLanes,
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
+          feedback: data.feedback || {},
         });
       });
       return list;
@@ -219,6 +237,15 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       };
       if (newMatch.seasonId !== undefined) {
         firestoreData.seasonId = newMatch.seasonId;
+      }
+      if (newMatch.teamALanes !== undefined) {
+        firestoreData.teamALanes = newMatch.teamALanes;
+      }
+      if (newMatch.teamBLanes !== undefined) {
+        firestoreData.teamBLanes = newMatch.teamBLanes;
+      }
+      if (newMatch.feedback !== undefined) {
+        firestoreData.feedback = newMatch.feedback;
       }
       const docRef = await addDoc(matchesCol, firestoreData);
       newMatch.id = docRef.id;
@@ -676,8 +703,11 @@ export async function fetchAllMatches(): Promise<Match[]> {
           createdAt: data.createdAt || Date.now(),
           teamA: data.teamA || [],
           teamB: data.teamB || [],
+          teamALanes: data.teamALanes,
+          teamBLanes: data.teamBLanes,
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
+          feedback: data.feedback || {},
         });
       });
       return list;
@@ -1657,4 +1687,125 @@ export function getWeightedWinrate(
   if (totalMatches === 0) return 0;
   const prior = 0.5;
   return ((wins + C * prior) / (totalMatches + C)) * 100;
+}
+
+// Increment player feedback (Likes/Dislikes) in a match
+export async function incrementPlayerFeedback(
+  matchId: string,
+  playerKey: string,
+  type: "likes" | "dislikes"
+): Promise<boolean> {
+  const playerKeyLower = playerKey.toLowerCase();
+
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "matches", matchId);
+      const { increment } = await import("firebase/firestore");
+      await updateDoc(docRef, {
+        [`feedback.${playerKeyLower}.${type}`]: increment(1)
+      });
+      return true;
+    } catch (e) {
+      console.error("Error updating feedback on Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback/Sync
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as Match[];
+        const idx = list.findIndex((m) => m.id === matchId);
+        if (idx !== -1) {
+          const match = list[idx];
+          if (!match.feedback) match.feedback = {};
+          if (!match.feedback[playerKeyLower]) {
+            match.feedback[playerKeyLower] = { likes: 0, dislikes: 0 };
+          }
+          match.feedback[playerKeyLower][type] += 1;
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          return true;
+        }
+      } catch (e) {
+        console.error("Error updating feedback in LocalStorage:", e);
+      }
+    }
+  }
+  return false;
+}
+
+// Fetch comments for a specific match
+export async function fetchComments(matchId: string): Promise<MatchComment[]> {
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const commentsCol = collection(db, "matches", matchId, "comments");
+      const q = query(commentsCol, orderBy("createdAt", "asc"));
+      const querySnapshot = await getDocs(q);
+      const list: MatchComment[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: docSnap.id,
+          matchId,
+          text: data.text || "",
+          createdAt: data.createdAt || Date.now(),
+        });
+      });
+      return list;
+    } catch (e) {
+      console.error(`Error fetching comments for match ${matchId}:`, e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(`mlbb_generator_comments_${matchId}`);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored) as MatchComment[];
+  } catch {
+    return [];
+  }
+}
+
+// Save an anonymous comment for a match
+export async function saveComment(
+  matchId: string,
+  text: string
+): Promise<MatchComment> {
+  const newComment = {
+    text,
+    createdAt: Date.now(),
+  };
+
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const commentsCol = collection(db, "matches", matchId, "comments");
+      const docRef = await addDoc(commentsCol, newComment);
+      return {
+        ...newComment,
+        id: docRef.id,
+        matchId,
+      };
+    } catch (e) {
+      console.error(`Error saving comment for match ${matchId}:`, e);
+    }
+  }
+
+  // LocalStorage Fallback
+  const id = `local_comment_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  const fullComment: MatchComment = {
+    ...newComment,
+    id,
+    matchId,
+  };
+  if (typeof window !== "undefined") {
+    const key = `mlbb_generator_comments_${matchId}`;
+    const stored = localStorage.getItem(key);
+    const list = stored ? (JSON.parse(stored) as MatchComment[]) : [];
+    list.push(fullComment);
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+  return fullComment;
 }

@@ -284,6 +284,8 @@ export default function Home() {
         const saved = await saveMatch({
           teamA: finalTeamA,
           teamB: finalTeamB,
+          teamALanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+          teamBLanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
           winner: null,
           createdAt: Date.now(),
           seasonId: activeSeasonId,

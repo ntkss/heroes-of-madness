@@ -120,12 +120,17 @@ function MatchCardComponent({
     const authorInfo = user
       ? {
           userId: user.uid,
-          authorName: user.displayName || user.email?.split("@")[0] || "GUEST_USER",
+          authorName:
+            user.displayName || user.email?.split("@")[0] || "GUEST_USER",
           authorAvatar: user.photoURL || undefined,
         }
       : undefined;
 
-    const saved = await saveComment(match.id, newCommentText.trim(), authorInfo);
+    const saved = await saveComment(
+      match.id,
+      newCommentText.trim(),
+      authorInfo,
+    );
     setComments((prev) => [...prev, saved]);
     setNewCommentText("");
   };
@@ -139,8 +144,10 @@ function MatchCardComponent({
           const name = getPlayerDisplayName(playerNameOrId);
           const dbPlayer = availablePlayers.find((p) => p.id === pKey);
           const lane = lanes ? lanes[idx] : defaultLanes[idx];
-          const feedback = localFeedback[pKey] || localFeedback[pKey.toLowerCase()] || { likes: 0, dislikes: 0 };
-          const userVote = user && feedback.userVotes ? feedback.userVotes[user.uid] : null;
+          const feedback = localFeedback[pKey] ||
+            localFeedback[pKey.toLowerCase()] || { likes: 0, dislikes: 0 };
+          const userVote =
+            user && feedback.userVotes ? feedback.userVotes[user.uid] : null;
           const isLiked = userVote === "likes";
           const isDisliked = userVote === "dislikes";
 
@@ -180,8 +187,8 @@ function MatchCardComponent({
                       !user
                         ? "Log in to rate performance"
                         : isLiked
-                        ? "Click to remove like"
-                        : "Like performance"
+                          ? "Click to remove like"
+                          : "Like performance"
                     }
                   >
                     👍{" "}
@@ -196,8 +203,8 @@ function MatchCardComponent({
                       !user
                         ? "Log in to rate performance"
                         : isDisliked
-                        ? "Click to remove dislike"
-                        : "Dislike performance"
+                          ? "Click to remove dislike"
+                          : "Dislike performance"
                     }
                   >
                     👎{" "}

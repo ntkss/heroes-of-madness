@@ -117,7 +117,15 @@ function MatchCardComponent({
     e.preventDefault();
     if (!newCommentText.trim()) return;
     playCoin();
-    const saved = await saveComment(match.id, newCommentText.trim());
+    const authorInfo = user
+      ? {
+          userId: user.uid,
+          authorName: user.displayName || user.email?.split("@")[0] || "GUEST_USER",
+          authorAvatar: user.photoURL || undefined,
+        }
+      : undefined;
+
+    const saved = await saveComment(match.id, newCommentText.trim(), authorInfo);
     setComments((prev) => [...prev, saved]);
     setNewCommentText("");
   };
@@ -346,7 +354,9 @@ function MatchCardComponent({
               comments.map((comment) => (
                 <div key={comment.id} className={styles.commentItem}>
                   <div className={styles.commentHeader}>
-                    <span className={styles.anonymousUser}>GUEST_USER</span>
+                    <span className={styles.anonymousUser}>
+                      {comment.authorName || "GUEST_USER"}
+                    </span>
                     <span className={styles.commentTime}>
                       {formatDate(comment.createdAt)}
                     </span>

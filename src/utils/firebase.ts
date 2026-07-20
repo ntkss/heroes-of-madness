@@ -53,6 +53,9 @@ export interface MatchComment {
   matchId: string;
   text: string;
   createdAt: number;
+  userId?: string;
+  authorName?: string;
+  authorAvatar?: string;
 }
 
 export interface DbPlayer {
@@ -1867,16 +1870,27 @@ export async function fetchComments(matchId: string): Promise<MatchComment[]> {
       const list: MatchComment[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        const rawCreatedAt = data.createdAt;
+        const createdAt =
+          typeof rawCreatedAt === "number"
+            ? rawCreatedAt
+            : rawCreatedAt?.toMillis
+            ? rawCreatedAt.toMillis()
+            : Date.now();
+
         list.push({
           id: docSnap.id,
           matchId,
           text: data.text || "",
-          createdAt: data.createdAt || Date.now(),
+          createdAt,
+          userId: data.userId,
+          authorName: data.authorName,
+          authorAvatar: data.authorAvatar,
         });
       });
       return list;
     } catch (e) {
-      console.error(`Error fetching comments for match ${matchId}:`, e);
+      console.error(`[Firestore Error] Error fetching comments for match ${matchId}:`, e);
     }
   }
 
@@ -1891,14 +1905,18 @@ export async function fetchComments(matchId: string): Promise<MatchComment[]> {
   }
 }
 
-// Save an anonymous comment for a match
+// Save an anonymous or authenticated comment for a match
 export async function saveComment(
   matchId: string,
   text: string,
+  authorInfo?: { userId?: string; authorName?: string; authorAvatar?: string },
 ): Promise<MatchComment> {
   const newComment = {
     text,
     createdAt: Date.now(),
+    ...(authorInfo?.userId ? { userId: authorInfo.userId } : {}),
+    ...(authorInfo?.authorName ? { authorName: authorInfo.authorName } : {}),
+    ...(authorInfo?.authorAvatar ? { authorAvatar: authorInfo.authorAvatar } : {}),
   };
 
   if (db && !matchId.startsWith("local_")) {
@@ -1911,7 +1929,7 @@ export async function saveComment(
         matchId,
       };
     } catch (e) {
-      console.error(`Error saving comment for match ${matchId}:`, e);
+      console.error(`[Firestore Error] Error saving comment for match ${matchId}:`, e);
     }
   }
 

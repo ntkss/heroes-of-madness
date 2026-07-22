@@ -9,6 +9,7 @@ import PodiumStandings from "@/components/PodiumStandings";
 import styles from "./styles.module.css";
 import {
   Season,
+  SeasonPlayerStat,
   Match,
   fetchSeasons,
   fetchAllMatches,
@@ -125,11 +126,93 @@ export default function SeasonsPage() {
     return found ? found.name : nameOrId;
   };
 
-  // Find podium positions
-  const firstPlace = selectedSeason?.podium.find((_, i) => i === 0) || null;
-  const secondPlace = selectedSeason?.podium.find((_, i) => i === 1) || null;
-  const thirdPlace = selectedSeason?.podium.find((_, i) => i === 2) || null;
-  const lastPlace = selectedSeason?.lastPlace || null;
+  // Find podium positions and calculate promotion metrics for archived seasons
+  const podiumFighters = (() => {
+    if (!selectedSeason || !selectedSeason.fighterStats) {
+      return {
+        firstPlace: selectedSeason?.podium.find((_, i) => i === 0) || null,
+        secondPlace: selectedSeason?.podium.find((_, i) => i === 1) || null,
+        thirdPlace: selectedSeason?.podium.find((_, i) => i === 2) || null,
+        lastPlace: selectedSeason?.lastPlace || null,
+      };
+    }
+
+    const sorted = [...selectedSeason.fighterStats].sort((a, b) => {
+      const aWins =
+        a.wins !== undefined
+          ? a.wins
+          : Math.round((a.winrate / 100) * a.total_match_played);
+      const bWins =
+        b.wins !== undefined
+          ? b.wins
+          : Math.round((b.winrate / 100) * b.total_match_played);
+      const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
+      const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+
+      if (bWeighted !== aWeighted) return bWeighted - aWeighted;
+      return b.total_match_played - a.total_match_played;
+    });
+
+    const mapStat = (stat: SeasonPlayerStat, idx: number): SeasonPlayerStat => {
+      const wins =
+        stat.wins !== undefined
+          ? stat.wins
+          : Math.round((stat.winrate / 100) * stat.total_match_played);
+      const losses =
+        stat.losses !== undefined
+          ? stat.losses
+          : stat.total_match_played - wins;
+
+      let matchesToNextRank = stat.matchesToNextRank;
+      let nextRankTarget = stat.nextRankTarget;
+
+      if (idx > 0 && matchesToNextRank === undefined) {
+        const targetStat = sorted[idx - 1];
+        const targetWins =
+          targetStat.wins !== undefined
+            ? targetStat.wins
+            : Math.round(
+                (targetStat.winrate / 100) * targetStat.total_match_played,
+              );
+        const targetScore = getWeightedWinrate(
+          targetWins,
+          targetStat.total_match_played,
+        );
+
+        let extraWins = 1;
+        while (true) {
+          const score = getWeightedWinrate(
+            wins + extraWins,
+            stat.total_match_played + extraWins,
+          );
+          if (score > targetScore) break;
+          extraWins++;
+          if (extraWins > 1000) break;
+        }
+        matchesToNextRank = extraWins;
+        nextRankTarget = idx;
+      }
+
+      return {
+        ...stat,
+        wins,
+        losses,
+        matchesToNextRank,
+        nextRankTarget,
+        rank: idx + 1,
+      };
+    };
+
+    return {
+      firstPlace: sorted[0] ? mapStat(sorted[0], 0) : null,
+      secondPlace: sorted[1] ? mapStat(sorted[1], 1) : null,
+      thirdPlace: sorted[2] ? mapStat(sorted[2], 2) : null,
+      lastPlace:
+        sorted.length > 3
+          ? mapStat(sorted[sorted.length - 1], sorted.length - 1)
+          : null,
+    };
+  })();
 
   if (loading) {
     return (
@@ -233,10 +316,10 @@ export default function SeasonsPage() {
               {/* PODIUM STANDINGS DISPLAY */}
               {selectedSeason && (
                 <PodiumStandings
-                  firstPlace={firstPlace}
-                  secondPlace={secondPlace}
-                  thirdPlace={thirdPlace}
-                  lastPlace={lastPlace}
+                  firstPlace={podiumFighters.firstPlace}
+                  secondPlace={podiumFighters.secondPlace}
+                  thirdPlace={podiumFighters.thirdPlace}
+                  lastPlace={podiumFighters.lastPlace}
                 />
               )}
 

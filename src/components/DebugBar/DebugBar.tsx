@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { isFirebaseConfigured } from "@/utils/firebase";
+import { isFirebaseConfigured, seedMockUserData } from "@/utils/firebase";
 import pkg from "../../../package.json";
 import styles from "./styles.module.css";
 
@@ -92,6 +92,22 @@ export default function DebugBar() {
       clearTimeout(initTimer);
     };
   }, []);
+
+  const handleSeedMockData = async () => {
+    if (
+      confirm(
+        "🛠️ SEED MOCK USER DATA?\nThis will seed mock player stats, match logs, comments, and archived seasons. Proceed?",
+      )
+    ) {
+      const success = await seedMockUserData();
+      if (success) {
+        alert("Mock user data seeded successfully! Reloading page...");
+        window.location.reload();
+      } else {
+        alert("Failed to seed mock user data.");
+      }
+    }
+  };
 
   const handleClearHistory = () => {
     if (
@@ -225,6 +241,9 @@ export default function DebugBar() {
 
           {/* Dev Utils Actions */}
           <div className={styles.actionsContainer}>
+            <button onClick={handleSeedMockData} className={styles.purgeBtn}>
+              🛠️ SEED MOCK DATA
+            </button>
             <button onClick={handleClearHistory} className={styles.purgeBtn}>
               PURGE LOCAL RECORDS
             </button>

@@ -14,6 +14,7 @@ import {
   saveComment,
   togglePlayerFeedback,
   PlayerFeedback,
+  seedMockUserData,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
 import { playBeep, playWin, playCoin } from "@/utils/audio";
@@ -629,7 +630,7 @@ export default function HistoryDashboard({
     const mapToSeasonPlayerStat = (
       stat: (typeof playerStats)[0],
       index: number,
-      allStats: typeof playerStats
+      allStats: typeof playerStats,
     ): SeasonPlayerStat => {
       const isSeason = statsSubTab === "season";
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
@@ -647,15 +648,20 @@ export default function HistoryDashboard({
       if (index > 0) {
         const targetStat = allStats[index - 1];
         const targetWins = isSeason ? targetStat.wins : targetStat.allTimeWins;
-        const targetMatches = isSeason ? targetStat.matches : targetStat.allTimeMatches;
+        const targetMatches = isSeason
+          ? targetStat.matches
+          : targetStat.allTimeMatches;
         const targetScore = getWeightedWinrate(targetWins, targetMatches);
-        
+
         let extraWins = 1;
         while (true) {
-           const score = getWeightedWinrate(wins + extraWins, totalMatches + extraWins);
-           if (score > targetScore) break;
-           extraWins++;
-           if (extraWins > 1000) break;
+          const score = getWeightedWinrate(
+            wins + extraWins,
+            totalMatches + extraWins,
+          );
+          if (score > targetScore) break;
+          extraWins++;
+          if (extraWins > 1000) break;
         }
         matchesToNextRank = extraWins;
         nextRankTarget = index;
@@ -673,18 +679,27 @@ export default function HistoryDashboard({
         losses,
         matchesToNextRank,
         nextRankTarget,
+        rank: index + 1,
       };
     };
 
     return {
-      firstPlace: playerStats[0] ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats) : null,
+      firstPlace: playerStats[0]
+        ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats)
+        : null,
       secondPlace: playerStats[1]
         ? mapToSeasonPlayerStat(playerStats[1], 1, playerStats)
         : null,
-      thirdPlace: playerStats[2] ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats) : null,
+      thirdPlace: playerStats[2]
+        ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats)
+        : null,
       lastPlace:
         playerStats.length > 3
-          ? mapToSeasonPlayerStat(playerStats[playerStats.length - 1], playerStats.length - 1, playerStats)
+          ? mapToSeasonPlayerStat(
+              playerStats[playerStats.length - 1],
+              playerStats.length - 1,
+              playerStats,
+            )
           : null,
     };
   }, [playerStats, statsSubTab, rankConfig]);
@@ -786,8 +801,28 @@ export default function HistoryDashboard({
           <div className={styles.emptyStateContainer}>
             <span className={styles.emptyStateTitle}>NO RECORDS FOUND</span>
             <span className={styles.emptyStateSubtitle}>
-              ARENA VACANT. START DRAFT TO INITIALIZE LOGS.
+              ARENA VACANT. START DRAFT TO INITIALIZE LOGS OR SEED MOCK DATA.
             </span>
+            <button
+              onClick={async () => {
+                playBeep(220, 0.15, "sawtooth");
+                const confirmSeed = window.confirm(
+                  "Do you want to seed mock user data, match logs, and seasons?",
+                );
+                if (!confirmSeed) return;
+                const success = await seedMockUserData();
+                if (success) {
+                  playWin();
+                  alert("Mock user data seeded successfully! Reloading...");
+                  window.location.reload();
+                } else {
+                  alert("Failed to seed mock user data.");
+                }
+              }}
+              className="mt-3 font-pixel text-[8.5px] px-3 py-1.5 border border-neon-yellow text-neon-yellow hover:bg-neon-yellow/20 transition-all cursor-pointer select-none"
+            >
+              🛠️ SEED MOCK USER DATA
+            </button>
           </div>
         ) : (
           <div className={styles.historyList}>
@@ -891,21 +926,33 @@ export default function HistoryDashboard({
                 let nextRankMsg = "";
                 if (displayMatches < rankConfig.minMatches) {
                   const needed = rankConfig.minMatches - displayMatches;
-                  nextRankMsg = `NEEDS ${needed} MATCH${needed > 1 ? "ES" : ""} FOR RANK`;
+                  nextRankMsg = `RANK ${index + 1} NEEDS ${needed} MORE MATCH${needed > 1 ? "ES" : ""} FOR RANK`;
                 } else if (index > 0) {
                   const targetStat = playerStats[index - 1];
-                  const targetWins = statsSubTab === "season" ? targetStat.wins : targetStat.allTimeWins;
-                  const targetMatches = statsSubTab === "season" ? targetStat.matches : targetStat.allTimeMatches;
-                  const targetScore = getWeightedWinrate(targetWins, targetMatches);
-                  
+                  const targetWins =
+                    statsSubTab === "season"
+                      ? targetStat.wins
+                      : targetStat.allTimeWins;
+                  const targetMatches =
+                    statsSubTab === "season"
+                      ? targetStat.matches
+                      : targetStat.allTimeMatches;
+                  const targetScore = getWeightedWinrate(
+                    targetWins,
+                    targetMatches,
+                  );
+
                   let extraWins = 1;
                   while (true) {
-                     const score = getWeightedWinrate(displayWins + extraWins, displayMatches + extraWins);
-                     if (score > targetScore) break;
-                     extraWins++;
-                     if (extraWins > 1000) break;
+                    const score = getWeightedWinrate(
+                      displayWins + extraWins,
+                      displayMatches + extraWins,
+                    );
+                    if (score > targetScore) break;
+                    extraWins++;
+                    if (extraWins > 1000) break;
                   }
-                  nextRankMsg = `NEEDS ${extraWins} WIN${extraWins > 1 ? "S" : ""} FOR RANK ${index}`;
+                  nextRankMsg = `RANK ${index + 1} NEEDS ${extraWins} MORE WIN${extraWins > 1 ? "S" : ""} TO BE PROMOTED TO RANK ${index}`;
                 } else {
                   nextRankMsg = "MAX RANK ACHIEVED";
                 }

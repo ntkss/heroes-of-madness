@@ -87,6 +87,7 @@ export interface SeasonPlayerStat {
   losses?: number;
   matchesToNextRank?: number;
   nextRankTarget?: number;
+  rank?: number;
 }
 
 export interface Season {
@@ -1412,8 +1413,179 @@ export async function updateUserRole(
   }
 }
 
-// Seed mock seasons and matches data for testing
-export async function seedMockSeasons(): Promise<boolean> {
+// Seed mock user data (players, matches, comments, and seasons) for testing
+export async function seedMockUserData(): Promise<boolean> {
+  const mockPlayers: DbPlayer[] = [
+    {
+      id: "nutty",
+      name: "Nutty",
+      alias: "Nutty",
+      avatar:
+        SQUAD.find((s) => s.id === "nutty")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+      imageURL:
+        SQUAD.find((s) => s.id === "nutty")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+      winrate: 75,
+      current_rank: "คนเก่ง",
+      highest_rank: "คนเก่ง",
+      total_match_played: 16,
+      role: "ASSASSIN",
+      createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+      allTimeWins: 32,
+      allTimeMatches: 42,
+      allTimeWinrate: 76,
+    },
+    {
+      id: "goku",
+      name: "Goku",
+      alias: "Goku",
+      avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
+      imageURL: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
+      winrate: 67,
+      current_rank: "คนเก่ง",
+      highest_rank: "คนเก่ง",
+      total_match_played: 15,
+      role: "FIGHTER",
+      createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+      allTimeWins: 28,
+      allTimeMatches: 40,
+      allTimeWinrate: 70,
+    },
+    {
+      id: "bas",
+      name: "Bas",
+      alias: "Bas",
+      avatar:
+        SQUAD.find((s) => s.id === "bas")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=bas",
+      imageURL:
+        SQUAD.find((s) => s.id === "bas")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=bas",
+      winrate: 62,
+      current_rank: "คนเก่ง",
+      highest_rank: "คนเก่ง",
+      total_match_played: 13,
+      role: "MAGE",
+      createdAt: Date.now() - 85 * 24 * 60 * 60 * 1000,
+      allTimeWins: 22,
+      allTimeMatches: 35,
+      allTimeWinrate: 63,
+    },
+    {
+      id: "jajou",
+      name: "Jajou",
+      alias: "Jajou",
+      avatar:
+        SQUAD.find((s) => s.id === "jajou")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=jajou",
+      imageURL:
+        SQUAD.find((s) => s.id === "jajou")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=jajou",
+      winrate: 54,
+      current_rank: "คนปกติ",
+      highest_rank: "คนเก่ง",
+      total_match_played: 13,
+      role: "MARKSMAN",
+      createdAt: Date.now() - 80 * 24 * 60 * 60 * 1000,
+      allTimeWins: 18,
+      allTimeMatches: 32,
+      allTimeWinrate: 56,
+    },
+    {
+      id: "moonshadow",
+      name: "Moonshadow",
+      alias: "Moonshadow",
+      avatar:
+        SQUAD.find((s) => s.id === "moonshadow")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=moonshadow",
+      imageURL:
+        SQUAD.find((s) => s.id === "moonshadow")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=moonshadow",
+      winrate: 50,
+      current_rank: "คนปกติ",
+      highest_rank: "คนปกติ",
+      total_match_played: 12,
+      role: "SUPPORT",
+      createdAt: Date.now() - 75 * 24 * 60 * 60 * 1000,
+      allTimeWins: 16,
+      allTimeMatches: 30,
+      allTimeWinrate: 53,
+    },
+    {
+      id: "jimmy",
+      name: "jimmy",
+      alias: "jimmy",
+      avatar:
+        SQUAD.find((s) => s.id === "jimmy")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=jimmy",
+      imageURL:
+        SQUAD.find((s) => s.id === "jimmy")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=jimmy",
+      winrate: 45,
+      current_rank: "คนปกติ",
+      highest_rank: "คนปกติ",
+      total_match_played: 11,
+      role: "TANK",
+      createdAt: Date.now() - 70 * 24 * 60 * 60 * 1000,
+      allTimeWins: 13,
+      allTimeMatches: 28,
+      allTimeWinrate: 46,
+    },
+    {
+      id: "tongpeng",
+      name: "ตงเผง",
+      alias: "Tongpeng",
+      avatar:
+        SQUAD.find((s) => s.id === "tongpeng")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=tongpeng",
+      imageURL:
+        SQUAD.find((s) => s.id === "tongpeng")?.imageURL ||
+        "https://api.dicebear.com/9.x/pixel-art/svg?seed=tongpeng",
+      winrate: 40,
+      current_rank: "คนกาก",
+      highest_rank: "คนปกติ",
+      total_match_played: 10,
+      role: "JUNGLE",
+      createdAt: Date.now() - 65 * 24 * 60 * 60 * 1000,
+      allTimeWins: 10,
+      allTimeMatches: 25,
+      allTimeWinrate: 40,
+    },
+    {
+      id: "mike",
+      name: "Mike",
+      alias: "Mike",
+      avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+      imageURL: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+      winrate: 33,
+      current_rank: "คนกาก",
+      highest_rank: "คนปกติ",
+      total_match_played: 12,
+      role: "FIGHTER",
+      createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+      allTimeWins: 8,
+      allTimeMatches: 24,
+      allTimeWinrate: 33,
+    },
+    {
+      id: "feeder",
+      name: "Feeder Pro",
+      alias: "Feeder",
+      avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder",
+      imageURL: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder",
+      winrate: 20,
+      current_rank: "คนกาก",
+      highest_rank: "คนกาก",
+      total_match_played: 10,
+      role: "INITIATOR",
+      createdAt: Date.now() - 50 * 24 * 60 * 60 * 1000,
+      allTimeWins: 3,
+      allTimeMatches: 20,
+      allTimeWinrate: 15,
+    },
+  ];
+
   const mockSeasons: Season[] = [
     {
       id: 1,
@@ -1425,7 +1597,9 @@ export async function seedMockSeasons(): Promise<boolean> {
           id: "nutty",
           name: "Nutty",
           alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          avatar:
+            SQUAD.find((s) => s.id === "nutty")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
           winrate: 75,
           total_match_played: 12,
           current_rank: "คนเก่ง",
@@ -1440,10 +1614,12 @@ export async function seedMockSeasons(): Promise<boolean> {
           current_rank: "คนเก่ง",
         },
         {
-          id: "mike",
-          name: "Mike",
-          alias: "Mike",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+          id: "bas",
+          name: "Bas",
+          alias: "Bas",
+          avatar:
+            SQUAD.find((s) => s.id === "bas")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=bas",
           winrate: 58,
           total_match_played: 12,
           current_rank: "คนปกติ",
@@ -1463,7 +1639,9 @@ export async function seedMockSeasons(): Promise<boolean> {
           id: "nutty",
           name: "Nutty",
           alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          avatar:
+            SQUAD.find((s) => s.id === "nutty")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
           winrate: 75,
           total_match_played: 12,
           current_rank: "คนเก่ง",
@@ -1478,10 +1656,12 @@ export async function seedMockSeasons(): Promise<boolean> {
           current_rank: "คนเก่ง",
         },
         {
-          id: "mike",
-          name: "Mike",
-          alias: "Mike",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+          id: "bas",
+          name: "Bas",
+          alias: "Bas",
+          avatar:
+            SQUAD.find((s) => s.id === "bas")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=bas",
           winrate: 58,
           total_match_played: 12,
           current_rank: "คนปกติ",
@@ -1516,27 +1696,31 @@ export async function seedMockSeasons(): Promise<boolean> {
           id: "nutty",
           name: "Nutty",
           alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          avatar:
+            SQUAD.find((s) => s.id === "nutty")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
           winrate: 70,
           total_match_played: 10,
           current_rank: "คนเก่ง",
         },
         {
-          id: "billy",
-          name: "Billy",
-          alias: "Billy",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy",
+          id: "jajou",
+          name: "Jajou",
+          alias: "Jajou",
+          avatar:
+            SQUAD.find((s) => s.id === "jajou")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=jajou",
           winrate: 60,
           total_match_played: 10,
           current_rank: "คนปกติ",
         },
       ],
       lastPlace: {
-        id: "noob",
-        name: "Noob King",
-        alias: "Noob",
-        avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob",
-        winrate: 10,
+        id: "mike",
+        name: "Mike",
+        alias: "Mike",
+        avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+        winrate: 15,
         total_match_played: 10,
         current_rank: "คนกาก",
       },
@@ -1554,26 +1738,30 @@ export async function seedMockSeasons(): Promise<boolean> {
           id: "nutty",
           name: "Nutty",
           alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
+          avatar:
+            SQUAD.find((s) => s.id === "nutty")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
           winrate: 70,
           total_match_played: 10,
           current_rank: "คนเก่ง",
         },
         {
-          id: "billy",
-          name: "Billy",
-          alias: "Billy",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy",
+          id: "jajou",
+          name: "Jajou",
+          alias: "Jajou",
+          avatar:
+            SQUAD.find((s) => s.id === "jajou")?.imageURL ||
+            "https://api.dicebear.com/9.x/pixel-art/svg?seed=jajou",
           winrate: 60,
           total_match_played: 10,
           current_rank: "คนปกติ",
         },
         {
-          id: "noob",
-          name: "Noob King",
-          alias: "Noob",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob",
-          winrate: 10,
+          id: "mike",
+          name: "Mike",
+          alias: "Mike",
+          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
+          winrate: 15,
           total_match_played: 10,
           current_rank: "คนกาก",
         },
@@ -1582,6 +1770,50 @@ export async function seedMockSeasons(): Promise<boolean> {
   ];
 
   const mockMatches: Match[] = [
+    {
+      id: "mock_m101",
+      createdAt: Date.now() - 2 * 60 * 60 * 1000,
+      teamA: ["Nutty", "Goku", "Bas", "Jajou", "Moonshadow"],
+      teamB: ["jimmy", "ตงเผง", "Mike", "Feeder Pro", "Player 10"],
+      teamALanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+      teamBLanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+      winner: "teamA",
+      seasonId: 3,
+      feedback: {
+        nutty: { likes: 5, dislikes: 0 },
+        goku: { likes: 3, dislikes: 0 },
+        bas: { likes: 2, dislikes: 1 },
+        feeder: { likes: 0, dislikes: 4 },
+      },
+    },
+    {
+      id: "mock_m102",
+      createdAt: Date.now() - 12 * 60 * 60 * 1000,
+      teamA: ["Bas", "Jajou", "jimmy", "ตงเผง", "Mike"],
+      teamB: ["Nutty", "Goku", "Moonshadow", "Feeder Pro", "Player 10"],
+      teamALanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+      teamBLanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+      winner: "teamB",
+      seasonId: 3,
+      feedback: {
+        goku: { likes: 4, dislikes: 0 },
+        nutty: { likes: 3, dislikes: 0 },
+      },
+    },
+    {
+      id: "mock_m103",
+      createdAt: Date.now() - 24 * 60 * 60 * 1000,
+      teamA: ["Nutty", "Goku", "Bas", "Moonshadow", "jimmy"],
+      teamB: ["Jajou", "ตงเผง", "Mike", "Feeder Pro", "Player 10"],
+      teamALanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+      teamBLanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+      winner: "teamA",
+      seasonId: 3,
+      feedback: {
+        bas: { likes: 4, dislikes: 0 },
+        jajou: { likes: 2, dislikes: 1 },
+      },
+    },
     {
       id: "mock_m1",
       createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
@@ -1601,15 +1833,43 @@ export async function seedMockSeasons(): Promise<boolean> {
     {
       id: "mock_m3",
       createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
-      teamA: ["Goku", "Nutty", "Billy", "Player 4", "Player 5"],
-      teamB: ["Noob King", "Player 7", "Player 8", "Player 9", "Player 10"],
+      teamA: ["Goku", "Nutty", "Bas", "Player 4", "Player 5"],
+      teamB: ["Mike", "Player 7", "Player 8", "Player 9", "Player 10"],
       winner: "teamA",
       seasonId: 2,
     },
   ];
 
+  const mockComments: MatchComment[] = [
+    {
+      id: "comment_1",
+      matchId: "mock_m101",
+      text: "Nutty MVP carried the whole fight at 15m Lord pit! 🔥",
+      createdAt: Date.now() - 1 * 60 * 60 * 1000,
+      authorName: "Arena Fanatic",
+    },
+    {
+      id: "comment_2",
+      matchId: "mock_m101",
+      text: "Goku's initiator engages were so clean 👑",
+      createdAt: Date.now() - 45 * 60 * 1000,
+      authorName: "GokuFan",
+    },
+    {
+      id: "comment_3",
+      matchId: "mock_m103",
+      text: "GG WP! Close arena battle late night!",
+      createdAt: Date.now() - 20 * 60 * 60 * 1000,
+      authorName: "Madness Spectator",
+    },
+  ];
+
   try {
     if (db) {
+      for (const player of mockPlayers) {
+        const playerRef = doc(db, "players", player.id);
+        await setDoc(playerRef, player);
+      }
       for (const season of mockSeasons) {
         const seasonRef = doc(db, "seasons", `season_${season.id}`);
         await setDoc(seasonRef, season);
@@ -1620,22 +1880,31 @@ export async function seedMockSeasons(): Promise<boolean> {
           createdAt: match.createdAt,
           teamA: match.teamA,
           teamB: match.teamB,
+          teamALanes: match.teamALanes,
+          teamBLanes: match.teamBLanes,
           winner: match.winner,
           seasonId: match.seasonId,
+          feedback: match.feedback || {},
         };
         await setDoc(matchRef, cleanMatch);
+      }
+      for (const comment of mockComments) {
+        const commentRef = doc(db, "comments", comment.id);
+        await setDoc(commentRef, comment);
       }
       const configRef = doc(db, "config", "seasonConfig");
       await setDoc(configRef, { activeSeasonId: 3, seasonStart: Date.now() });
     } else {
       if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(mockPlayers));
         localStorage.setItem(
           "mlbb_generator_seasons",
           JSON.stringify(mockSeasons),
         );
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mockMatches));
         localStorage.setItem(
-          "mlbb_generator_matches",
-          JSON.stringify(mockMatches),
+          "mlbb_generator_comments",
+          JSON.stringify(mockComments),
         );
         localStorage.setItem(
           "mlbb_generator_season_config",
@@ -1645,9 +1914,14 @@ export async function seedMockSeasons(): Promise<boolean> {
     }
     return true;
   } catch (e) {
-    console.error("Error seeding mock seasons:", e);
+    console.error("Error seeding mock user data:", e);
     return false;
   }
+}
+
+// Seed mock seasons (calls seedMockUserData)
+export async function seedMockSeasons(): Promise<boolean> {
+  return seedMockUserData();
 }
 
 // Clear seeded mock seasons and matches data

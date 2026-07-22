@@ -17,6 +17,12 @@ export default function PodiumStandings({
   thirdPlace,
   lastPlace,
 }: PodiumStandingsProps) {
+  const lastPlaceRank =
+    lastPlace?.rank ||
+    (lastPlace?.nextRankTarget !== undefined
+      ? lastPlace.nextRankTarget + 1
+      : 4);
+
   return (
     <div className={styles.podiumGrid}>
       {/* 2nd Place */}
@@ -48,8 +54,11 @@ export default function PodiumStandings({
               {secondPlace.winrate}% WR ({secondPlace.total_match_played}M)
             </span>
             {secondPlace.matchesToNextRank !== undefined && (
-              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
-                Needs {secondPlace.matchesToNextRank} win{secondPlace.matchesToNextRank > 1 ? "s" : ""} for Rank {secondPlace.nextRankTarget}
+              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider text-center">
+                Rank {secondPlace.rank || 2} needs{" "}
+                {secondPlace.matchesToNextRank} more win
+                {secondPlace.matchesToNextRank > 1 ? "s" : ""} to be promoted to
+                Rank {secondPlace.nextRankTarget}
               </span>
             )}
           </div>
@@ -136,8 +145,11 @@ export default function PodiumStandings({
               {thirdPlace.winrate}% WR ({thirdPlace.total_match_played}M)
             </span>
             {thirdPlace.matchesToNextRank !== undefined && (
-              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
-                Needs {thirdPlace.matchesToNextRank} win{thirdPlace.matchesToNextRank > 1 ? "s" : ""} for Rank {thirdPlace.nextRankTarget}
+              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider text-center">
+                Rank {thirdPlace.rank || 3} needs {thirdPlace.matchesToNextRank}{" "}
+                more win
+                {thirdPlace.matchesToNextRank > 1 ? "s" : ""} to be promoted to
+                Rank {thirdPlace.nextRankTarget}
               </span>
             )}
           </div>
@@ -171,19 +183,27 @@ export default function PodiumStandings({
               {lastPlace.name}
             </Link>
             <span className={styles.spoonSub}>
-              {lastPlace.wins}W - {lastPlace.losses}L
+              {lastPlace.wins !== undefined
+                ? `${lastPlace.wins}W - ${lastPlace.losses || 0}L`
+                : `${Math.round((lastPlace.winrate / 100) * lastPlace.total_match_played)}W - ${lastPlace.total_match_played - Math.round((lastPlace.winrate / 100) * lastPlace.total_match_played)}L`}
             </span>
             <span className={styles.spoonSub}>
               {lastPlace.winrate}% WR ({lastPlace.total_match_played}M)
             </span>
             {lastPlace.matchesToNextRank !== undefined && (
-              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
-                Needs {lastPlace.matchesToNextRank} win{lastPlace.matchesToNextRank > 1 ? "s" : ""} for Rank {lastPlace.nextRankTarget}
+              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider text-center">
+                Rank {lastPlaceRank} needs {lastPlace.matchesToNextRank} more
+                win
+                {lastPlace.matchesToNextRank > 1 ? "s" : ""} to be promoted to
+                Rank {lastPlace.nextRankTarget}
               </span>
             )}
           </div>
         )}
         <div className={styles.spoonPedestal}>
+          <span className={styles.spoonPedestalRankNumber}>
+            {lastPlaceRank}
+          </span>
           <span className={styles.spoonEmoji}>💩</span>
           <span className={styles.spoonPedestalLabel}>ที่โหล่</span>
         </div>

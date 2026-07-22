@@ -130,3 +130,7 @@
 .cancelDeleteBtn {
   @apply font-pixel text-[9px] text-slate-300 bg-slate-900 border border-slate-700 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer uppercase;
 }
+
+.profileLinkBtn {
+  @apply mt-1 text-[8px] font-pixel border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue hover:bg-neon-blue/10 px-2 py-1 transition-all rounded-none uppercase cursor-pointer select-none leading-none inline-block;
+}

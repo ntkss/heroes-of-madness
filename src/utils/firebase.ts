@@ -83,6 +83,10 @@ export interface SeasonPlayerStat {
   winrate: number;
   total_match_played: number;
   current_rank: string;
+  wins?: number;
+  losses?: number;
+  matchesToNextRank?: number;
+  nextRankTarget?: number;
 }
 
 export interface Season {

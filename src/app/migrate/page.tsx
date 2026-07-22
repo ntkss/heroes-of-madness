@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import { useAuth } from "@/utils/AuthContext";
-import { db } from "@/utils/firebase";
+import { db, SeasonPlayerStat } from "@/utils/firebase";
 import {
   collection,
   getDocs,
   doc,
   writeBatch,
   getDoc,
+  DocumentData,
 } from "firebase/firestore";
 
 interface MigrationLog {
@@ -27,7 +28,7 @@ export default function MigratePage() {
   const [newId, setNewId] = useState("chalawan");
   const [previewData, setPreviewData] = useState<{
     playerFound: boolean;
-    playerData: any;
+    playerData: DocumentData | null;
     affectedMatches: string[];
     affectedSeasons: string[];
   } | null>(null);
@@ -46,31 +47,40 @@ export default function MigratePage() {
     addLog(`Checking migration impact for player ID/Name: "${targetId}"...`);
     try {
       const lowerTarget = targetId.toLowerCase();
-      
+
       // 1. Check Player Document
       const playerDocRef = doc(database, "players", targetId);
       const playerDocSnap = await getDoc(playerDocRef);
-      
+
       // Also check lowercase version in case it was created differently
       const playerDocRefLower = doc(database, "players", lowerTarget);
       const playerDocSnapLower = await getDoc(playerDocRefLower);
 
       let found = false;
-      let data: any = null;
+      let data: DocumentData | null = null;
       let actualDocId = targetId;
 
       if (playerDocSnap.exists()) {
         found = true;
         data = playerDocSnap.data();
         actualDocId = targetId;
-        addLog(`Found player document with ID "${targetId}": "${data.name}"`, "success");
+        addLog(
+          `Found player document with ID "${targetId}": "${data.name}"`,
+          "success",
+        );
       } else if (playerDocSnapLower.exists()) {
         found = true;
         data = playerDocSnapLower.data();
         actualDocId = lowerTarget;
-        addLog(`Found player document with lowercase ID "${lowerTarget}": "${data.name}"`, "success");
+        addLog(
+          `Found player document with lowercase ID "${lowerTarget}": "${data.name}"`,
+          "success",
+        );
       } else {
-        addLog(`Player document "${targetId}" or "${lowerTarget}" not found directly in Firestore. Will search dynamically in all players...`, "warning");
+        addLog(
+          `Player document "${targetId}" or "${lowerTarget}" not found directly in Firestore. Will search dynamically in all players...`,
+          "warning",
+        );
         const playersSnap = await getDocs(collection(database, "players"));
         playersSnap.forEach((d) => {
           const p = d.data();
@@ -81,13 +91,19 @@ export default function MigratePage() {
             found = true;
             data = p;
             actualDocId = d.id;
-            addLog(`Found player dynamically under document ID "${d.id}": "${p.name}"`, "success");
+            addLog(
+              `Found player dynamically under document ID "${d.id}": "${p.name}"`,
+              "success",
+            );
           }
         });
       }
 
       if (!found) {
-        addLog(`No player record found for "${targetId}". We can still scan references.`, "warning");
+        addLog(
+          `No player record found for "${targetId}". We can still scan references.`,
+          "warning",
+        );
       }
 
       // 2. Scan Matches
@@ -96,13 +112,19 @@ export default function MigratePage() {
       matchesSnap.forEach((d) => {
         const m = d.data();
         const hasTeamA = m.teamA?.some(
-          (name: string) => name.toLowerCase() === lowerTarget || name.toLowerCase() === actualDocId.toLowerCase()
+          (name: string) =>
+            name.toLowerCase() === lowerTarget ||
+            name.toLowerCase() === actualDocId.toLowerCase(),
         );
         const hasTeamB = m.teamB?.some(
-          (name: string) => name.toLowerCase() === lowerTarget || name.toLowerCase() === actualDocId.toLowerCase()
+          (name: string) =>
+            name.toLowerCase() === lowerTarget ||
+            name.toLowerCase() === actualDocId.toLowerCase(),
         );
-        const hasWinner = m.winner?.toLowerCase() === lowerTarget || m.winner?.toLowerCase() === actualDocId.toLowerCase();
-        
+        const hasWinner =
+          m.winner?.toLowerCase() === lowerTarget ||
+          m.winner?.toLowerCase() === actualDocId.toLowerCase();
+
         let hasFeedback = false;
         if (m.feedback) {
           const keys = Object.keys(m.feedback);
@@ -120,7 +142,10 @@ export default function MigratePage() {
         }
       });
 
-      addLog(`Found ${affectedMatches.length} affected match logs.`, affectedMatches.length > 0 ? "info" : "success");
+      addLog(
+        `Found ${affectedMatches.length} affected match logs.`,
+        affectedMatches.length > 0 ? "info" : "success",
+      );
 
       // 3. Scan Seasons
       const seasonsSnap = await getDocs(collection(database, "seasons"));
@@ -128,13 +153,17 @@ export default function MigratePage() {
       seasonsSnap.forEach((d) => {
         const s = d.data();
         const inPodium = s.podium?.some(
-          (p: any) => p.id?.toLowerCase() === lowerTarget || p.name?.toLowerCase() === lowerTarget
+          (p: SeasonPlayerStat) =>
+            p.id?.toLowerCase() === lowerTarget ||
+            p.name?.toLowerCase() === lowerTarget,
         );
         const inLastPlace =
           s.lastPlace?.id?.toLowerCase() === lowerTarget ||
           s.lastPlace?.name?.toLowerCase() === lowerTarget;
         const inStats = s.fighterStats?.some(
-          (p: any) => p.id?.toLowerCase() === lowerTarget || p.name?.toLowerCase() === lowerTarget
+          (p: SeasonPlayerStat) =>
+            p.id?.toLowerCase() === lowerTarget ||
+            p.name?.toLowerCase() === lowerTarget,
         );
 
         if (inPodium || inLastPlace || inStats) {
@@ -142,7 +171,10 @@ export default function MigratePage() {
         }
       });
 
-      addLog(`Found ${affectedSeasons.length} affected season records.`, affectedSeasons.length > 0 ? "info" : "success");
+      addLog(
+        `Found ${affectedSeasons.length} affected season records.`,
+        affectedSeasons.length > 0 ? "info" : "success",
+      );
 
       setPreviewData({
         playerFound: found,
@@ -150,9 +182,9 @@ export default function MigratePage() {
         affectedMatches,
         affectedSeasons,
       });
-
-    } catch (e: any) {
-      addLog(`Error checking impact: ${e.message}`, "error");
+    } catch (e) {
+      const error = e as Error;
+      addLog(`Error checking impact: ${error.message}`, "error");
     }
   };
 
@@ -161,7 +193,10 @@ export default function MigratePage() {
     if (!database) return;
     setIsMigrating(true);
     setLogs([]);
-    addLog(`STARTING MIGRATION: "${targetId}" -> "${newId}" (${newName})`, "info");
+    addLog(
+      `STARTING MIGRATION: "${targetId}" -> "${newId}" (${newName})`,
+      "info",
+    );
 
     try {
       const batch = writeBatch(database);
@@ -170,7 +205,7 @@ export default function MigratePage() {
 
       // 1. Migrate Player Document
       let actualOldDocId = targetId;
-      let playerDocData: any = null;
+      let playerDocData: DocumentData | null = null;
 
       // Find correct old document
       const docRef1 = doc(database, "players", targetId);
@@ -199,9 +234,11 @@ export default function MigratePage() {
       }
 
       if (playerDocData) {
-        addLog(`Copying player document "${actualOldDocId}" -> "${lowerNewId}"...`);
+        addLog(
+          `Copying player document "${actualOldDocId}" -> "${lowerNewId}"...`,
+        );
         const newPlayerRef = doc(database, "players", lowerNewId);
-        
+
         const updatedPlayerData = {
           ...playerDocData,
           name: newName,
@@ -209,10 +246,15 @@ export default function MigratePage() {
         };
 
         batch.set(newPlayerRef, updatedPlayerData);
-        addLog(`Scheduling delete of old player document "${actualOldDocId}"...`);
+        addLog(
+          `Scheduling delete of old player document "${actualOldDocId}"...`,
+        );
         batch.delete(doc(database, "players", actualOldDocId));
       } else {
-        addLog(`No source player document found under "${targetId}" to migrate. Creating new document instead...`, "warning");
+        addLog(
+          `No source player document found under "${targetId}" to migrate. Creating new document instead...`,
+          "warning",
+        );
         const newPlayerRef = doc(database, "players", lowerNewId);
         batch.set(newPlayerRef, {
           name: newName,
@@ -270,15 +312,18 @@ export default function MigratePage() {
           m.winner?.toLowerCase() === actualOldDocId.toLowerCase()
         ) {
           changed = true;
-          newWinner = m.winner === "teamA" || m.winner === "teamB" ? m.winner : newName;
+          newWinner =
+            m.winner === "teamA" || m.winner === "teamB" ? m.winner : newName;
         }
 
         // Update Feedback
-        let newFeedback = m.feedback ? { ...m.feedback } : undefined;
+        const newFeedback = m.feedback ? { ...m.feedback } : undefined;
         if (m.feedback) {
           const oldFeedbackKeys = Object.keys(m.feedback);
           const oldKey = oldFeedbackKeys.find(
-            (k) => k.toLowerCase() === lowerTarget || k.toLowerCase() === actualOldDocId.toLowerCase()
+            (k) =>
+              k.toLowerCase() === lowerTarget ||
+              k.toLowerCase() === actualOldDocId.toLowerCase(),
           );
 
           if (oldKey) {
@@ -312,7 +357,7 @@ export default function MigratePage() {
         const s = seasonDoc.data();
         let changed = false;
 
-        const updateStatArray = (arr: any[]) => {
+        const updateStatArray = (arr: SeasonPlayerStat[] | undefined) => {
           if (!arr) return arr;
           return arr.map((p) => {
             if (
@@ -334,7 +379,7 @@ export default function MigratePage() {
 
         const newPodium = updateStatArray(s.podium);
         const newStats = updateStatArray(s.fighterStats);
-        
+
         let newLastPlace = s.lastPlace;
         if (
           s.lastPlace?.id?.toLowerCase() === lowerTarget ||
@@ -357,7 +402,10 @@ export default function MigratePage() {
             lastPlace: newLastPlace,
           });
           seasonsUpdated++;
-          addLog(`Scheduled updates for season document ID "${seasonDoc.id}"`, "success");
+          addLog(
+            `Scheduled updates for season document ID "${seasonDoc.id}"`,
+            "success",
+          );
         }
       });
 
@@ -374,12 +422,16 @@ export default function MigratePage() {
         localStorage.removeItem("mlbb_generator_players");
         localStorage.removeItem("mlbb_generator_matches");
         localStorage.removeItem("mlbb_generator_seasons");
-        addLog("Local caches cleared. Database stats will reload automatically on next visit.", "success");
+        addLog(
+          "Local caches cleared. Database stats will reload automatically on next visit.",
+          "success",
+        );
       }
 
       addLog("MIGRATION COMPLETE!", "success");
-    } catch (e: any) {
-      addLog(`MIGRATION FAILED: ${e.message}`, "error");
+    } catch (e) {
+      const error = e as Error;
+      addLog(`MIGRATION FAILED: ${error.message}`, "error");
     } finally {
       setIsMigrating(false);
     }
@@ -396,20 +448,32 @@ export default function MigratePage() {
           <div className="bg-slate-900/80 border border-slate-800 p-4 mb-6 text-sm leading-relaxed">
             <p className="text-yellow-400 font-bold mb-2">Instructions:</p>
             <p>
-              Use this dashboard to rename a player ID / Name in Firestore. This tool will:
+              Use this dashboard to rename a player ID / Name in Firestore. This
+              tool will:
             </p>
             <ul className="list-disc list-inside mt-2 space-y-1 text-slate-300">
-              <li>Find and rename the player document in <code className="text-red-300">players</code></li>
-              <li>Scan and replace the name in all matching <code className="text-red-300">matches</code> rosters</li>
+              <li>
+                Find and rename the player document in{" "}
+                <code className="text-red-300">players</code>
+              </li>
+              <li>
+                Scan and replace the name in all matching{" "}
+                <code className="text-red-300">matches</code> rosters
+              </li>
               <li>Move and aggregate feedback counts to the new key</li>
-              <li>Update archived stats in <code className="text-red-300">seasons</code></li>
+              <li>
+                Update archived stats in{" "}
+                <code className="text-red-300">seasons</code>
+              </li>
               <li>Invalidate browser localStorage caches</li>
             </ul>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
-              <label className="block text-xs uppercase text-slate-400 mb-1">Target ID / Name</label>
+              <label className="block text-xs uppercase text-slate-400 mb-1">
+                Target ID / Name
+              </label>
               <input
                 type="text"
                 value={targetId}
@@ -419,7 +483,9 @@ export default function MigratePage() {
               />
             </div>
             <div>
-              <label className="block text-xs uppercase text-slate-400 mb-1">New Display Name</label>
+              <label className="block text-xs uppercase text-slate-400 mb-1">
+                New Display Name
+              </label>
               <input
                 type="text"
                 value={newName}
@@ -429,7 +495,9 @@ export default function MigratePage() {
               />
             </div>
             <div>
-              <label className="block text-xs uppercase text-slate-400 mb-1">New Document ID</label>
+              <label className="block text-xs uppercase text-slate-400 mb-1">
+                New Document ID
+              </label>
               <input
                 type="text"
                 value={newId}
@@ -448,7 +516,7 @@ export default function MigratePage() {
             >
               🔍 Dry Run / Preview
             </button>
-            
+
             {isAdmin ? (
               <button
                 onClick={runMigration}
@@ -473,21 +541,47 @@ export default function MigratePage() {
 
           {previewData && (
             <div className="border border-slate-800 bg-slate-950 p-4 mb-6 text-xs">
-              <h3 className="font-bold text-yellow-400 mb-2 uppercase">Migration Preview:</h3>
+              <h3 className="font-bold text-yellow-400 mb-2 uppercase">
+                Migration Preview:
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p>Player Document Found: <span className={previewData.playerFound ? "text-emerald-400" : "text-rose-500"}>{previewData.playerFound ? "YES" : "NO"}</span></p>
+                  <p>
+                    Player Document Found:{" "}
+                    <span
+                      className={
+                        previewData.playerFound
+                          ? "text-emerald-400"
+                          : "text-rose-500"
+                      }
+                    >
+                      {previewData.playerFound ? "YES" : "NO"}
+                    </span>
+                  </p>
                   {previewData.playerFound && (
                     <ul className="list-disc list-inside ml-2 mt-1 text-slate-400">
                       <li>Name: {previewData.playerData?.name}</li>
                       <li>Role: {previewData.playerData?.role}</li>
-                      <li>Matches Played: {previewData.playerData?.total_match_played}</li>
+                      <li>
+                        Matches Played:{" "}
+                        {previewData.playerData?.total_match_played}
+                      </li>
                     </ul>
                   )}
                 </div>
                 <div>
-                  <p>Affected Match Logs: <span className="text-cyan-400 font-bold">{previewData.affectedMatches.length}</span></p>
-                  <p>Affected Season Records: <span className="text-cyan-400 font-bold">{previewData.affectedSeasons.length}</span></p>
+                  <p>
+                    Affected Match Logs:{" "}
+                    <span className="text-cyan-400 font-bold">
+                      {previewData.affectedMatches.length}
+                    </span>
+                  </p>
+                  <p>
+                    Affected Season Records:{" "}
+                    <span className="text-cyan-400 font-bold">
+                      {previewData.affectedSeasons.length}
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -499,13 +593,18 @@ export default function MigratePage() {
             </h3>
             <div className="h-64 overflow-y-auto font-mono text-xs space-y-1.5 pr-2 select-text text-slate-300">
               {logs.length === 0 ? (
-                <p className="text-slate-600">Console idle. Click "Dry Run" or "Run Migration" to start...</p>
+                <p className="text-slate-600">
+                  Console idle. Click &quot;Dry Run&quot; or &quot;Run
+                  Migration&quot; to start...
+                </p>
               ) : (
                 logs.map((log, idx) => {
                   let colorClass = "text-slate-300";
-                  if (log.type === "success") colorClass = "text-emerald-400 font-semibold";
+                  if (log.type === "success")
+                    colorClass = "text-emerald-400 font-semibold";
                   if (log.type === "warning") colorClass = "text-yellow-400";
-                  if (log.type === "error") colorClass = "text-rose-500 font-bold";
+                  if (log.type === "error")
+                    colorClass = "text-rose-500 font-bold";
                   return (
                     <div key={idx} className={`${colorClass} leading-relaxed`}>
                       [{new Date().toLocaleTimeString()}] {log.message}

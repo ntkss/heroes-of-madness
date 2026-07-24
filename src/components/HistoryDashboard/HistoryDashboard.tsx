@@ -628,14 +628,43 @@ export default function HistoryDashboard({
   const podiumData = React.useMemo(() => {
     const mapToSeasonPlayerStat = (
       stat: (typeof playerStats)[0],
+      index: number,
+      allStats: typeof playerStats,
     ): SeasonPlayerStat => {
       const isSeason = statsSubTab === "season";
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
+      const wins = isSeason ? stat.wins : stat.allTimeWins;
+      const losses = isSeason ? stat.losses : stat.allTimeLosses;
       const currentRank = stat.dbPlayer
         ? stat.dbPlayer.current_rank
         : totalMatches >= rankConfig.minMatches
           ? "Normal"
           : "Unranked";
+
+      let matchesToNextRank = undefined;
+      let nextRankTarget = undefined;
+
+      if (index > 0) {
+        const targetStat = allStats[index - 1];
+        const targetWins = isSeason ? targetStat.wins : targetStat.allTimeWins;
+        const targetMatches = isSeason
+          ? targetStat.matches
+          : targetStat.allTimeMatches;
+        const targetScore = getWeightedWinrate(targetWins, targetMatches);
+
+        let extraWins = 1;
+        while (true) {
+          const score = getWeightedWinrate(
+            wins + extraWins,
+            totalMatches + extraWins,
+          );
+          if (score > targetScore) break;
+          extraWins++;
+          if (extraWins > 1000) break;
+        }
+        matchesToNextRank = extraWins;
+        nextRankTarget = index;
+      }
 
       return {
         id: stat.dbPlayer?.id || stat.name.toLowerCase(),
@@ -645,18 +674,30 @@ export default function HistoryDashboard({
         winrate: Math.round(isSeason ? stat.winrate : stat.allTimeWinrate),
         total_match_played: totalMatches,
         current_rank: currentRank,
+        wins,
+        losses,
+        matchesToNextRank,
+        nextRankTarget,
       };
     };
 
     return {
-      firstPlace: playerStats[0] ? mapToSeasonPlayerStat(playerStats[0]) : null,
-      secondPlace: playerStats[1]
-        ? mapToSeasonPlayerStat(playerStats[1])
+      firstPlace: playerStats[0]
+        ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats)
         : null,
-      thirdPlace: playerStats[2] ? mapToSeasonPlayerStat(playerStats[2]) : null,
+      secondPlace: playerStats[1]
+        ? mapToSeasonPlayerStat(playerStats[1], 1, playerStats)
+        : null,
+      thirdPlace: playerStats[2]
+        ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats)
+        : null,
       lastPlace:
         playerStats.length > 3
-          ? mapToSeasonPlayerStat(playerStats[playerStats.length - 1])
+          ? mapToSeasonPlayerStat(
+              playerStats[playerStats.length - 1],
+              playerStats.length - 1,
+              playerStats,
+            )
           : null,
     };
   }, [playerStats, statsSubTab, rankConfig]);
@@ -860,6 +901,40 @@ export default function HistoryDashboard({
                     ? stats.winrate
                     : stats.allTimeWinrate;
 
+                let nextRankMsg = "";
+                if (displayMatches < rankConfig.minMatches) {
+                  const needed = rankConfig.minMatches - displayMatches;
+                  nextRankMsg = `NEEDS ${needed} MATCH${needed > 1 ? "ES" : ""} FOR RANK`;
+                } else if (index > 0) {
+                  const targetStat = playerStats[index - 1];
+                  const targetWins =
+                    statsSubTab === "season"
+                      ? targetStat.wins
+                      : targetStat.allTimeWins;
+                  const targetMatches =
+                    statsSubTab === "season"
+                      ? targetStat.matches
+                      : targetStat.allTimeMatches;
+                  const targetScore = getWeightedWinrate(
+                    targetWins,
+                    targetMatches,
+                  );
+
+                  let extraWins = 1;
+                  while (true) {
+                    const score = getWeightedWinrate(
+                      displayWins + extraWins,
+                      displayMatches + extraWins,
+                    );
+                    if (score > targetScore) break;
+                    extraWins++;
+                    if (extraWins > 1000) break;
+                  }
+                  nextRankMsg = `NEEDS ${extraWins} WIN${extraWins > 1 ? "S" : ""} FOR RANK ${index}`;
+                } else {
+                  nextRankMsg = "MAX RANK ACHIEVED";
+                }
+
                 return (
                   <div
                     key={stats.name}
@@ -912,6 +987,9 @@ export default function HistoryDashboard({
                           </Link>
                         </div>
                         {renderRankInfo(stats.dbPlayer)}
+                        <div className="text-[7.5px] font-pixel text-slate-400 mt-1.5 uppercase tracking-wider">
+                          {nextRankMsg}
+                        </div>
                       </div>
                     </div>
 

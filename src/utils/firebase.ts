@@ -83,6 +83,10 @@ export interface SeasonPlayerStat {
   winrate: number;
   total_match_played: number;
   current_rank: string;
+  wins?: number;
+  losses?: number;
+  matchesToNextRank?: number;
+  nextRankTarget?: number;
 }
 
 export interface Season {
@@ -144,7 +148,7 @@ console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
   isFirebaseConfigured,
 });
 
-export let db: Firestore | null = null;
+let db: Firestore | null = null;
 export let auth: Auth | null = null;
 
 if (isFirebaseConfigured) {

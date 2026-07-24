@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { DbPlayer } from "@/utils/firebase";
 import { playBeep, playCoin } from "@/utils/audio";
 import EditFighterForm from "@/components/EditFighterForm";
@@ -195,6 +196,16 @@ export default function FighterDirectory({
                         {player.current_rank}
                       </span>
                     </span>
+                    <Link
+                      href={`/players/${player.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBeep(300, 0.1, "sine");
+                      }}
+                      className={styles.profileLinkBtn}
+                    >
+                      PROFILE 👤
+                    </Link>
                   </div>
                   {/* WR badge if match played > 0 */}
                   {player.total_match_played > 0 && (

@@ -42,8 +42,18 @@ export default function PodiumStandings({
               {secondPlace.name}
             </Link>
             <span className={styles.podiumSub}>
+              {secondPlace.wins}W - {secondPlace.losses}L
+            </span>
+            <span className={styles.podiumSub}>
               {secondPlace.winrate}% WR ({secondPlace.total_match_played}M)
             </span>
+            {secondPlace.matchesToNextRank !== undefined && (
+              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
+                Needs {secondPlace.matchesToNextRank} win
+                {secondPlace.matchesToNextRank > 1 ? "s" : ""} for Rank{" "}
+                {secondPlace.nextRankTarget}
+              </span>
+            )}
           </div>
         )}
         <div className={styles.secondPlacePedestal}>
@@ -86,6 +96,9 @@ export default function PodiumStandings({
               {firstPlace.name}
             </Link>
             <span className={styles.championSub}>
+              {firstPlace.wins}W - {firstPlace.losses}L
+            </span>
+            <span className={styles.championSub}>
               {firstPlace.winrate}% WR ({firstPlace.total_match_played}M)
             </span>
           </div>
@@ -119,8 +132,18 @@ export default function PodiumStandings({
               {thirdPlace.name}
             </Link>
             <span className={styles.podiumSub}>
+              {thirdPlace.wins}W - {thirdPlace.losses}L
+            </span>
+            <span className={styles.podiumSub}>
               {thirdPlace.winrate}% WR ({thirdPlace.total_match_played}M)
             </span>
+            {thirdPlace.matchesToNextRank !== undefined && (
+              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
+                Needs {thirdPlace.matchesToNextRank} win
+                {thirdPlace.matchesToNextRank > 1 ? "s" : ""} for Rank{" "}
+                {thirdPlace.nextRankTarget}
+              </span>
+            )}
           </div>
         )}
         <div className={styles.thirdPlacePedestal}>
@@ -152,8 +175,18 @@ export default function PodiumStandings({
               {lastPlace.name}
             </Link>
             <span className={styles.spoonSub}>
+              {lastPlace.wins}W - {lastPlace.losses}L
+            </span>
+            <span className={styles.spoonSub}>
               {lastPlace.winrate}% WR ({lastPlace.total_match_played}M)
             </span>
+            {lastPlace.matchesToNextRank !== undefined && (
+              <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
+                Needs {lastPlace.matchesToNextRank} win
+                {lastPlace.matchesToNextRank > 1 ? "s" : ""} for Rank{" "}
+                {lastPlace.nextRankTarget}
+              </span>
+            )}
           </div>
         )}
         <div className={styles.spoonPedestal}>

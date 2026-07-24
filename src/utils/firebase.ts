@@ -148,7 +148,7 @@ console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
   isFirebaseConfigured,
 });
 
-export let db: Firestore | null = null;
+let db: Firestore | null = null;
 export let auth: Auth | null = null;
 
 if (isFirebaseConfigured) {

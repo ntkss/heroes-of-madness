@@ -629,7 +629,7 @@ export default function HistoryDashboard({
     const mapToSeasonPlayerStat = (
       stat: (typeof playerStats)[0],
       index: number,
-      allStats: typeof playerStats
+      allStats: typeof playerStats,
     ): SeasonPlayerStat => {
       const isSeason = statsSubTab === "season";
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
@@ -647,15 +647,20 @@ export default function HistoryDashboard({
       if (index > 0) {
         const targetStat = allStats[index - 1];
         const targetWins = isSeason ? targetStat.wins : targetStat.allTimeWins;
-        const targetMatches = isSeason ? targetStat.matches : targetStat.allTimeMatches;
+        const targetMatches = isSeason
+          ? targetStat.matches
+          : targetStat.allTimeMatches;
         const targetScore = getWeightedWinrate(targetWins, targetMatches);
-        
+
         let extraWins = 1;
         while (true) {
-           const score = getWeightedWinrate(wins + extraWins, totalMatches + extraWins);
-           if (score > targetScore) break;
-           extraWins++;
-           if (extraWins > 1000) break;
+          const score = getWeightedWinrate(
+            wins + extraWins,
+            totalMatches + extraWins,
+          );
+          if (score > targetScore) break;
+          extraWins++;
+          if (extraWins > 1000) break;
         }
         matchesToNextRank = extraWins;
         nextRankTarget = index;
@@ -677,14 +682,22 @@ export default function HistoryDashboard({
     };
 
     return {
-      firstPlace: playerStats[0] ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats) : null,
+      firstPlace: playerStats[0]
+        ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats)
+        : null,
       secondPlace: playerStats[1]
         ? mapToSeasonPlayerStat(playerStats[1], 1, playerStats)
         : null,
-      thirdPlace: playerStats[2] ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats) : null,
+      thirdPlace: playerStats[2]
+        ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats)
+        : null,
       lastPlace:
         playerStats.length > 3
-          ? mapToSeasonPlayerStat(playerStats[playerStats.length - 1], playerStats.length - 1, playerStats)
+          ? mapToSeasonPlayerStat(
+              playerStats[playerStats.length - 1],
+              playerStats.length - 1,
+              playerStats,
+            )
           : null,
     };
   }, [playerStats, statsSubTab, rankConfig]);
@@ -894,16 +907,28 @@ export default function HistoryDashboard({
                   nextRankMsg = `NEEDS ${needed} MATCH${needed > 1 ? "ES" : ""} FOR RANK`;
                 } else if (index > 0) {
                   const targetStat = playerStats[index - 1];
-                  const targetWins = statsSubTab === "season" ? targetStat.wins : targetStat.allTimeWins;
-                  const targetMatches = statsSubTab === "season" ? targetStat.matches : targetStat.allTimeMatches;
-                  const targetScore = getWeightedWinrate(targetWins, targetMatches);
-                  
+                  const targetWins =
+                    statsSubTab === "season"
+                      ? targetStat.wins
+                      : targetStat.allTimeWins;
+                  const targetMatches =
+                    statsSubTab === "season"
+                      ? targetStat.matches
+                      : targetStat.allTimeMatches;
+                  const targetScore = getWeightedWinrate(
+                    targetWins,
+                    targetMatches,
+                  );
+
                   let extraWins = 1;
                   while (true) {
-                     const score = getWeightedWinrate(displayWins + extraWins, displayMatches + extraWins);
-                     if (score > targetScore) break;
-                     extraWins++;
-                     if (extraWins > 1000) break;
+                    const score = getWeightedWinrate(
+                      displayWins + extraWins,
+                      displayMatches + extraWins,
+                    );
+                    if (score > targetScore) break;
+                    extraWins++;
+                    if (extraWins > 1000) break;
                   }
                   nextRankMsg = `NEEDS ${extraWins} WIN${extraWins > 1 ? "S" : ""} FOR RANK ${index}`;
                 } else {

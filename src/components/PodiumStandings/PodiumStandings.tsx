@@ -49,7 +49,9 @@ export default function PodiumStandings({
             </span>
             {secondPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
-                Needs {secondPlace.matchesToNextRank} win{secondPlace.matchesToNextRank > 1 ? "s" : ""} for Rank {secondPlace.nextRankTarget}
+                Needs {secondPlace.matchesToNextRank} win
+                {secondPlace.matchesToNextRank > 1 ? "s" : ""} for Rank{" "}
+                {secondPlace.nextRankTarget}
               </span>
             )}
           </div>
@@ -137,7 +139,9 @@ export default function PodiumStandings({
             </span>
             {thirdPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
-                Needs {thirdPlace.matchesToNextRank} win{thirdPlace.matchesToNextRank > 1 ? "s" : ""} for Rank {thirdPlace.nextRankTarget}
+                Needs {thirdPlace.matchesToNextRank} win
+                {thirdPlace.matchesToNextRank > 1 ? "s" : ""} for Rank{" "}
+                {thirdPlace.nextRankTarget}
               </span>
             )}
           </div>
@@ -178,7 +182,9 @@ export default function PodiumStandings({
             </span>
             {lastPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
-                Needs {lastPlace.matchesToNextRank} win{lastPlace.matchesToNextRank > 1 ? "s" : ""} for Rank {lastPlace.nextRankTarget}
+                Needs {lastPlace.matchesToNextRank} win
+                {lastPlace.matchesToNextRank > 1 ? "s" : ""} for Rank{" "}
+                {lastPlace.nextRankTarget}
               </span>
             )}
           </div>

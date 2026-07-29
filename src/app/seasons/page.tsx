@@ -26,8 +26,6 @@ export default function SeasonsPage() {
   );
   const [audioInitialized, setAudioInitialized] = useState(false);
 
-
-
   useEffect(() => {
     const loadData = async () => {
       try {

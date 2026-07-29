@@ -1,0 +1,16 @@
+.widget {
+  background: var(--color-bg-cabinet);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.25rem;
+}
+
+.widgetTitle {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--color-neon-yellow);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 210, 0, 0.2);
+  padding-bottom: 0.5rem;
+  text-shadow: 0 0 5px rgba(255, 210, 0, 0.3);
+}

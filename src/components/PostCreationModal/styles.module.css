@@ -1,0 +1,228 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1.5rem;
+}
+
+.modalContent {
+  background: var(--color-bg-cabinet);
+  border: 2px solid var(--color-neon-blue);
+  width: 100%;
+  max-width: 650px;
+  box-shadow: 0 0 30px rgba(0, 210, 255, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+  font-family: var(--font-tech);
+}
+
+.modalHeader {
+  background: rgba(0, 210, 255, 0.08);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTitle {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--color-neon-blue);
+  margin: 0;
+  text-shadow: 0 0 5px rgba(0, 210, 255, 0.4);
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #a0a0c0;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: var(--color-neon-red);
+}
+
+.formBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--color-neon-yellow);
+}
+
+.inputField {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem;
+  color: #fff;
+  font-family: var(--font-tech);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.inputField:focus {
+  border-color: var(--color-neon-blue);
+  box-shadow: 0 0 8px rgba(0, 210, 255, 0.1);
+}
+
+.textareaField {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem;
+  color: #fff;
+  font-family: var(--font-tech);
+  font-size: 13px;
+  outline: none;
+  min-height: 150px;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.textareaField:focus {
+  border-color: var(--color-neon-blue);
+}
+
+.selectField {
+  background: #101016;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem;
+  color: #fff;
+  font-family: var(--font-tech);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.selectField:focus {
+  border-color: var(--color-neon-blue);
+}
+
+.imageUploadContainer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.uploadPreview {
+  width: 80px;
+  height: 60px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.uploadPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uploadPlaceholder {
+  font-size: 20px;
+  color: #303040;
+}
+
+.uploadBtn {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  padding: 0.5rem 1rem;
+  background: #1a1a24;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.uploadBtn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadBtn:hover {
+  border-color: var(--color-neon-blue);
+  color: var(--color-neon-blue);
+}
+
+.removeImageBtn {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 42, 95, 0.1);
+  border: 1px solid var(--color-neon-red);
+  color: var(--color-neon-red);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.removeImageBtn:hover {
+  background: var(--color-neon-red);
+  color: #000;
+}
+
+.mentionsHelper {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.75rem;
+}
+
+.mentionsHeader {
+  font-size: 11px;
+  color: #808098;
+  margin-bottom: 0.5rem;
+}
+
+.errorBox {
+  background: rgba(255, 42, 95, 0.1);
+  border: 1px solid var(--color-neon-red);
+  color: var(--color-neon-red);
+  padding: 0.75rem;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.submitBtn {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  background: rgba(0, 210, 255, 0.1);
+  border: 2px solid var(--color-neon-blue);
+  color: var(--color-neon-blue);
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.1);
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.submitBtn:hover {
+  background: var(--color-neon-blue);
+  color: #000;
+  box-shadow: 0 0 15px var(--color-neon-blue);
+}

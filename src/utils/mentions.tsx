@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { fetchPlayers, fetchMatches, DbPlayer, Match } from "@/utils/firebase";
+import {
+  fetchPlayers,
+  fetchMatchById,
+  DbPlayer,
+  Match,
+} from "@/utils/firebase";
 
 // Custom component to fetch and render player mention badge
 export function PlayerMentionBadge({ playerId }: { playerId: string }) {
@@ -44,19 +49,8 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
   useEffect(() => {
     const load = async () => {
       try {
-        if (matchId.startsWith("local_")) {
-          // Fallback for local storage matches
-          const stored = localStorage.getItem("mlbb_generator_matches");
-          if (stored) {
-            const list = JSON.parse(stored) as Match[];
-            const found = list.find((m) => m.id === matchId);
-            if (found) setMatch(found);
-          }
-        } else {
-          const list = await fetchMatches();
-          const found = list.find((m) => m.id === matchId);
-          if (found) setMatch(found);
-        }
+        const found = await fetchMatchById(matchId);
+        if (found) setMatch(found);
       } catch (e) {
         console.error("Error fetching match for mention:", e);
       }

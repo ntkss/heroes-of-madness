@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useRef } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import styles from "../styles.module.css";
@@ -15,9 +15,65 @@ import {
   deletePostComment,
   ForumPost,
   ForumComment,
+  updatePost,
+  fetchPlayers,
+  fetchMatches,
+  extractAutomaticTags,
+  DbPlayer,
+  Match,
 } from "@/utils/firebase";
 import { parseMentions } from "@/utils/mentions";
 import { playBeep, playCoin } from "@/utils/audio";
+
+// Client-side image compression helper using Canvas
+const compressPostImage = (
+  file: File,
+  maxWidth = 800,
+  maxHeight = 600,
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate aspect ratio scale
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Canvas context could not be created"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.75);
+        resolve(compressedBase64);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -37,6 +93,175 @@ export default function ForumPostDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState("");
+
+  // Edit Post State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editImageBase64, setEditImageBase64] = useState("");
+  const [editImagePreview, setEditImagePreview] = useState("");
+  const [players, setPlayers] = useState<DbPlayer[]>([]);
+  const [recentMatches, setRecentMatches] = useState<Match[]>([]);
+  const [editMentionPlayerId, setEditMentionPlayerId] = useState("");
+  const [editMentionMatchId, setEditMentionMatchId] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const editDescTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleOpenEdit = async () => {
+    if (!post) return;
+    setEditTitle(post.title);
+    setEditDescription(post.description);
+    setEditImageBase64(post.imageUrl || "");
+    setEditImagePreview(post.imageUrl || "");
+    setEditError("");
+
+    playBeep(440, 0.15, "triangle");
+    setIsEditModalOpen(true);
+
+    try {
+      const [playersList, matchesList] = await Promise.all([
+        fetchPlayers(),
+        fetchMatches(),
+      ]);
+      setPlayers(playersList);
+      setRecentMatches(matchesList.slice(0, 15));
+    } catch (e) {
+      console.error("Error loading edit helpers:", e);
+    }
+  };
+
+  const handleUpdatePostSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError("");
+
+    if (!user || !post) return;
+
+    const titleTrimmed = editTitle.trim();
+    const descTrimmed = editDescription.trim();
+
+    if (!titleTrimmed) {
+      setEditError("TITLE REQUIRED!");
+      return;
+    }
+
+    if (titleTrimmed.length > 80) {
+      setEditError("TITLE TOO LONG (MAX 80 CHARS)!");
+      return;
+    }
+
+    if (!descTrimmed) {
+      setEditError("DESCRIPTION REQUIRED!");
+      return;
+    }
+
+    setEditSubmitting(true);
+    try {
+      const finalTags = extractAutomaticTags(
+        titleTrimmed,
+        descTrimmed,
+        post.type,
+      );
+
+      const mentionedPlayers: string[] = [];
+      const mentionedMatches: string[] = [];
+
+      const playerRegex = /@player:([\w\d_-]+)/g;
+      const matchRegex = /@match:([\w\d_-]+)/g;
+
+      let match;
+      while ((match = playerRegex.exec(descTrimmed)) !== null) {
+        mentionedPlayers.push(match[1]);
+      }
+      while ((match = matchRegex.exec(descTrimmed)) !== null) {
+        mentionedMatches.push(match[1]);
+      }
+
+      if (mentionedPlayers.length > 0 && !finalTags.includes("players")) {
+        finalTags.push("players");
+      }
+      if (mentionedMatches.length > 0 && !finalTags.includes("match")) {
+        finalTags.push("match");
+      }
+
+      const success = await updatePost(post.id, {
+        title: titleTrimmed,
+        description: descTrimmed,
+        imageUrl: editImageBase64 || undefined,
+        tags: finalTags,
+        mentionedPlayers,
+        mentionedMatches,
+      });
+
+      if (success) {
+        setPost({
+          ...post,
+          title: titleTrimmed,
+          description: descTrimmed,
+          imageUrl: editImageBase64 || undefined,
+          tags: finalTags,
+          mentionedPlayers,
+          mentionedMatches,
+        });
+        setIsEditModalOpen(false);
+        playCoin();
+      } else {
+        setEditError("FAILED TO UPDATE THREAD DATA!");
+      }
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : "FAILED TO UPDATE THREAD!",
+      );
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleEditImageUploadChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setEditError("");
+    if (file.size > 12 * 1024 * 1024) {
+      setEditError("IMAGE FILE SIZE TOO LARGE (MAX 12MB)!");
+      return;
+    }
+
+    try {
+      const compressed = await compressPostImage(file);
+      setEditImageBase64(compressed);
+      setEditImagePreview(compressed);
+    } catch {
+      setEditError("FAILED TO COMPRESS PORTRAIT!");
+    }
+  };
+
+  const handleClearEditImage = () => {
+    setEditImageBase64("");
+    setEditImagePreview("");
+  };
+
+  const insertEditMentionAtCursor = (textToInsert: string) => {
+    const textarea = editDescTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const oldText = editDescription;
+    const newText =
+      oldText.substring(0, start) + textToInsert + oldText.substring(end);
+
+    setEditDescription(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd =
+        start + textToInsert.length;
+    }, 0);
+  };
 
   // Load Post and Comments
   useEffect(() => {
@@ -161,7 +386,7 @@ export default function ForumPostDetailPage({ params }: PageProps) {
             className={styles.backLink}
             onClick={() => playBeep(200, 0.1, "sine")}
           >
-            ◀ RETURN TO FORUMS LIST
+            ◀ FORUMS
           </Link>
           <div className="text-center py-20 border border-dashed border-red-500/30">
             <h2 className="text-neon-red font-pixel text-sm glow-red uppercase select-none">
@@ -188,7 +413,7 @@ export default function ForumPostDetailPage({ params }: PageProps) {
           className={styles.backLink}
           onClick={() => playBeep(200, 0.1, "sine")}
         >
-          ◀ FORUMS INDEX
+          ◀ FORUMS
         </Link>
 
         {/* Content Layout */}
@@ -226,6 +451,17 @@ export default function ForumPostDetailPage({ params }: PageProps) {
                 <span>{new Date(post.createdAt).toLocaleString()}</span>
                 <span>•</span>
                 <span>👀 {post.views || 0} VIEWS</span>
+                {user && post.authorId === user.uid && (
+                  <>
+                    <span>•</span>
+                    <button
+                      onClick={handleOpenEdit}
+                      className="text-[#ffd200] hover:text-white transition-colors cursor-pointer text-xs font-pixel"
+                    >
+                      ✏️ EDIT THREAD
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Post Image */}
@@ -398,6 +634,190 @@ export default function ForumPostDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+
+        {/* EDIT POST MODAL */}
+        {isEditModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>EDIT THREAD</h2>
+                <button
+                  onClick={() => {
+                    playBeep(150, 0.1, "sine");
+                    setIsEditModalOpen(false);
+                  }}
+                  className={styles.closeBtn}
+                >
+                  ✕ CLOSE
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleUpdatePostSubmit}
+                className={styles.formBody}
+              >
+                {/* Title */}
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>TOPIC TITLE (REQ)</label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Topic title..."
+                    className={styles.inputField}
+                    maxLength={80}
+                    disabled={editSubmitting}
+                  />
+                </div>
+
+                {/* Description Body */}
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>DESCRIPTION TEXT (REQ)</label>
+                  <textarea
+                    ref={editDescTextareaRef}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Write details... Support inline mentions of fighters and matches!"
+                    className={styles.textareaField}
+                    disabled={editSubmitting}
+                  />
+                </div>
+
+                {/* Mention Autocomplete selector helpers */}
+                <div className={styles.mentionsHelper}>
+                  <div className={styles.mentionsHeader}>
+                    ⚡ INSERT MENTION DEPENDENCY:
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {/* Players */}
+                    <div className="flex gap-1.5">
+                      <select
+                        value={editMentionPlayerId}
+                        onChange={(e) => setEditMentionPlayerId(e.target.value)}
+                        className="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 flex-grow font-tech outline-none"
+                        disabled={editSubmitting}
+                      >
+                        <option value="">-- CHOOSE PLAYER --</option>
+                        {players.map((p) => (
+                          <option key={p.id} value={p.name}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editMentionPlayerId) {
+                            insertEditMentionAtCursor(
+                              `@player:${editMentionPlayerId}`,
+                            );
+                            playBeep(700, 0.05, "sine");
+                          }
+                        }}
+                        className="bg-sky-950 border border-sky-700 text-sky-400 px-2 text-xs font-pixel"
+                        disabled={!editMentionPlayerId || editSubmitting}
+                      >
+                        ADD
+                      </button>
+                    </div>
+
+                    {/* Matches */}
+                    <div className="flex gap-1.5">
+                      <select
+                        value={editMentionMatchId}
+                        onChange={(e) => setEditMentionMatchId(e.target.value)}
+                        className="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 flex-grow font-tech outline-none"
+                        disabled={editSubmitting}
+                      >
+                        <option value="">-- CHOOSE MATCH --</option>
+                        {recentMatches.map((m) => {
+                          const date = new Date(
+                            m.createdAt,
+                          ).toLocaleDateString();
+                          return (
+                            <option key={m.id} value={m.id}>
+                              Match: {m.teamA[0]} vs {m.teamB[0]} ({date})
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editMentionMatchId) {
+                            insertEditMentionAtCursor(
+                              `@match:${editMentionMatchId}`,
+                            );
+                            playBeep(700, 0.05, "sine");
+                          }
+                        }}
+                        className="bg-rose-950 border border-rose-700 text-rose-400 px-2 text-xs font-pixel"
+                        disabled={!editMentionMatchId || editSubmitting}
+                      >
+                        ADD
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional image edit */}
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>
+                    ATTACH SCREENSHOT / PREVIEW PHOTO
+                  </label>
+                  <div className={styles.imageUploadContainer}>
+                    {editImagePreview ? (
+                      <>
+                        <div className={styles.uploadPreview}>
+                          <img src={editImagePreview} alt="Edit Preview" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearEditImage}
+                          className={styles.removeImageBtn}
+                          disabled={editSubmitting}
+                        >
+                          REMOVE PHOTO
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className={styles.uploadPreview}>
+                          <span className={styles.uploadPlaceholder}>🖼️</span>
+                        </div>
+                        <label className={styles.uploadBtn}>
+                          UPLOAD IMAGE
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleEditImageUploadChange}
+                            disabled={editSubmitting}
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Errors */}
+                {editError && (
+                  <div className={styles.errorBox}>⚠️ {editError}</div>
+                )}
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className={styles.submitBtn}
+                >
+                  {editSubmitting
+                    ? "UPDATING SYSTEM THREAD..."
+                    : "💾 SAVE CHANGES"}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </CRTOverlay>
   );

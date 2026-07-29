@@ -12,11 +12,9 @@ import {
   Match,
   fetchSeasons,
   fetchAllMatches,
-  seedMockSeasons,
-  clearMockSeasons,
   getWeightedWinrate,
 } from "@/utils/firebase";
-import { playBeep, playWin } from "@/utils/audio";
+import { playBeep } from "@/utils/audio";
 
 export default function SeasonsPage() {
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -27,44 +25,6 @@ export default function SeasonsPage() {
     "leaderboard",
   );
   const [audioInitialized, setAudioInitialized] = useState(false);
-
-  const handleSeedMockData = async () => {
-    playBeep(220, 0.15, "sawtooth");
-    const confirmSeed = window.confirm(
-      "Do you want to seed mock Season 1 and Season 2 data for testing?",
-    );
-    if (!confirmSeed) return;
-
-    setLoading(true);
-    const success = await seedMockSeasons();
-    if (success) {
-      playWin();
-      alert("Mock season data successfully seeded! Reloading page...");
-      window.location.reload();
-    } else {
-      alert("Failed to seed mock seasons.");
-      setLoading(false);
-    }
-  };
-
-  const handleClearMockData = async () => {
-    playBeep(150, 0.15, "sawtooth");
-    const confirmClear = window.confirm(
-      "Are you sure you want to delete mock Season 1 and Season 2 and reset config to Season 1?",
-    );
-    if (!confirmClear) return;
-
-    setLoading(true);
-    const success = await clearMockSeasons();
-    if (success) {
-      playWin();
-      alert("Mock season data successfully cleared! Reloading page...");
-      window.location.reload();
-    } else {
-      alert("Failed to clear mock seasons.");
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -176,10 +136,6 @@ export default function SeasonsPage() {
                 SEASON IN SETTINGS, ITS ARCHIVES WILL RECORD HERE!
               </p>
 
-              <button onClick={handleSeedMockData} className={styles.seedBtn}>
-                🛠️ SEED SEASONS MOCK DATA
-              </button>
-
               <Link
                 href="/"
                 onClick={() => playBeep(250, 0.1, "sawtooth")}
@@ -210,13 +166,6 @@ export default function SeasonsPage() {
                         </option>
                       ))}
                   </select>
-
-                  <button
-                    onClick={handleClearMockData}
-                    className={styles.clearBtn}
-                  >
-                    ✕ CLEAR MOCK DATA
-                  </button>
                 </div>
 
                 <div className={styles.durationText}>

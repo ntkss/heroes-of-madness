@@ -518,7 +518,7 @@ export default function Home() {
         {/* Dashboard Main Area */}
         <main className="mx-auto w-full p-4 md:p-8 flex-grow flex flex-col gap-8 items-center">
           {/* Top Section: PlayerInput (Centered, Max 800px) */}
-          <section className="w-full max-w-[900px] flex flex-col">
+          <section className="container">
             <PlayerInput
               names={names}
               onChange={setNames}

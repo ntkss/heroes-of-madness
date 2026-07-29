@@ -166,7 +166,7 @@
 /* Post list */
 .postList {
   display: flex;
-  flex-col: column;
+  flex-direction: column;
   gap: 1rem;
   margin-bottom: 2rem;
 }

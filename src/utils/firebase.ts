@@ -2220,20 +2220,32 @@ export async function savePost(
 ): Promise<ForumPost> {
   const slug = generatePostSlug(postData.title);
   const createdAt = Date.now();
-  const newPost = {
-    ...postData,
+  const newPost: ForumPost = {
+    title: postData.title,
+    description: postData.description,
+    type: postData.type,
+    authorId: postData.authorId,
+    authorName: postData.authorName,
+    authorAvatar: postData.authorAvatar,
     slug,
     createdAt,
     views: 0,
     likes: 0,
     dislikes: 0,
     userVotes: {},
+    tags: postData.tags || [],
+    mentionedPlayers: postData.mentionedPlayers || [],
+    mentionedMatches: postData.mentionedMatches || [],
+    ...(postData.imageUrl ? { imageUrl: postData.imageUrl } : {}),
+    id: "", // Will be updated with docRef.id if Firestore succeeds
   };
 
   if (db && isFirebaseConfigured) {
     try {
+      // Create a clean object without the id field and any undefined values for Firestore
+      const { id, ...firestoreData } = newPost;
       const postsCol = collection(db, "posts");
-      const docRef = await addDoc(postsCol, newPost);
+      const docRef = await addDoc(postsCol, firestoreData);
       return {
         ...newPost,
         id: docRef.id,

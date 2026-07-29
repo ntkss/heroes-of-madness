@@ -465,6 +465,18 @@ export default function Home() {
               🏆 SEASONS
             </Link>
 
+            {/* Forums Board Link */}
+            <Link
+              href="/forums"
+              onClick={() => {
+                playBeep(300, 0.15, "sawtooth");
+              }}
+              className="flex items-center gap-1.5 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none uppercase tracking-wide"
+              title="Browse Forums Board"
+            >
+              💬 FORUMS
+            </Link>
+
             {/* Announcer Synth Activator */}
             <button
               onClick={(e) => {

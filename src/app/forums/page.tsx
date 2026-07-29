@@ -73,12 +73,12 @@ export default function ForumsPage() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [players, setPlayers] = useState<DbPlayer[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
-  
+
   // Filtering & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "news" | "forum">("all");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  
+
   // Modals / Creating Post
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [postTitle, setPostTitle] = useState("");
@@ -86,15 +86,15 @@ export default function ForumsPage() {
   const [postType, setPostType] = useState<"news" | "forum">("forum");
   const [postImageBase64, setPostImageBase64] = useState("");
   const [postImagePreview, setPostImagePreview] = useState("");
-  
+
   // Mentions insert selectors
   const [mentionPlayerId, setMentionPlayerId] = useState("");
   const [mentionMatchId, setMentionMatchId] = useState("");
-  
+
   const [loading, setLoading] = useState(true);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -147,15 +147,19 @@ export default function ForumsPage() {
     setFormSubmitting(true);
     try {
       // Automatic Tagging Extraction
-      const finalTags = extractAutomaticTags(titleTrimmed, descTrimmed, postType);
-      
+      const finalTags = extractAutomaticTags(
+        titleTrimmed,
+        descTrimmed,
+        postType,
+      );
+
       // Parse description for mention dependencies
       const mentionedPlayers: string[] = [];
       const mentionedMatches: string[] = [];
-      
+
       const playerRegex = /@player:([\w\d_-]+)/g;
       const matchRegex = /@match:([\w\d_-]+)/g;
-      
+
       let match;
       while ((match = playerRegex.exec(descTrimmed)) !== null) {
         mentionedPlayers.push(match[1]);
@@ -163,7 +167,7 @@ export default function ForumsPage() {
       while ((match = matchRegex.exec(descTrimmed)) !== null) {
         mentionedMatches.push(match[1]);
       }
-      
+
       // If mentioned elements exist, auto group in the tags list
       if (mentionedPlayers.length > 0 && !finalTags.includes("players")) {
         finalTags.push("players");
@@ -179,14 +183,16 @@ export default function ForumsPage() {
         imageUrl: postImageBase64 || undefined,
         authorId: user.uid,
         authorName: user.displayName || "ANONYMOUS FIGHTER",
-        authorAvatar: user.photoURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}&backgroundColor=1a1a2e`,
+        authorAvatar:
+          user.photoURL ||
+          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}&backgroundColor=1a1a2e`,
         tags: finalTags,
         mentionedPlayers,
         mentionedMatches,
       });
 
       setPosts((prev) => [saved, ...prev]);
-      
+
       // Clear inputs
       setPostTitle("");
       setPostDescription("");
@@ -196,16 +202,20 @@ export default function ForumsPage() {
       setMentionMatchId("");
       setPostType("forum");
       setIsModalOpen(false);
-      
+
       playCoin();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "FAILED TO CREATE THREAD!");
+      setFormError(
+        err instanceof Error ? err.message : "FAILED TO CREATE THREAD!",
+      );
     } finally {
       setFormSubmitting(false);
     }
   };
 
-  const handleImageUploadChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUploadChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -236,19 +246,21 @@ export default function ForumsPage() {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const oldText = postDescription;
-    const newText = oldText.substring(0, start) + textToInsert + oldText.substring(end);
+    const newText =
+      oldText.substring(0, start) + textToInsert + oldText.substring(end);
 
     setPostDescription(newText);
 
     setTimeout(() => {
       textarea.focus();
-      textarea.selectionStart = textarea.selectionEnd = start + textToInsert.length;
+      textarea.selectionStart = textarea.selectionEnd =
+        start + textToInsert.length;
     }, 0);
   };
 
   // Compile list of all distinct tags in current posts for the sidebar
   const allDistinctTags = Array.from(
-    new Set(posts.flatMap((p) => p.tags))
+    new Set(posts.flatMap((p) => p.tags)),
   ).sort();
 
   // Filter logic
@@ -257,10 +269,10 @@ export default function ForumsPage() {
     const matchesSearch =
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Tab filter
     const matchesTab = activeTab === "all" || post.type === activeTab;
-    
+
     // Tag filter
     const matchesTag = !selectedTag || post.tags.includes(selectedTag);
 
@@ -271,7 +283,11 @@ export default function ForumsPage() {
     <CRTOverlay>
       <div className={styles.container}>
         {/* Navigation Breadcrumb */}
-        <Link href="/" className={styles.backLink} onClick={() => playBeep(200, 0.1, "sine")}>
+        <Link
+          href="/"
+          className={styles.backLink}
+          onClick={() => playBeep(200, 0.1, "sine")}
+        >
           ◀ BACK TO CABINET MAIN
         </Link>
 
@@ -374,12 +390,19 @@ export default function ForumsPage() {
                   >
                     {post.imageUrl && (
                       <div className={styles.postCardThumb}>
-                        <img src={post.imageUrl} className={styles.thumbImg} alt="post thumb" />
+                        <img
+                          src={post.imageUrl}
+                          className={styles.thumbImg}
+                          alt="post thumb"
+                        />
                       </div>
                     )}
                     <div className={styles.postCardContent}>
                       <h2 className={styles.postTitle}>
-                        <Link href={`/forums/${post.slug}`} onClick={() => playBeep(520, 0.1, "sine")}>
+                        <Link
+                          href={`/forums/${post.slug}`}
+                          onClick={() => playBeep(520, 0.1, "sine")}
+                        >
                           {post.title}
                         </Link>
                       </h2>
@@ -388,30 +411,40 @@ export default function ForumsPage() {
                           ? post.description.substring(0, 180) + "..."
                           : post.description}
                       </p>
-                      
+
                       {/* Meta information row */}
                       <div className={styles.postMeta}>
-                        <span className={`${styles.badgeType} ${post.type === "news" ? styles.badgeTypeNews : ""}`}>
+                        <span
+                          className={`${styles.badgeType} ${post.type === "news" ? styles.badgeTypeNews : ""}`}
+                        >
                           {post.type}
                         </span>
-                        
+
                         <div className={styles.postAuthor}>
                           <img
                             src={post.authorAvatar}
                             className={styles.authorAvatar}
                             alt="author avatar"
                           />
-                          <span className="text-slate-300 font-semibold">{post.authorName}</span>
+                          <span className="text-slate-300 font-semibold">
+                            {post.authorName}
+                          </span>
                         </div>
-                        
+
                         <span>•</span>
-                        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                        
+                        <span>
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+
                         <span>•</span>
-                        <span className={styles.metaItem}>👀 {post.views || 0} VIEWS</span>
-                        
+                        <span className={styles.metaItem}>
+                          👀 {post.views || 0} VIEWS
+                        </span>
+
                         <span>•</span>
-                        <span className={styles.metaItem}>👍 {post.likes || 0} LIKES</span>
+                        <span className={styles.metaItem}>
+                          👍 {post.likes || 0} LIKES
+                        </span>
                       </div>
 
                       {/* Display Post Tags */}
@@ -447,7 +480,9 @@ export default function ForumsPage() {
                   #ALL-TAGS ({posts.length})
                 </button>
                 {allDistinctTags.map((tag) => {
-                  const count = posts.filter((p) => p.tags.includes(tag)).length;
+                  const count = posts.filter((p) =>
+                    p.tags.includes(tag),
+                  ).length;
                   return (
                     <button
                       key={tag}
@@ -483,7 +518,9 @@ export default function ForumsPage() {
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
               <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>CREATE NEW COMMUNITY THREAD</h2>
+                <h2 className={styles.modalTitle}>
+                  CREATE NEW COMMUNITY THREAD
+                </h2>
                 <button
                   onClick={() => {
                     playBeep(150, 0.1, "sine");
@@ -516,12 +553,18 @@ export default function ForumsPage() {
                     <label className={styles.label}>POST CATEGORY</label>
                     <select
                       value={postType}
-                      onChange={(e) => setPostType(e.target.value as "news" | "forum")}
+                      onChange={(e) =>
+                        setPostType(e.target.value as "news" | "forum")
+                      }
                       className={styles.selectField}
                       disabled={formSubmitting}
                     >
-                      <option value="forum">💬 GENERAL DISCUSSION (FORUMS)</option>
-                      <option value="news">📢 OFFICIAL ANNOUNCEMENT (NEWS)</option>
+                      <option value="forum">
+                        💬 GENERAL DISCUSSION (FORUMS)
+                      </option>
+                      <option value="news">
+                        📢 OFFICIAL ANNOUNCEMENT (NEWS)
+                      </option>
                     </select>
                   </div>
                 )}
@@ -541,7 +584,9 @@ export default function ForumsPage() {
 
                 {/* Mention Selector Helpers */}
                 <div className={styles.mentionsHelper}>
-                  <div className={styles.mentionsHeader}>⚡ INSERT MENTION DEPENDENCY:</div>
+                  <div className={styles.mentionsHeader}>
+                    ⚡ INSERT MENTION DEPENDENCY:
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Players dropdown */}
                     <div className="flex gap-1.5">
@@ -583,7 +628,9 @@ export default function ForumsPage() {
                       >
                         <option value="">-- CHOOSE MATCH --</option>
                         {recentMatches.map((m) => {
-                          const date = new Date(m.createdAt).toLocaleDateString();
+                          const date = new Date(
+                            m.createdAt,
+                          ).toLocaleDateString();
                           return (
                             <option key={m.id} value={m.id}>
                               Match: {m.teamA[0]} vs {m.teamB[0]} ({date})
@@ -610,7 +657,9 @@ export default function ForumsPage() {
 
                 {/* Optional Image upload */}
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>ATTACH SCREENSHOT / PREVIEW PHOTO</label>
+                  <label className={styles.label}>
+                    ATTACH SCREENSHOT / PREVIEW PHOTO
+                  </label>
                   <div className={styles.imageUploadContainer}>
                     {postImagePreview ? (
                       <>
@@ -646,7 +695,9 @@ export default function ForumsPage() {
                 </div>
 
                 {/* Error field */}
-                {formError && <div className={styles.errorBox}>⚠️ {formError}</div>}
+                {formError && (
+                  <div className={styles.errorBox}>⚠️ {formError}</div>
+                )}
 
                 {/* Submit button */}
                 <button
@@ -654,7 +705,9 @@ export default function ForumsPage() {
                   disabled={formSubmitting}
                   className={styles.submitBtn}
                 >
-                  {formSubmitting ? "COMPILING SYSTEM POST..." : "🚀 PUBLISH POST"}
+                  {formSubmitting
+                    ? "COMPILING SYSTEM POST..."
+                    : "🚀 PUBLISH POST"}
                 </button>
               </form>
             </div>

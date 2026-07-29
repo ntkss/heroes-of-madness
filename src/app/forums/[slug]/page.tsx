@@ -28,12 +28,12 @@ export default function ForumPostDetailPage({ params }: PageProps) {
   const slug = resolvedParams.slug;
 
   const { user, login, isAdmin } = useAuth();
-  
+
   const [post, setPost] = useState<ForumPost | null>(null);
   const [postsList, setPostsList] = useState<ForumPost[]>([]);
   const [comments, setComments] = useState<ForumComment[]>([]);
   const [newCommentText, setNewCommentText] = useState("");
-  
+
   const [loading, setLoading] = useState(true);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState("");
@@ -45,7 +45,7 @@ export default function ForumPostDetailPage({ params }: PageProps) {
         const activePost = await fetchPostBySlug(slug);
         if (activePost) {
           setPost(activePost);
-          
+
           // Increment views
           await incrementPostViews(activePost.id);
           // Refresh views count locally
@@ -55,7 +55,7 @@ export default function ForumPostDetailPage({ params }: PageProps) {
           const commentsList = await fetchPostComments(activePost.id);
           setComments(commentsList);
         }
-        
+
         // Fetch posts for recommendation widget
         const allPosts = await fetchPosts();
         setPostsList(allPosts.filter((p) => p.slug !== slug).slice(0, 5));
@@ -108,14 +108,18 @@ export default function ForumPostDetailPage({ params }: PageProps) {
       const saved = await savePostComment(post.id, textTrimmed, {
         userId: user.uid,
         authorName: user.displayName || "ANONYMOUS FIGHTER",
-        authorAvatar: user.photoURL || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}&backgroundColor=1a1a2e`,
+        authorAvatar:
+          user.photoURL ||
+          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}&backgroundColor=1a1a2e`,
       });
 
       setComments((prev) => [...prev, saved]);
       setNewCommentText("");
       playCoin();
     } catch (err) {
-      setCommentError(err instanceof Error ? err.message : "FAILED TO PUBLISH COMMENT!");
+      setCommentError(
+        err instanceof Error ? err.message : "FAILED TO PUBLISH COMMENT!",
+      );
     } finally {
       setCommentSubmitting(false);
     }
@@ -152,7 +156,11 @@ export default function ForumPostDetailPage({ params }: PageProps) {
     return (
       <CRTOverlay>
         <div className={styles.container}>
-          <Link href="/forums" className={styles.backLink} onClick={() => playBeep(200, 0.1, "sine")}>
+          <Link
+            href="/forums"
+            className={styles.backLink}
+            onClick={() => playBeep(200, 0.1, "sine")}
+          >
             ◀ RETURN TO FORUMS LIST
           </Link>
           <div className="text-center py-20 border border-dashed border-red-500/30">
@@ -175,7 +183,11 @@ export default function ForumPostDetailPage({ params }: PageProps) {
     <CRTOverlay>
       <div className={styles.container}>
         {/* Back Link */}
-        <Link href="/forums" className={styles.backLink} onClick={() => playBeep(200, 0.1, "sine")}>
+        <Link
+          href="/forums"
+          className={styles.backLink}
+          onClick={() => playBeep(200, 0.1, "sine")}
+        >
           ◀ FORUMS INDEX
         </Link>
 
@@ -185,12 +197,16 @@ export default function ForumPostDetailPage({ params }: PageProps) {
           <div>
             <article className={styles.detailCard}>
               {/* Type Category Badge */}
-              <span className={`${styles.badgeType} ${post.type === "news" ? styles.badgeTypeNews : ""}`}>
+              <span
+                className={`${styles.badgeType} ${post.type === "news" ? styles.badgeTypeNews : ""}`}
+              >
                 {post.type}
               </span>
 
               {/* Title */}
-              <h1 className={`${styles.detailTitle} ${post.type === "news" ? "text-neon-red glow-red" : "text-white"}`}>
+              <h1
+                className={`${styles.detailTitle} ${post.type === "news" ? "text-neon-red glow-red" : "text-white"}`}
+              >
                 {post.title}
               </h1>
 
@@ -202,7 +218,9 @@ export default function ForumPostDetailPage({ params }: PageProps) {
                     className={styles.authorAvatar}
                     alt="author avatar"
                   />
-                  <span className="text-slate-200 font-semibold">{post.authorName}</span>
+                  <span className="text-slate-200 font-semibold">
+                    {post.authorName}
+                  </span>
                 </div>
                 <span>•</span>
                 <span>{new Date(post.createdAt).toLocaleString()}</span>
@@ -238,7 +256,9 @@ export default function ForumPostDetailPage({ params }: PageProps) {
                   <button
                     onClick={() => handleVote("dislikes")}
                     className={`${styles.feedbackBtn} ${
-                      activeVote === "dislikes" ? styles.feedbackBtnDislikeActive : ""
+                      activeVote === "dislikes"
+                        ? styles.feedbackBtnDislikeActive
+                        : ""
                     }`}
                   >
                     👎 DISLIKES ({post.dislikes || 0})
@@ -252,7 +272,9 @@ export default function ForumPostDetailPage({ params }: PageProps) {
 
             {/* Comments Thread Section */}
             <div className={styles.commentsContainer}>
-              <h3 className={styles.commentsHeading}>COMMENT LOGS ({comments.length})</h3>
+              <h3 className={styles.commentsHeading}>
+                COMMENT LOGS ({comments.length})
+              </h3>
 
               <div className={styles.commentsList}>
                 {comments.length === 0 ? (
@@ -298,7 +320,10 @@ export default function ForumPostDetailPage({ params }: PageProps) {
 
               {/* Add Comment Form */}
               {user ? (
-                <form onSubmit={handleCreateComment} className={styles.commentForm}>
+                <form
+                  onSubmit={handleCreateComment}
+                  className={styles.commentForm}
+                >
                   <textarea
                     value={newCommentText}
                     onChange={(e) => setNewCommentText(e.target.value)}
@@ -308,18 +333,24 @@ export default function ForumPostDetailPage({ params }: PageProps) {
                     disabled={commentSubmitting}
                     required
                   />
-                  {commentError && <div className={styles.errorBox}>⚠️ {commentError}</div>}
+                  {commentError && (
+                    <div className={styles.errorBox}>⚠️ {commentError}</div>
+                  )}
                   <button
                     type="submit"
                     disabled={commentSubmitting || !newCommentText.trim()}
                     className={styles.submitBtn}
                   >
-                    {commentSubmitting ? "TRANSMITTING COMMENT..." : "💬 INJECT COMMENT"}
+                    {commentSubmitting
+                      ? "TRANSMITTING COMMENT..."
+                      : "💬 INJECT COMMENT"}
                   </button>
                 </form>
               ) : (
                 <div className={styles.loginPrompt}>
-                  <p>YOU MUST LOGIN TO WRITE RESPONSES ON THIS CABINET BOARD.</p>
+                  <p>
+                    YOU MUST LOGIN TO WRITE RESPONSES ON THIS CABINET BOARD.
+                  </p>
                   <button
                     onClick={() => {
                       playCoin();
@@ -339,7 +370,9 @@ export default function ForumPostDetailPage({ params }: PageProps) {
             <div className={styles.sidebarCard}>
               <h3 className={styles.widgetTitle}>OTHER POSTS</h3>
               {postsList.length === 0 ? (
-                <p className="text-xs text-slate-500 font-pixel text-center">NO OTHERS FOUND</p>
+                <p className="text-xs text-slate-500 font-pixel text-center">
+                  NO OTHERS FOUND
+                </p>
               ) : (
                 <div className={styles.listRow}>
                   {postsList.map((p) => (
@@ -354,7 +387,8 @@ export default function ForumPostDetailPage({ params }: PageProps) {
                           {p.title}
                         </span>
                         <span className={styles.listItemMeta}>
-                          {p.type === "news" ? "📢 News" : "💬 Forum"} • 👀 {p.views || 0}
+                          {p.type === "news" ? "📢 News" : "💬 Forum"} • 👀{" "}
+                          {p.views || 0}
                         </span>
                       </div>
                     </Link>

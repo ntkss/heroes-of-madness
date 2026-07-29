@@ -15,7 +15,7 @@ export function PlayerMentionBadge({ playerId }: { playerId: string }) {
         const found = list.find(
           (p) =>
             p.id.toLowerCase() === playerId.toLowerCase() ||
-            p.name.toLowerCase() === playerId.toLowerCase()
+            p.name.toLowerCase() === playerId.toLowerCase(),
         );
         if (found) setPlayer(found);
       } catch (e) {
@@ -98,7 +98,7 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
             <h3 className="text-[#ffd200] text-base font-pixel mb-5 text-center tracking-wider glow-yellow select-none">
               MATCH HISTORIC DATA
             </h3>
-            
+
             <div className="grid grid-cols-2 gap-4 text-center mb-6">
               {/* Blue Team */}
               <div className="border border-sky-500/30 bg-sky-500/5 p-3">
@@ -107,7 +107,10 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
                 </h4>
                 <ul className="text-xs space-y-1.5 text-slate-300">
                   {match.teamA.map((p, idx) => (
-                    <li key={idx} className="flex justify-between items-center text-[11px]">
+                    <li
+                      key={idx}
+                      className="flex justify-between items-center text-[11px]"
+                    >
                       <span className="font-semibold">{p}</span>
                       <span className="text-slate-500 font-mono text-[9px] uppercase bg-slate-900 px-1 py-0.5">
                         {match.teamALanes?.[idx] || "ALL"}
@@ -129,7 +132,10 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
                 </h4>
                 <ul className="text-xs space-y-1.5 text-slate-300">
                   {match.teamB.map((p, idx) => (
-                    <li key={idx} className="flex justify-between items-center text-[11px]">
+                    <li
+                      key={idx}
+                      className="flex justify-between items-center text-[11px]"
+                    >
                       <span className="font-semibold">{p}</span>
                       <span className="text-slate-500 font-mono text-[9px] uppercase bg-slate-900 px-1 py-0.5">
                         {match.teamBLanes?.[idx] || "ALL"}
@@ -148,7 +154,9 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
             <div className="text-center text-[11px] text-slate-400 border-t border-slate-800 pt-4 space-y-0.5">
               <p>MATCH UNIQUE ID: {match.id}</p>
               <p>RECORDED TIME: {new Date(match.createdAt).toLocaleString()}</p>
-              <p className="text-rose-400 font-semibold mt-1">SEASON RUN: #{match.seasonId || 1}</p>
+              <p className="text-rose-400 font-semibold mt-1">
+                SEASON RUN: #{match.seasonId || 1}
+              </p>
             </div>
           </div>
         </div>
@@ -179,11 +187,11 @@ export function parseMentions(text: string): React.ReactNode[] {
     // Push mention badge
     if (type === "player") {
       parts.push(
-        <PlayerMentionBadge key={`player-${id}-${matchIndex}`} playerId={id} />
+        <PlayerMentionBadge key={`player-${id}-${matchIndex}`} playerId={id} />,
       );
     } else if (type === "match") {
       parts.push(
-        <MatchMentionBadge key={`match-${id}-${matchIndex}`} matchId={id} />
+        <MatchMentionBadge key={`match-${id}-${matchIndex}`} matchId={id} />,
       );
     }
 

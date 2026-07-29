@@ -1995,32 +1995,80 @@ export interface ForumComment {
 }
 
 // Automatic tagging
-export function extractAutomaticTags(title: string, description: string, type: "news" | "forum"): string[] {
+export function extractAutomaticTags(
+  title: string,
+  description: string,
+  type: "news" | "forum",
+): string[] {
   const tagsSet = new Set<string>();
-  
+
   if (type === "news") {
     tagsSet.add("news");
   } else {
     tagsSet.add("forum");
   }
-  
+
   const content = (title + " " + description).toLowerCase();
-  
+
   const keywordMap: Record<string, string[]> = {
-    "rank": ["rank", "tier", "winrate", "win rate", "placement", "division"],
-    "patch-update": ["patch", "update", "buff", "nerf", "revamp", "balance", "release", "patch-update", "season"],
-    "mlbb": ["mlbb", "mobile legends", "legends", "moba", "fighter", "squad", "meta"],
-    "match": ["match", "scrim", "verses", "vs", "history", "winner", "team a", "team b", "score"],
-    "tournament": ["tournament", "cup", "esports", "championship", "bracket", "draft"],
-    "guide": ["guide", "tutorial", "build", "item", "emblem", "how to", "tips", "tricks"]
+    rank: ["rank", "tier", "winrate", "win rate", "placement", "division"],
+    "patch-update": [
+      "patch",
+      "update",
+      "buff",
+      "nerf",
+      "revamp",
+      "balance",
+      "release",
+      "patch-update",
+      "season",
+    ],
+    mlbb: [
+      "mlbb",
+      "mobile legends",
+      "legends",
+      "moba",
+      "fighter",
+      "squad",
+      "meta",
+    ],
+    match: [
+      "match",
+      "scrim",
+      "verses",
+      "vs",
+      "history",
+      "winner",
+      "team a",
+      "team b",
+      "score",
+    ],
+    tournament: [
+      "tournament",
+      "cup",
+      "esports",
+      "championship",
+      "bracket",
+      "draft",
+    ],
+    guide: [
+      "guide",
+      "tutorial",
+      "build",
+      "item",
+      "emblem",
+      "how to",
+      "tips",
+      "tricks",
+    ],
   };
-  
+
   Object.entries(keywordMap).forEach(([tag, keywords]) => {
-    if (keywords.some(keyword => content.includes(keyword))) {
+    if (keywords.some((keyword) => content.includes(keyword))) {
       tagsSet.add(tag);
     }
   });
-  
+
   const hashtagRegex = /#([\w-]+)/g;
   let match;
   while ((match = hashtagRegex.exec(content)) !== null) {
@@ -2029,7 +2077,7 @@ export function extractAutomaticTags(title: string, description: string, type: "
       tagsSet.add(hashtag);
     }
   }
-  
+
   return Array.from(tagsSet);
 }
 
@@ -2041,13 +2089,16 @@ export function generatePostSlug(title: string): string {
     .replace(/[^\w\s-]/g, "")
     .replace(/[\s_]+/g, "-")
     .replace(/-+/g, "-");
-  
+
   const randomSuffix = Math.random().toString(36).substring(2, 8);
   return `${cleanTitle || "post"}-${randomSuffix}`;
 }
 
 // Fetch forum posts
-export async function fetchPosts(tag?: string, type?: "news" | "forum"): Promise<ForumPost[]> {
+export async function fetchPosts(
+  tag?: string,
+  type?: "news" | "forum",
+): Promise<ForumPost[]> {
   if (db && isFirebaseConfigured) {
     try {
       const postsCol = collection(db, "posts");
@@ -2075,11 +2126,11 @@ export async function fetchPosts(tag?: string, type?: "news" | "forum"): Promise
           mentionedPlayers: data.mentionedPlayers || [],
           mentionedMatches: data.mentionedMatches || [],
         };
-        
+
         let matchFilter = true;
         if (tag && !post.tags.includes(tag.toLowerCase())) matchFilter = false;
         if (type && post.type !== type) matchFilter = false;
-        
+
         if (matchFilter) {
           list.push(post);
         }
@@ -2116,7 +2167,7 @@ export async function fetchPostBySlug(slug: string): Promise<ForumPost | null> {
       const postsCol = collection(db, "posts");
       const q = query(postsCol, where("slug", "==", slug), limit(1));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         const docSnap = querySnapshot.docs[0];
         const data = docSnap.data();
@@ -2141,7 +2192,10 @@ export async function fetchPostBySlug(slug: string): Promise<ForumPost | null> {
         };
       }
     } catch (e) {
-      console.error(`[Firestore Error] Error fetching post by slug ${slug}:`, e);
+      console.error(
+        `[Firestore Error] Error fetching post by slug ${slug}:`,
+        e,
+      );
     }
   }
 
@@ -2159,7 +2213,10 @@ export async function fetchPostBySlug(slug: string): Promise<ForumPost | null> {
 
 // Save forum post
 export async function savePost(
-  postData: Omit<ForumPost, "id" | "slug" | "createdAt" | "views" | "likes" | "dislikes" | "userVotes">,
+  postData: Omit<
+    ForumPost,
+    "id" | "slug" | "createdAt" | "views" | "likes" | "dislikes" | "userVotes"
+  >,
 ): Promise<ForumPost> {
   const slug = generatePostSlug(postData.title);
   const createdAt = Date.now();
@@ -2211,7 +2268,10 @@ export async function incrementPostViews(postId: string): Promise<void> {
       });
       return;
     } catch (e) {
-      console.error(`[Firestore Error] Error incrementing views for post ${postId}:`, e);
+      console.error(
+        `[Firestore Error] Error incrementing views for post ${postId}:`,
+        e,
+      );
     }
   }
 
@@ -2242,7 +2302,9 @@ export async function togglePostFeedback(
   const computeNewFeedback = (post: ForumPost): Partial<ForumPost> => {
     const likes = post.likes || 0;
     const dislikes = post.dislikes || 0;
-    const userVotes: { [uid: string]: "likes" | "dislikes" } = post.userVotes ? { ...post.userVotes } : {};
+    const userVotes: { [uid: string]: "likes" | "dislikes" } = post.userVotes
+      ? { ...post.userVotes }
+      : {};
     const currentVote = userVotes[userId] || null;
 
     let newLikes = likes;
@@ -2303,7 +2365,10 @@ export async function togglePostFeedback(
             const idx = list.findIndex((p) => p.id === postId);
             if (idx !== -1) {
               list[idx] = { ...list[idx], ...result };
-              localStorage.setItem("mlbb_generator_posts", JSON.stringify(list));
+              localStorage.setItem(
+                "mlbb_generator_posts",
+                JSON.stringify(list),
+              );
             }
           } catch (e) {
             console.error("Error syncing local storage:", e);
@@ -2342,7 +2407,9 @@ export async function togglePostFeedback(
 }
 
 // Fetch comments for a specific post
-export async function fetchPostComments(postId: string): Promise<ForumComment[]> {
+export async function fetchPostComments(
+  postId: string,
+): Promise<ForumComment[]> {
   if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
     try {
       const commentsCol = collection(db, "posts", postId, "comments");
@@ -2371,7 +2438,10 @@ export async function fetchPostComments(postId: string): Promise<ForumComment[]>
       });
       return list;
     } catch (e) {
-      console.error(`[Firestore Error] Error fetching comments for post ${postId}:`, e);
+      console.error(
+        `[Firestore Error] Error fetching comments for post ${postId}:`,
+        e,
+      );
     }
   }
 
@@ -2410,7 +2480,10 @@ export async function savePostComment(
         postId,
       };
     } catch (e) {
-      console.error(`[Firestore Error] Error saving comment for post ${postId}:`, e);
+      console.error(
+        `[Firestore Error] Error saving comment for post ${postId}:`,
+        e,
+      );
     }
   }
 
@@ -2462,14 +2535,20 @@ export async function deletePost(postId: string): Promise<boolean> {
 }
 
 // Delete post comment
-export async function deletePostComment(postId: string, commentId: string): Promise<boolean> {
+export async function deletePostComment(
+  postId: string,
+  commentId: string,
+): Promise<boolean> {
   if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
     try {
       const docRef = doc(db, "posts", postId, "comments", commentId);
       await deleteDoc(docRef);
       return true;
     } catch (e) {
-      console.error(`[Firestore Error] Error deleting comment ${commentId}:`, e);
+      console.error(
+        `[Firestore Error] Error deleting comment ${commentId}:`,
+        e,
+      );
     }
   }
 

@@ -70,9 +70,9 @@ export default function ForumsPage() {
         {/* Header bar */}
         <header className={styles.header}>
           <div>
-            <h1 className={styles.title}>BBS FORUMS & NEWS</h1>
+            <h1 className={styles.title}>FORUMS & NEWS</h1>
             <p className="text-xs text-[#a0a0c0] mt-1 font-mono tracking-wider">
-              RETRO DIGITAL COMMUNITY ARCHIVE SYSTEM v2.0
+              HEROES COMMUNITY
             </p>
           </div>
           <div className={styles.headerActions}>
@@ -135,7 +135,7 @@ export default function ForumsPage() {
           <div className={styles.searchBar}>
             <input
               type="text"
-              placeholder="SEARCH TOPICS..."
+              placeholder="SEARCH..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
@@ -150,7 +150,7 @@ export default function ForumsPage() {
           <div>
             {loading ? (
               <div className="text-center font-pixel text-xs text-[#a0a0c0] py-16 animate-pulse select-none">
-                CONNECTING BBS TERMINAL...
+                CONNECTING TERMINAL...
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="text-center text-slate-500 font-pixel text-[11px] border border-dashed border-slate-800 py-16 uppercase">

@@ -21,7 +21,7 @@ export default function SidebarWidgetPanel({
     <div className={styles.sidebar}>
       {/* Tag groupings cloud widget */}
       <div className={styles.widget}>
-        <h3 className={styles.widgetTitle}>TAG GROUPINGS</h3>
+        <h3 className={styles.widgetTitle}>TAG</h3>
         <div className={styles.widgetTagsList}>
           <button
             onClick={() => {

@@ -25,9 +25,7 @@ export default function PostCard({ post }: PostCardProps) {
         </div>
       )}
       <div className={styles.postCardContent}>
-        <h2 className={styles.postTitle}>
-          {post.title}
-        </h2>
+        <h2 className={styles.postTitle}>{post.title}</h2>
         <p className={styles.postExcerpt}>
           {post.description.length > 180
             ? post.description.substring(0, 180) + "..."

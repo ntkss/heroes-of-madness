@@ -251,7 +251,10 @@ export async function fetchMatchById(matchId: string): Promise<Match | null> {
         };
       }
     } catch (e) {
-      console.error(`[Firestore Error] Error fetching match by ID ${matchId}:`, e);
+      console.error(
+        `[Firestore Error] Error fetching match by ID ${matchId}:`,
+        e,
+      );
     }
   }
 
@@ -2626,7 +2629,21 @@ export async function deletePostComment(
 // Update an existing post
 export async function updatePost(
   postId: string,
-  updatedFields: Partial<Omit<ForumPost, "id" | "slug" | "createdAt" | "views" | "likes" | "dislikes" | "userVotes" | "authorId" | "authorName" | "authorAvatar">> & { tags?: string[] },
+  updatedFields: Partial<
+    Omit<
+      ForumPost,
+      | "id"
+      | "slug"
+      | "createdAt"
+      | "views"
+      | "likes"
+      | "dislikes"
+      | "userVotes"
+      | "authorId"
+      | "authorName"
+      | "authorAvatar"
+    >
+  > & { tags?: string[] },
 ): Promise<boolean> {
   if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
     try {

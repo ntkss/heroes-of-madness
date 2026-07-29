@@ -1,6 +1,5 @@
 import React from "react";
 import Tag from "../Tag";
-import ForumsRulebook from "../ForumsRulebook";
 import { ForumPost } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
@@ -47,9 +46,6 @@ export default function SidebarWidgetPanel({
           })}
         </div>
       </div>
-
-      {/* Forums Rulebook protocol widget */}
-      {/* <ForumsRulebook /> */}
     </div>
   );
 }

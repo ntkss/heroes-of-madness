@@ -49,7 +49,7 @@ export default function SidebarWidgetPanel({
       </div>
 
       {/* Forums Rulebook protocol widget */}
-      <ForumsRulebook />
+      {/* <ForumsRulebook /> */}
     </div>
   );
 }

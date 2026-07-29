@@ -50,7 +50,8 @@ export default function ForumsPage() {
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === "all" || post.type === activeTab;
-    const matchesTag = !selectedTag || (post.tags && post.tags.includes(selectedTag));
+    const matchesTag =
+      !selectedTag || (post.tags && post.tags.includes(selectedTag));
     return matchesSearch && matchesTab && matchesTag;
   });
 
@@ -63,7 +64,7 @@ export default function ForumsPage() {
           className={styles.backLink}
           onClick={() => playBeep(200, 0.1, "sine")}
         >
-          ◀ BACK TO CABINET MAIN
+          ◀ BACK
         </Link>
 
         {/* Header bar */}

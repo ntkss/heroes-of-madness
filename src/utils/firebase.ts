@@ -16,6 +16,7 @@ import {
   writeBatch,
   Firestore,
   DocumentData,
+  increment,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -1957,4 +1958,614 @@ export async function saveComment(
     localStorage.setItem(key, JSON.stringify(list));
   }
   return fullComment;
+}
+
+// --- Forums & News Features ---
+
+export interface ForumPost {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  type: "news" | "forum";
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  createdAt: number;
+  tags: string[];
+  views: number;
+  likes: number;
+  dislikes: number;
+  userVotes?: {
+    [userId: string]: "likes" | "dislikes";
+  };
+  mentionedPlayers?: string[];
+  mentionedMatches?: string[];
+}
+
+export interface ForumComment {
+  id: string;
+  postId: string;
+  text: string;
+  createdAt: number;
+  userId: string;
+  authorName: string;
+  authorAvatar: string;
+}
+
+// Automatic tagging
+export function extractAutomaticTags(
+  title: string,
+  description: string,
+  type: "news" | "forum",
+): string[] {
+  const tagsSet = new Set<string>();
+
+  if (type === "news") {
+    tagsSet.add("news");
+  } else {
+    tagsSet.add("forum");
+  }
+
+  const content = (title + " " + description).toLowerCase();
+
+  const keywordMap: Record<string, string[]> = {
+    rank: ["rank", "tier", "winrate", "win rate", "placement", "division"],
+    "patch-update": [
+      "patch",
+      "update",
+      "buff",
+      "nerf",
+      "revamp",
+      "balance",
+      "release",
+      "patch-update",
+      "season",
+    ],
+    mlbb: [
+      "mlbb",
+      "mobile legends",
+      "legends",
+      "moba",
+      "fighter",
+      "squad",
+      "meta",
+    ],
+    match: [
+      "match",
+      "scrim",
+      "verses",
+      "vs",
+      "history",
+      "winner",
+      "team a",
+      "team b",
+      "score",
+    ],
+    tournament: [
+      "tournament",
+      "cup",
+      "esports",
+      "championship",
+      "bracket",
+      "draft",
+    ],
+    guide: [
+      "guide",
+      "tutorial",
+      "build",
+      "item",
+      "emblem",
+      "how to",
+      "tips",
+      "tricks",
+    ],
+  };
+
+  Object.entries(keywordMap).forEach(([tag, keywords]) => {
+    if (keywords.some((keyword) => content.includes(keyword))) {
+      tagsSet.add(tag);
+    }
+  });
+
+  const hashtagRegex = /#([\w-]+)/g;
+  let match;
+  while ((match = hashtagRegex.exec(content)) !== null) {
+    const hashtag = match[1].toLowerCase();
+    if (hashtag && hashtag.length > 1) {
+      tagsSet.add(hashtag);
+    }
+  }
+
+  return Array.from(tagsSet);
+}
+
+// Slug generation
+export function generatePostSlug(title: string): string {
+  const cleanTitle = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-");
+
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `${cleanTitle || "post"}-${randomSuffix}`;
+}
+
+// Fetch forum posts
+export async function fetchPosts(
+  tag?: string,
+  type?: "news" | "forum",
+): Promise<ForumPost[]> {
+  if (db && isFirebaseConfigured) {
+    try {
+      const postsCol = collection(db, "posts");
+      const q = query(postsCol, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const list: ForumPost[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const post = {
+          id: docSnap.id,
+          slug: data.slug || "",
+          title: data.title || "",
+          description: data.description || "",
+          imageUrl: data.imageUrl,
+          type: data.type || "forum",
+          authorId: data.authorId || "",
+          authorName: data.authorName || "",
+          authorAvatar: data.authorAvatar || "",
+          createdAt: data.createdAt || Date.now(),
+          tags: data.tags || [],
+          views: data.views || 0,
+          likes: data.likes || 0,
+          dislikes: data.dislikes || 0,
+          userVotes: data.userVotes || {},
+          mentionedPlayers: data.mentionedPlayers || [],
+          mentionedMatches: data.mentionedMatches || [],
+        };
+
+        let matchFilter = true;
+        if (tag && !post.tags.includes(tag.toLowerCase())) matchFilter = false;
+        if (type && post.type !== type) matchFilter = false;
+
+        if (matchFilter) {
+          list.push(post);
+        }
+      });
+      return list;
+    } catch (e) {
+      console.error("[Firestore Error] Error fetching posts:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem("mlbb_generator_posts");
+  if (!stored) return [];
+  try {
+    const list = JSON.parse(stored) as ForumPost[];
+    const sorted = list.sort((a, b) => b.createdAt - a.createdAt);
+    return sorted.filter((post) => {
+      let matchFilter = true;
+      if (tag && !post.tags.includes(tag.toLowerCase())) matchFilter = false;
+      if (type && post.type !== type) matchFilter = false;
+      return matchFilter;
+    });
+  } catch {
+    return [];
+  }
+}
+
+// Fetch single forum post by slug
+export async function fetchPostBySlug(slug: string): Promise<ForumPost | null> {
+  if (db && isFirebaseConfigured) {
+    try {
+      const { where } = await import("firebase/firestore");
+      const postsCol = collection(db, "posts");
+      const q = query(postsCol, where("slug", "==", slug), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          slug: data.slug || "",
+          title: data.title || "",
+          description: data.description || "",
+          imageUrl: data.imageUrl,
+          type: data.type || "forum",
+          authorId: data.authorId || "",
+          authorName: data.authorName || "",
+          authorAvatar: data.authorAvatar || "",
+          createdAt: data.createdAt || Date.now(),
+          tags: data.tags || [],
+          views: data.views || 0,
+          likes: data.likes || 0,
+          dislikes: data.dislikes || 0,
+          userVotes: data.userVotes || {},
+          mentionedPlayers: data.mentionedPlayers || [],
+          mentionedMatches: data.mentionedMatches || [],
+        };
+      }
+    } catch (e) {
+      console.error(
+        `[Firestore Error] Error fetching post by slug ${slug}:`,
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem("mlbb_generator_posts");
+  if (!stored) return null;
+  try {
+    const list = JSON.parse(stored) as ForumPost[];
+    return list.find((post) => post.slug === slug) || null;
+  } catch {
+    return null;
+  }
+}
+
+// Save forum post
+export async function savePost(
+  postData: Omit<
+    ForumPost,
+    "id" | "slug" | "createdAt" | "views" | "likes" | "dislikes" | "userVotes"
+  >,
+): Promise<ForumPost> {
+  const slug = generatePostSlug(postData.title);
+  const createdAt = Date.now();
+  const newPost = {
+    ...postData,
+    slug,
+    createdAt,
+    views: 0,
+    likes: 0,
+    dislikes: 0,
+    userVotes: {},
+  };
+
+  if (db && isFirebaseConfigured) {
+    try {
+      const postsCol = collection(db, "posts");
+      const docRef = await addDoc(postsCol, newPost);
+      return {
+        ...newPost,
+        id: docRef.id,
+      };
+    } catch (e) {
+      console.error("[Firestore Error] Error saving post:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  const id = `local_post_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  const fullPost: ForumPost = {
+    ...newPost,
+    id,
+  };
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_posts");
+    const list = stored ? (JSON.parse(stored) as ForumPost[]) : [];
+    list.push(fullPost);
+    localStorage.setItem("mlbb_generator_posts", JSON.stringify(list));
+  }
+  return fullPost;
+}
+
+// Increment post views
+export async function incrementPostViews(postId: string): Promise<void> {
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "posts", postId);
+      await updateDoc(docRef, {
+        views: increment(1),
+      });
+      return;
+    } catch (e) {
+      console.error(
+        `[Firestore Error] Error incrementing views for post ${postId}:`,
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_posts");
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as ForumPost[];
+        const idx = list.findIndex((p) => p.id === postId);
+        if (idx !== -1) {
+          list[idx].views = (list[idx].views || 0) + 1;
+          localStorage.setItem("mlbb_generator_posts", JSON.stringify(list));
+        }
+      } catch (e) {
+        console.error("Error updating views in LocalStorage:", e);
+      }
+    }
+  }
+}
+
+// Toggle post feedback (Likes/Dislikes)
+export async function togglePostFeedback(
+  postId: string,
+  targetType: "likes" | "dislikes",
+  userId: string,
+): Promise<ForumPost | null> {
+  const computeNewFeedback = (post: ForumPost): Partial<ForumPost> => {
+    const likes = post.likes || 0;
+    const dislikes = post.dislikes || 0;
+    const userVotes: { [uid: string]: "likes" | "dislikes" } = post.userVotes
+      ? { ...post.userVotes }
+      : {};
+    const currentVote = userVotes[userId] || null;
+
+    let newLikes = likes;
+    let newDislikes = dislikes;
+    let newVote: "likes" | "dislikes" | null = targetType;
+
+    if (currentVote === targetType) {
+      newVote = null;
+    }
+
+    if (currentVote === "likes") newLikes = Math.max(0, newLikes - 1);
+    if (currentVote === "dislikes") newDislikes = Math.max(0, newDislikes - 1);
+
+    if (newVote === "likes") newLikes += 1;
+    if (newVote === "dislikes") newDislikes += 1;
+
+    if (newVote) {
+      userVotes[userId] = newVote;
+    } else {
+      delete userVotes[userId];
+    }
+
+    return {
+      likes: newLikes,
+      dislikes: newDislikes,
+      userVotes,
+    };
+  };
+
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const { runTransaction } = await import("firebase/firestore");
+      const docRef = doc(db, "posts", postId);
+
+      const result = await runTransaction(db, async (transaction) => {
+        const sfDoc = await transaction.get(docRef);
+        if (!sfDoc.exists()) {
+          throw new Error("Post doc does not exist");
+        }
+
+        const postData = sfDoc.data() as ForumPost;
+        const newFb = computeNewFeedback(postData);
+
+        transaction.update(docRef, newFb);
+
+        return {
+          ...postData,
+          ...newFb,
+        };
+      });
+
+      // Sync local storage
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("mlbb_generator_posts");
+        if (stored) {
+          try {
+            const list = JSON.parse(stored) as ForumPost[];
+            const idx = list.findIndex((p) => p.id === postId);
+            if (idx !== -1) {
+              list[idx] = { ...list[idx], ...result };
+              localStorage.setItem(
+                "mlbb_generator_posts",
+                JSON.stringify(list),
+              );
+            }
+          } catch (e) {
+            console.error("Error syncing local storage:", e);
+          }
+        }
+      }
+
+      return result;
+    } catch (e) {
+      console.error("Error updating post feedback on Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_posts");
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as ForumPost[];
+        const idx = list.findIndex((p) => p.id === postId);
+        if (idx !== -1) {
+          const post = list[idx];
+          const newFb = computeNewFeedback(post);
+          const updatedPost = { ...post, ...newFb };
+          list[idx] = updatedPost;
+          localStorage.setItem("mlbb_generator_posts", JSON.stringify(list));
+          return updatedPost;
+        }
+      } catch (e) {
+        console.error("Error updating post feedback in LocalStorage:", e);
+      }
+    }
+  }
+
+  return null;
+}
+
+// Fetch comments for a specific post
+export async function fetchPostComments(
+  postId: string,
+): Promise<ForumComment[]> {
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const commentsCol = collection(db, "posts", postId, "comments");
+      const q = query(commentsCol, orderBy("createdAt", "asc"));
+      const querySnapshot = await getDocs(q);
+      const list: ForumComment[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const rawCreatedAt = data.createdAt;
+        const createdAt =
+          typeof rawCreatedAt === "number"
+            ? rawCreatedAt
+            : rawCreatedAt?.toMillis
+              ? rawCreatedAt.toMillis()
+              : Date.now();
+
+        list.push({
+          id: docSnap.id,
+          postId,
+          text: data.text || "",
+          createdAt,
+          userId: data.userId || "",
+          authorName: data.authorName || "",
+          authorAvatar: data.authorAvatar || "",
+        });
+      });
+      return list;
+    } catch (e) {
+      console.error(
+        `[Firestore Error] Error fetching comments for post ${postId}:`,
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(`mlbb_generator_post_comments_${postId}`);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored) as ForumComment[];
+  } catch {
+    return [];
+  }
+}
+
+// Save a comment for a post
+export async function savePostComment(
+  postId: string,
+  text: string,
+  authorInfo: { userId: string; authorName: string; authorAvatar: string },
+): Promise<ForumComment> {
+  const newComment = {
+    text,
+    createdAt: Date.now(),
+    userId: authorInfo.userId,
+    authorName: authorInfo.authorName,
+    authorAvatar: authorInfo.authorAvatar,
+  };
+
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const commentsCol = collection(db, "posts", postId, "comments");
+      const docRef = await addDoc(commentsCol, newComment);
+      return {
+        ...newComment,
+        id: docRef.id,
+        postId,
+      };
+    } catch (e) {
+      console.error(
+        `[Firestore Error] Error saving comment for post ${postId}:`,
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  const id = `local_postcomment_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  const fullComment: ForumComment = {
+    ...newComment,
+    id,
+    postId,
+  };
+  if (typeof window !== "undefined") {
+    const key = `mlbb_generator_post_comments_${postId}`;
+    const stored = localStorage.getItem(key);
+    const list = stored ? (JSON.parse(stored) as ForumComment[]) : [];
+    list.push(fullComment);
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+  return fullComment;
+}
+
+// Delete post
+export async function deletePost(postId: string): Promise<boolean> {
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "posts", postId);
+      await deleteDoc(docRef);
+      return true;
+    } catch (e) {
+      console.error(`[Firestore Error] Error deleting post ${postId}:`, e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_posts");
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as ForumPost[];
+        const filtered = list.filter((p) => p.id !== postId);
+        localStorage.setItem("mlbb_generator_posts", JSON.stringify(filtered));
+        localStorage.removeItem(`mlbb_generator_post_comments_${postId}`);
+        return true;
+      } catch (e) {
+        console.error("Error deleting post in LocalStorage:", e);
+      }
+    }
+  }
+  return false;
+}
+
+// Delete post comment
+export async function deletePostComment(
+  postId: string,
+  commentId: string,
+): Promise<boolean> {
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "posts", postId, "comments", commentId);
+      await deleteDoc(docRef);
+      return true;
+    } catch (e) {
+      console.error(
+        `[Firestore Error] Error deleting comment ${commentId}:`,
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const key = `mlbb_generator_post_comments_${postId}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as ForumComment[];
+        const filtered = list.filter((c) => c.id !== commentId);
+        localStorage.setItem(key, JSON.stringify(filtered));
+        return true;
+      } catch (e) {
+        console.error("Error deleting comment in LocalStorage:", e);
+      }
+    }
+  }
+  return false;
 }

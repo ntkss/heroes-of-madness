@@ -230,6 +230,43 @@ export async function fetchMatches(): Promise<Match[]> {
   }
 }
 
+// Fetch single match by ID
+export async function fetchMatchById(matchId: string): Promise<Match | null> {
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "matches", matchId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          createdAt: data.createdAt || Date.now(),
+          teamA: data.teamA || [],
+          teamB: data.teamB || [],
+          teamALanes: data.teamALanes,
+          teamBLanes: data.teamBLanes,
+          winner: data.winner !== undefined ? data.winner : null,
+          seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
+          feedback: data.feedback || {},
+        };
+      }
+    } catch (e) {
+      console.error(`[Firestore Error] Error fetching match by ID ${matchId}:`, e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!stored) return null;
+  try {
+    const list = JSON.parse(stored) as Match[];
+    return list.find((m) => m.id === matchId) || null;
+  } catch {
+    return null;
+  }
+}
+
 // Save a new match
 export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
   const newMatch: Match = {

@@ -2622,3 +2622,64 @@ export async function deletePostComment(
   }
   return false;
 }
+
+// Update an existing post
+export async function updatePost(
+  postId: string,
+  updatedFields: Partial<Omit<ForumPost, "id" | "slug" | "createdAt" | "views" | "likes" | "dislikes" | "userVotes" | "authorId" | "authorName" | "authorAvatar">> & { tags?: string[] },
+): Promise<boolean> {
+  if (db && isFirebaseConfigured && !postId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "posts", postId);
+      // Clean up undefined values for Firestore
+      const cleanFields: Record<string, unknown> = {};
+      Object.entries(updatedFields).forEach(([key, val]) => {
+        if (val !== undefined) {
+          cleanFields[key] = val;
+        } else {
+          // If a field like imageUrl is undefined, we remove it from Firestore using deleteField()
+          // or we can set it to null/empty. Let's just set it to null or delete field.
+          // In Firestore, we can use deleteField() or simply delete it.
+          // Since we want to support removing the image, if imageUrl is undefined or empty string, we can delete the key!
+          // We can dynamically import deleteField from firebase/firestore
+        }
+      });
+
+      // If imageUrl is explicitly undefined in updatedFields (meaning user removed it),
+      // we need to set it to null or delete it in Firestore.
+      if ("imageUrl" in updatedFields && !updatedFields.imageUrl) {
+        const { deleteField } = await import("firebase/firestore");
+        cleanFields.imageUrl = deleteField();
+      }
+
+      await updateDoc(docRef, cleanFields);
+      return true;
+    } catch (e) {
+      console.error(`[Firestore Error] Error updating post ${postId}:`, e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("mlbb_generator_posts");
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as ForumPost[];
+        const idx = list.findIndex((p) => p.id === postId);
+        if (idx !== -1) {
+          const updatedPost = { ...list[idx], ...updatedFields };
+          // If imageUrl is undefined or empty, delete it from the object
+          if ("imageUrl" in updatedFields && !updatedFields.imageUrl) {
+            delete updatedPost.imageUrl;
+          }
+          list[idx] = updatedPost;
+          localStorage.setItem("mlbb_generator_posts", JSON.stringify(list));
+          return true;
+        }
+      } catch (e) {
+        console.error("Error updating post in LocalStorage:", e);
+      }
+    }
+  }
+  return false;
+}

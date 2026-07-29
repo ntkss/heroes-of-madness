@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { fetchPlayers, fetchMatchById, DbPlayer, Match } from "@/utils/firebase";
+import {
+  fetchPlayers,
+  fetchMatchById,
+  DbPlayer,
+  Match,
+} from "@/utils/firebase";
 
 // Custom component to fetch and render player mention badge
 export function PlayerMentionBadge({ playerId }: { playerId: string }) {

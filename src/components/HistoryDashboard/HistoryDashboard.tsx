@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -9,14 +9,11 @@ import {
   RankConfig,
   SeasonPlayerStat,
   getWeightedWinrate,
-  MatchComment,
-  fetchComments,
-  saveComment,
   togglePlayerFeedback,
   PlayerFeedback,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
-import { playBeep, playWin, playCoin } from "@/utils/audio";
+import { playBeep, playWin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
 import { useAuth } from "@/utils/AuthContext";
 
@@ -56,10 +53,6 @@ function MatchCardComponent({
   handleDelete,
 }: MatchCardProps) {
   const { user } = useAuth();
-  const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<MatchComment[]>([]);
-  const [newCommentText, setNewCommentText] = useState("");
-  const [loadingComments, setLoadingComments] = useState(false);
   const [prevFeedback, setPrevFeedback] = useState(match.feedback);
   const [localFeedback, setLocalFeedback] = useState<{
     [playerKey: string]: PlayerFeedback;
@@ -70,18 +63,6 @@ function MatchCardComponent({
     setPrevFeedback(match.feedback);
     setLocalFeedback(match.feedback || {});
   }
-
-  useEffect(() => {
-    if (showComments) {
-      const loadComments = async () => {
-        setLoadingComments(true);
-        const list = await fetchComments(match.id);
-        setComments(list);
-        setLoadingComments(false);
-      };
-      loadComments();
-    }
-  }, [showComments, match.id]);
 
   const handleFeedbackClick = async (
     playerKey: string,
@@ -111,28 +92,6 @@ function MatchCardComponent({
         };
       });
     }
-  };
-
-  const handleAddComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCommentText.trim()) return;
-    playCoin();
-    const authorInfo = user
-      ? {
-          userId: user.uid,
-          authorName:
-            user.displayName || user.email?.split("@")[0] || "GUEST_USER",
-          authorAvatar: user.photoURL || undefined,
-        }
-      : undefined;
-
-    const saved = await saveComment(
-      match.id,
-      newCommentText.trim(),
-      authorInfo,
-    );
-    setComments((prev) => [...prev, saved]);
-    setNewCommentText("");
   };
 
   const renderRoster = (team: string[], lanes: string[] | undefined) => {
@@ -316,17 +275,6 @@ function MatchCardComponent({
             </div>
           )}
 
-          {/* Toggle comments button */}
-          <button
-            onClick={() => {
-              playBeep(330, 0.1, "sine");
-              setShowComments(!showComments);
-            }}
-            className={styles.commentsToggleBtn}
-          >
-            💬 COMMENTS {comments.length > 0 ? `(${comments.length})` : ""}
-          </button>
-
           {/* Delete button */}
           {isAdmin && (
             <button
@@ -342,53 +290,6 @@ function MatchCardComponent({
           )}
         </div>
       </div>
-
-      {/* Expanded Comments Section */}
-      {showComments && (
-        <div className={styles.commentsSection}>
-          <h4 className={styles.commentsTitle}>ANONYMOUS COMMENTS</h4>
-
-          <div className={styles.commentsList}>
-            {loadingComments ? (
-              <div className={styles.loadingComments}>
-                LOADING TRANSMISSIONS...
-              </div>
-            ) : comments.length === 0 ? (
-              <div className={styles.noComments}>
-                NO TRANSMISSIONS YET. POST A COMMENT BELOW!
-              </div>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment.id} className={styles.commentItem}>
-                  <div className={styles.commentHeader}>
-                    <span className={styles.anonymousUser}>
-                      {comment.authorName || "GUEST_USER"}
-                    </span>
-                    <span className={styles.commentTime}>
-                      {formatDate(comment.createdAt)}
-                    </span>
-                  </div>
-                  <p className={styles.commentText}>{comment.text}</p>
-                </div>
-              ))
-            )}
-          </div>
-
-          <form onSubmit={handleAddComment} className={styles.commentForm}>
-            <input
-              type="text"
-              placeholder="ENTER ANONYMOUS RESPONSE..."
-              value={newCommentText}
-              onChange={(e) => setNewCommentText(e.target.value)}
-              className={styles.commentInput}
-              maxLength={200}
-            />
-            <button type="submit" className={styles.commentSubmitBtn}>
-              SEND 💬
-            </button>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

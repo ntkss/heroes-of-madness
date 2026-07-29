@@ -386,7 +386,7 @@ export default function ForumPostDetailPage({ params }: PageProps) {
             className={styles.backLink}
             onClick={() => playBeep(200, 0.1, "sine")}
           >
-            ◀ RETURN TO FORUMS LIST
+            ◀ FORUMS
           </Link>
           <div className="text-center py-20 border border-dashed border-red-500/30">
             <h2 className="text-neon-red font-pixel text-sm glow-red uppercase select-none">
@@ -413,7 +413,7 @@ export default function ForumPostDetailPage({ params }: PageProps) {
           className={styles.backLink}
           onClick={() => playBeep(200, 0.1, "sine")}
         >
-          ◀ FORUMS INDEX
+          ◀ FORUMS
         </Link>
 
         {/* Content Layout */}

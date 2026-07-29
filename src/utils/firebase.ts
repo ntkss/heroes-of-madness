@@ -2368,6 +2368,7 @@ export async function togglePostFeedback(
         return {
           ...postData,
           ...newFb,
+          id: sfDoc.id,
         };
       });
 

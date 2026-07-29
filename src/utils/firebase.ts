@@ -2243,7 +2243,10 @@ export async function savePost(
   if (db && isFirebaseConfigured) {
     try {
       // Create a clean object without the id field and any undefined values for Firestore
-      const { id, ...firestoreData } = newPost;
+      const firestoreData: Omit<ForumPost, "id"> & { id?: string } = {
+        ...newPost,
+      };
+      delete firestoreData.id;
       const postsCol = collection(db, "posts");
       const docRef = await addDoc(postsCol, firestoreData);
       return {

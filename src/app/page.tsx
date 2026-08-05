@@ -23,6 +23,7 @@ import {
   fetchRankConfig,
   DEFAULT_RANK_CONFIG,
   fetchSeasonConfig,
+  fetchLineConfig,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
@@ -237,6 +238,129 @@ export default function Home() {
     }
   };
 
+  const triggerLineDraftNotification = async (
+    tA: string[],
+    tB: string[],
+    seasonId: number,
+  ) => {
+    try {
+      const lineConfig = await fetchLineConfig();
+      if (!lineConfig.enabled || !lineConfig.groupId) return;
+
+      const resolvePlayer = (idOrName: string) => {
+        const found = availablePlayers.find(
+          (p) =>
+            p.id === idOrName ||
+            p.name.toLowerCase() === idOrName.toLowerCase(),
+        );
+        if (found) {
+          return found.alias ? `${found.name} (${found.alias})` : found.name;
+        }
+        return idOrName; // Bot or fallback
+      };
+
+      const roles = ["Top Lane", "Jungle", "Mid Lane", "ADC", "Support"];
+      const formatTeam = (team: string[]) => {
+        return team
+          .map((player, idx) => {
+            const role = roles[idx] || `Slot ${idx + 1}`;
+            return `🛡️ ${role}: ${resolvePlayer(player)}`;
+          })
+          .join("\n");
+      };
+
+      const messageText =
+        `🎮 HEROES OF MADNESS - MATCH DRAFTED!\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🏆 Season ${seasonId} • Match Draft\n\n` +
+        `🔵 BLUE TEAM (Team A):\n${formatTeam(tA)}\n\n` +
+        `🔴 RED TEAM (Team B):\n${formatTeam(tB)}\n\n` +
+        `🔗 Open Cabinet to fight: ${window.location.origin}`;
+
+      const res = await fetch("/api/line/notify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messageText,
+          groupId: lineConfig.groupId,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        console.warn("LINE Notify failed:", data.error);
+      }
+    } catch (error) {
+      console.error("Error sending LINE draft notification:", error);
+    }
+  };
+
+  const triggerLineResultNotification = async (
+    matchId: string,
+    winner: "teamA" | "teamB",
+  ) => {
+    try {
+      const lineConfig = await fetchLineConfig();
+      if (!lineConfig.enabled || !lineConfig.groupId) return;
+
+      const match = matches.find((m) => m.id === matchId);
+      if (!match) return;
+
+      const resolvePlayer = (idOrName: string) => {
+        const found = availablePlayers.find(
+          (p) =>
+            p.id === idOrName ||
+            p.name.toLowerCase() === idOrName.toLowerCase(),
+        );
+        if (found) {
+          return found.alias ? `${found.name} (${found.alias})` : found.name;
+        }
+        return idOrName;
+      };
+
+      const winningTeamColor =
+        winner === "teamA" ? "🔵 BLUE TEAM" : "🔴 RED TEAM";
+      const losingTeamColor =
+        winner === "teamA" ? "🔴 RED TEAM" : "🔵 BLUE TEAM";
+      const winningPlayers = winner === "teamA" ? match.teamA : match.teamB;
+      const losingPlayers = winner === "teamA" ? match.teamB : match.teamA;
+
+      const formatNamesList = (players: string[]) => {
+        return players.map((p) => resolvePlayer(p)).join(", ");
+      };
+
+      const messageText =
+        `🏆 HEROES OF MADNESS - BATTLE RESULTS!\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `👑 WINNER: ${winningTeamColor}\n` +
+        `Fighters: ${formatNamesList(winningPlayers)}\n\n` +
+        `💀 DEFEATED: ${losingTeamColor}\n` +
+        `Fighters: ${formatNamesList(losingPlayers)}\n\n` +
+        `⭐ Leaderboard updated! Go check active standings.\n` +
+        `🔗 URL: ${window.location.origin}`;
+
+      const res = await fetch("/api/line/notify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messageText,
+          groupId: lineConfig.groupId,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        console.warn("LINE Notify failed:", data.error);
+      }
+    } catch (error) {
+      console.error("Error sending LINE result notification:", error);
+    }
+  };
+
   const handleGenerate = async () => {
     if (isGenerating) return;
 
@@ -294,6 +418,7 @@ export default function Home() {
 
         const updatedLogs = await fetchMatches();
         setMatches(updatedLogs);
+        await triggerLineDraftNotification(finalTeamA, finalTeamB, activeSeasonId);
       } catch (error) {
         console.error("Failed to log draft match:", error);
       } finally {
@@ -310,6 +435,8 @@ export default function Home() {
     if (matchId === activeMatchId) {
       setActiveWinner(winner);
     }
+
+    await triggerLineResultNotification(matchId, winner);
 
     const [updatedLogs, updatedPlayers] = await Promise.all([
       fetchMatches(),

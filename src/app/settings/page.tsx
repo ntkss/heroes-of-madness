@@ -17,8 +17,6 @@ import {
   SeasonConfig,
   fetchLineConfig,
   saveLineConfig,
-  LineConfig,
-  DEFAULT_LINE_CONFIG,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
@@ -699,8 +697,8 @@ export default function SettingsPage() {
                       </span>
                       <span className={styles.seasonEngineDateVal}>
                         {seasonConfig?.seasonStart
-                           ? new Date(seasonConfig.seasonStart).toLocaleString()
-                           : "UNKNOWN"}
+                          ? new Date(seasonConfig.seasonStart).toLocaleString()
+                          : "UNKNOWN"}
                       </span>
                     </div>
 
@@ -731,12 +729,12 @@ export default function SettingsPage() {
               /* LINE Chatbot UI */
               <form onSubmit={handleLineSubmit} className={styles.form}>
                 <div className={styles.formSection}>
-                  <span className={styles.sectionTitle}>💬 LINE Chatbot Integration</span>
-                  
+                  <span className={styles.sectionTitle}>
+                    💬 LINE Chatbot Integration
+                  </span>
+
                   <div className={styles.inputWrapperFull}>
-                    <label className={styles.inputLabel}>
-                      LINE GROUP ID
-                    </label>
+                    <label className={styles.inputLabel}>LINE GROUP ID</label>
                     <input
                       type="text"
                       value={lineGroupId}
@@ -746,12 +744,16 @@ export default function SettingsPage() {
                       disabled={loading}
                     />
                     <span className={styles.inputHelpText}>
-                      The target LINE group ID to automatically stream drafts and match results.
-                      Add the bot to a group and send <code>/groupid</code> to display the ID.
+                      The target LINE group ID to automatically stream drafts
+                      and match results. Add the bot to a group and send{" "}
+                      <code>/groupid</code> to display the ID.
                     </span>
                   </div>
 
-                  <div className={styles.inputWrapperFull} style={{ marginTop: "1rem" }}>
+                  <div
+                    className={styles.inputWrapperFull}
+                    style={{ marginTop: "1rem" }}
+                  >
                     <label className="flex items-center gap-3 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -764,8 +766,12 @@ export default function SettingsPage() {
                         Enable Automatic LINE Notifications
                       </span>
                     </label>
-                    <span className={styles.inputHelpText} style={{ marginLeft: "1.75rem" }}>
-                      When enabled, drafts and battle results are automatically posted to the LINE group.
+                    <span
+                      className={styles.inputHelpText}
+                      style={{ marginLeft: "1.75rem" }}
+                    >
+                      When enabled, drafts and battle results are automatically
+                      posted to the LINE group.
                     </span>
                   </div>
                 </div>

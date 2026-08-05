@@ -418,7 +418,11 @@ export default function Home() {
 
         const updatedLogs = await fetchMatches();
         setMatches(updatedLogs);
-        await triggerLineDraftNotification(finalTeamA, finalTeamB, activeSeasonId);
+        await triggerLineDraftNotification(
+          finalTeamA,
+          finalTeamB,
+          activeSeasonId,
+        );
       } catch (error) {
         console.error("Failed to log draft match:", error);
       } finally {

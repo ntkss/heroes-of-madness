@@ -7,17 +7,19 @@ export async function POST(request: Request) {
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
     if (!accessToken) {
-      console.error("[LINE API] Missing LINE_CHANNEL_ACCESS_TOKEN environment variable.");
+      console.error(
+        "[LINE API] Missing LINE_CHANNEL_ACCESS_TOKEN environment variable.",
+      );
       return NextResponse.json(
         { error: "LINE Channel Access Token is not configured on the server." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!groupId) {
       return NextResponse.json(
         { error: "LINE Group ID is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,16 +42,21 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[LINE API] Error response from LINE push endpoint:", errText);
+      console.error(
+        "[LINE API] Error response from LINE push endpoint:",
+        errText,
+      );
       return NextResponse.json(
         { error: `LINE API returned error: ${errText}` },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.error("[LINE API] Exception in notify API route:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

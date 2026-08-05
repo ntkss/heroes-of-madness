@@ -27,7 +27,7 @@ import {
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
-import { toBlob } from "html-to-image";
+import { toBlob, toPng } from "html-to-image";
 import { useAuth } from "@/utils/AuthContext";
 
 export default function Home() {
@@ -242,6 +242,7 @@ export default function Home() {
     tA: string[],
     tB: string[],
     seasonId: number,
+    imageUrl?: string,
   ) => {
     try {
       const lineConfig = await fetchLineConfig();
@@ -285,6 +286,7 @@ export default function Home() {
         body: JSON.stringify({
           messageText,
           groupId: lineConfig.groupId,
+          imageUrl,
         }),
       });
 
@@ -361,6 +363,75 @@ export default function Home() {
     }
   };
 
+  const captureAndUploadDraftImage = async (
+    matchId: string,
+    seasonId: number,
+  ) => {
+    try {
+      // Wait for the DOM to settle and images to load
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      if (!arenaRef.current) return;
+
+      const dataUrl = await toPng(arenaRef.current, {
+        filter: (node) => {
+          if (node.classList?.contains("exclude-from-capture")) {
+            return false;
+          }
+          return true;
+        },
+        cacheBust: true,
+        backgroundColor: "#030712",
+      });
+
+      const base64Data = dataUrl.split(",")[1];
+      if (!base64Data) return;
+
+      // Get user's ID token if logged in, for authentication bypass
+      const { auth } = await import("@/utils/firebase");
+      const idToken = auth ? await auth.currentUser?.getIdToken() : undefined;
+
+      const lineConfig = await fetchLineConfig();
+      if (!lineConfig.enabled || !lineConfig.groupId) return;
+
+      // Send base64 to notify route which handles server-to-server upload (no CORS!)
+      const res = await fetch("/api/line/notify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          groupId: lineConfig.groupId,
+          imageBuffer: base64Data,
+          idToken,
+          matchId,
+          messageText: `📸 Matchup Screenshot (Season ${seasonId})`,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        console.warn("Background image notify failed:", errData.error);
+        setToast({
+          message: `IMAGE NOTIFICATION FAILED: ${errData.error.toUpperCase()}`,
+          type: "error",
+        });
+      }
+    } catch (captureError) {
+      console.warn(
+        "Background matchup capture or upload failed:",
+        captureError,
+      );
+      const errMsg =
+        captureError instanceof Error
+          ? captureError.message
+          : String(captureError);
+      setToast({
+        message: `IMAGE NOTIFICATION FAILED: ${errMsg.toUpperCase()}`,
+        type: "error",
+      });
+    }
+  };
+
   const handleGenerate = async () => {
     if (isGenerating) return;
 
@@ -418,11 +489,16 @@ export default function Home() {
 
         const updatedLogs = await fetchMatches();
         setMatches(updatedLogs);
+
+        // Send text notification immediately
         await triggerLineDraftNotification(
           finalTeamA,
           finalTeamB,
           activeSeasonId,
         );
+
+        // Capture screenshot and upload in the background (asynchronously)
+        captureAndUploadDraftImage(saved.id, activeSeasonId);
       } catch (error) {
         console.error("Failed to log draft match:", error);
       } finally {

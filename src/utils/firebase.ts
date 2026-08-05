@@ -127,7 +127,18 @@ export const DEFAULT_RANK_CONFIG: RankConfig = {
   },
 };
 
+export interface LineConfig {
+  groupId: string;
+  enabled: boolean;
+}
+
+export const DEFAULT_LINE_CONFIG: LineConfig = {
+  groupId: "",
+  enabled: false,
+};
+
 const LOCAL_CONFIG_KEY = "mlbb_generator_rank_config";
+const LOCAL_LINE_CONFIG_KEY = "mlbb_generator_line_config";
 
 // Check if all essential Firebase variables are defined in the environment
 export const isFirebaseConfigured = !!(
@@ -735,6 +746,80 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
   if (typeof window !== "undefined") {
     localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
     await recalculateRanks(config);
+    return true;
+  }
+  return false;
+}
+
+// Fetch LINE configuration rules
+export async function fetchLineConfig(): Promise<LineConfig> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "lineSystem");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const config: LineConfig = {
+          groupId: data.groupId || "",
+          enabled: data.enabled ?? false,
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_LINE_CONFIG_KEY, JSON.stringify(config));
+        }
+        return config;
+      } else {
+        await setDoc(configRef, DEFAULT_LINE_CONFIG);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            LOCAL_LINE_CONFIG_KEY,
+            JSON.stringify(DEFAULT_LINE_CONFIG),
+          );
+        }
+        return DEFAULT_LINE_CONFIG;
+      }
+    } catch (e) {
+      console.error(
+        "Error fetching LINE config from Firestore, switching to LocalStorage:",
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_LINE_CONFIG_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored) as LineConfig;
+      } catch {
+        return DEFAULT_LINE_CONFIG;
+      }
+    }
+  }
+  return DEFAULT_LINE_CONFIG;
+}
+
+// Save LINE configuration rules
+export async function saveLineConfig(config: LineConfig): Promise<boolean> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "lineSystem");
+      await setDoc(configRef, config);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_LINE_CONFIG_KEY, JSON.stringify(config));
+      }
+      return true;
+    } catch (e) {
+      console.error(
+        "Error saving LINE config to Firestore, saving to LocalStorage instead:",
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_LINE_CONFIG_KEY, JSON.stringify(config));
     return true;
   }
   return false;

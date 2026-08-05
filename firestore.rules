@@ -49,6 +49,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Match Images
+    match /matchImages/{matchId} {
+      allow read, write: if true;
+    }
+
     // Config Bootstrap
     match /config/bootstrap {
       allow read: if true;

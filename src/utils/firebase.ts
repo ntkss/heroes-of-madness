@@ -26,6 +26,7 @@ import {
   Auth,
   User,
 } from "firebase/auth";
+import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
 
 export interface PlayerFeedback {
   likes: number;
@@ -160,8 +161,9 @@ console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
   isFirebaseConfigured,
 });
 
-let db: Firestore | null = null;
+export let db: Firestore | null = null;
 export let auth: Auth | null = null;
+let storage: FirebaseStorage | null = null;
 
 if (isFirebaseConfigured) {
   try {
@@ -179,7 +181,8 @@ if (isFirebaseConfigured) {
       getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
     auth = getAuth(app);
-    console.log("🔥 Firebase & Auth initialized successfully!");
+    storage = getStorage(app);
+    console.log("🔥 Firebase, Auth & Storage initialized successfully!");
   } catch (error) {
     console.error(
       "❌ Firebase initialization error, falling back to LocalStorage:",
@@ -823,6 +826,16 @@ export async function saveLineConfig(config: LineConfig): Promise<boolean> {
     return true;
   }
   return false;
+}
+
+// Upload matchup screenshot to Firebase Storage
+export async function uploadMatchImage(matchId: string, blob: Blob): Promise<string> {
+  if (!storage) {
+    throw new Error("Firebase Storage is not configured/initialized.");
+  }
+  const imageRef = ref(storage, `matches/${matchId}.png`);
+  await uploadBytes(imageRef, blob);
+  return await getDownloadURL(imageRef);
 }
 
 // Fetch all matches from database without a limit

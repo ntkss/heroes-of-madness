@@ -3,7 +3,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ matchId: string }> }
+  { params }: { params: Promise<{ matchId: string }> },
 ) {
   try {
     const { matchId } = await params;

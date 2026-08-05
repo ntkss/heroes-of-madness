@@ -26,7 +26,13 @@ import {
   Auth,
   User,
 } from "firebase/auth";
-import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  FirebaseStorage,
+} from "firebase/storage";
 
 export interface PlayerFeedback {
   likes: number;
@@ -829,7 +835,10 @@ export async function saveLineConfig(config: LineConfig): Promise<boolean> {
 }
 
 // Upload matchup screenshot to Firebase Storage
-export async function uploadMatchImage(matchId: string, blob: Blob): Promise<string> {
+export async function uploadMatchImage(
+  matchId: string,
+  blob: Blob,
+): Promise<string> {
   if (!storage) {
     throw new Error("Firebase Storage is not configured/initialized.");
   }

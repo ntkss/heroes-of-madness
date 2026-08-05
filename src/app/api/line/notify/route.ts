@@ -4,7 +4,8 @@ import { doc, setDoc } from "firebase/firestore";
 
 export async function POST(request: Request) {
   try {
-    const { messageText, groupId, imageUrl, imageBuffer, matchId } = await request.json();
+    const { messageText, groupId, imageUrl, imageBuffer, matchId } =
+      await request.json();
 
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
@@ -34,7 +35,9 @@ export async function POST(request: Request) {
         const protocol = host.startsWith("localhost") ? "http" : "https";
         const baseUrl = `${protocol}://${host}`;
 
-        console.log(`[LINE API] Storing matchup image in Firestore for match ${matchId}...`);
+        console.log(
+          `[LINE API] Storing matchup image in Firestore for match ${matchId}...`,
+        );
         const imageRef = doc(db, "matchImages", matchId);
         await setDoc(imageRef, {
           image: imageBuffer,
@@ -44,7 +47,10 @@ export async function POST(request: Request) {
         finalImageUrl = `${baseUrl}/api/line/image/${matchId}`;
         console.log(`[LINE API] Image saved. Serving URL: ${finalImageUrl}`);
       } catch (dbError) {
-        console.error("[LINE API] Failed to store image in Firestore:", dbError);
+        console.error(
+          "[LINE API] Failed to store image in Firestore:",
+          dbError,
+        );
       }
     }
 

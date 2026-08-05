@@ -417,8 +417,14 @@ export default function Home() {
         });
       }
     } catch (captureError) {
-      console.warn("Background matchup capture or upload failed:", captureError);
-      const errMsg = captureError instanceof Error ? captureError.message : String(captureError);
+      console.warn(
+        "Background matchup capture or upload failed:",
+        captureError,
+      );
+      const errMsg =
+        captureError instanceof Error
+          ? captureError.message
+          : String(captureError);
       setToast({
         message: `IMAGE NOTIFICATION FAILED: ${errMsg.toUpperCase()}`,
         type: "error",

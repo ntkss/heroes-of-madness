@@ -15,6 +15,8 @@ import {
   fetchSeasonConfig,
   endCurrentSeason,
   SeasonConfig,
+  fetchLineConfig,
+  saveLineConfig,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
@@ -22,9 +24,9 @@ import styles from "./styles.module.css";
 
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
-  const [settingsTab, setSettingsTab] = useState<"ranks" | "users" | "seasons">(
-    "ranks",
-  );
+  const [settingsTab, setSettingsTab] = useState<
+    "ranks" | "users" | "seasons" | "line"
+  >("ranks");
   const [users, setUsers] = useState<DbUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
@@ -39,8 +41,13 @@ export default function SettingsPage() {
   const [highWinrate, setHighWinrate] = useState(55);
   const [lowWinrate, setLowWinrate] = useState(45);
 
+  const [lineGroupId, setLineGroupId] = useState("");
+  const [lineEnabled, setLineEnabled] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [lineError, setLineError] = useState("");
+  const [lineSuccess, setLineSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [audioInitialized, setAudioInitialized] = useState(false);
 
@@ -137,6 +144,10 @@ export default function SettingsPage() {
 
       const sCfg = await fetchSeasonConfig();
       setSeasonConfig(sCfg);
+
+      const lCfg = await fetchLineConfig();
+      setLineGroupId(lCfg.groupId);
+      setLineEnabled(lCfg.enabled);
     };
     loadConfig();
   }, [isAdmin]);
@@ -224,6 +235,27 @@ export default function SettingsPage() {
       const errorMessage =
         err instanceof Error ? err.message : "FAILED TO SAVE RANK SETTINGS!";
       setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLineSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLineError("");
+    setLineSuccess("");
+    setLoading(true);
+    try {
+      await saveLineConfig({
+        groupId: lineGroupId.trim(),
+        enabled: lineEnabled,
+      });
+      playCoin();
+      setLineSuccess("LINE BOT SETTINGS UPDATED SUCCESSFULLY!");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "FAILED TO SAVE LINE SETTINGS!";
+      setLineError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -353,6 +385,20 @@ export default function SettingsPage() {
                 }`}
               >
                 🏆 SEASON ENGINE
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playBeep(330, 0.1, "sawtooth");
+                  setSettingsTab("line");
+                }}
+                className={`${styles.tabBtn} ${
+                  settingsTab === "line"
+                    ? styles.tabBtnActive
+                    : styles.tabBtnInactive
+                }`}
+              >
+                💬 LINE CHATBOT
               </button>
             </div>
 
@@ -629,7 +675,7 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : settingsTab === "seasons" ? (
               /* Season Engine UI */
               <div className={styles.seasonEngineContainer}>
                 <div className={styles.formSection}>
@@ -679,6 +725,92 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+            ) : (
+              /* LINE Chatbot UI */
+              <form onSubmit={handleLineSubmit} className={styles.form}>
+                <div className={styles.formSection}>
+                  <span className={styles.sectionTitle}>
+                    💬 LINE Chatbot Integration
+                  </span>
+
+                  <div className={styles.inputWrapperFull}>
+                    <label className={styles.inputLabel}>LINE GROUP ID</label>
+                    <input
+                      type="text"
+                      value={lineGroupId}
+                      onChange={(e) => setLineGroupId(e.target.value)}
+                      placeholder="e.g. C123456789abcdef123456789abcdef12"
+                      className={styles.inputDefault}
+                      disabled={loading}
+                    />
+                    <span className={styles.inputHelpText}>
+                      The target LINE group ID to automatically stream drafts
+                      and match results. Add the bot to a group and send{" "}
+                      <code>/groupid</code> to display the ID.
+                    </span>
+                  </div>
+
+                  <div
+                    className={styles.inputWrapperFull}
+                    style={{ marginTop: "1rem" }}
+                  >
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={lineEnabled}
+                        onChange={(e) => setLineEnabled(e.target.checked)}
+                        className="w-4 h-4 accent-neon-yellow cursor-pointer"
+                        disabled={loading}
+                      />
+                      <span className="font-pixel text-[9px] text-slate-300 uppercase tracking-wider">
+                        Enable Automatic LINE Notifications
+                      </span>
+                    </label>
+                    <span
+                      className={styles.inputHelpText}
+                      style={{ marginLeft: "1.75rem" }}
+                    >
+                      When enabled, drafts and battle results are automatically
+                      posted to the LINE group.
+                    </span>
+                  </div>
+                </div>
+
+                {lineError && (
+                  <div className={styles.statusError}>
+                    ⚠️ CONFIG ERROR: {lineError}
+                  </div>
+                )}
+
+                {lineSuccess && (
+                  <div className={styles.statusSuccess}>
+                    ✅ Config Success: {lineSuccess}
+                  </div>
+                )}
+
+                <div className={styles.formActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(200, 0.1, "sawtooth");
+                      setLineGroupId("");
+                      setLineEnabled(false);
+                    }}
+                    disabled={loading}
+                    className={styles.resetBtn}
+                  >
+                    CLEAR SETTINGS
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={styles.applyBtn}
+                  >
+                    {loading ? "SAVING..." : "SAVE LINE SETTINGS"}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </main>

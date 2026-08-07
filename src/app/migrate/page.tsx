@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import { useAuth } from "@/utils/AuthContext";
-import { db, SeasonPlayerStat } from "@/utils/firebase";
+import { db, SeasonPlayerStat, recalculateRanks } from "@/utils/firebase";
 import {
   collection,
   getDocs,
@@ -185,11 +185,13 @@ export default function MigratePage() {
         const mentionsPlayer = p.mentionedPlayers?.some(
           (name: string) =>
             name.toLowerCase() === lowerTarget ||
-            name.toLowerCase() === actualDocId.toLowerCase()
+            name.toLowerCase() === actualDocId.toLowerCase(),
         );
         const descriptionMentions =
           p.description?.toLowerCase().includes(`@player:${lowerTarget}`) ||
-          p.description?.toLowerCase().includes(`@player:${actualDocId.toLowerCase()}`);
+          p.description
+            ?.toLowerCase()
+            .includes(`@player:${actualDocId.toLowerCase()}`);
 
         if (mentionsPlayer || descriptionMentions) {
           affectedPosts.push(d.id);
@@ -249,11 +251,13 @@ export default function MigratePage() {
         // dynamic search
         const playersSnap = await getDocs(collection(database, "players"));
         playersSnap.forEach((d) => {
+          const p = d.data();
           if (
             d.id.toLowerCase() === lowerTarget ||
-            d.data().name?.toLowerCase() === lowerTarget
+            p.name?.toLowerCase() === lowerTarget ||
+            p.alias?.toLowerCase() === lowerTarget
           ) {
-            playerDocData = d.data();
+            playerDocData = p;
             actualOldDocId = d.id;
           }
         });
@@ -298,6 +302,20 @@ export default function MigratePage() {
         });
       }
 
+      const oldId = actualOldDocId.toLowerCase();
+      const oldName = playerDocData?.name?.toLowerCase() || "";
+      const oldAlias = playerDocData?.alias?.toLowerCase() || "";
+
+      const isMatch = (name: string) => {
+        const n = name.toLowerCase();
+        return (
+          n === lowerTarget ||
+          (oldId && n === oldId) ||
+          (oldName && n === oldName) ||
+          (oldAlias && n === oldAlias)
+        );
+      };
+
       // 2. Migrate Match Logs
       addLog("Scanning matches for references...");
       const matchesSnap = await getDocs(collection(database, "matches"));
@@ -309,54 +327,45 @@ export default function MigratePage() {
 
         // Update Team A
         const newTeamA = m.teamA?.map((name: string) => {
-          if (
-            name.toLowerCase() === lowerTarget ||
-            name.toLowerCase() === actualOldDocId.toLowerCase()
-          ) {
+          if (isMatch(name)) {
             changed = true;
-            return newName; // Replace name/id with new name
+            return newName.toLowerCase(); // Keep match log rosters strictly lowercase
           }
           return name;
         });
 
         // Update Team B
         const newTeamB = m.teamB?.map((name: string) => {
-          if (
-            name.toLowerCase() === lowerTarget ||
-            name.toLowerCase() === actualOldDocId.toLowerCase()
-          ) {
+          if (isMatch(name)) {
             changed = true;
-            return newName; // Replace name/id with new name
+            return newName.toLowerCase(); // Keep match log rosters strictly lowercase
           }
           return name;
         });
 
         // Update Winner
         let newWinner = m.winner;
-        if (
-          m.winner?.toLowerCase() === lowerTarget ||
-          m.winner?.toLowerCase() === actualOldDocId.toLowerCase()
-        ) {
+        if (m.winner && isMatch(m.winner)) {
           changed = true;
           newWinner =
-            m.winner === "teamA" || m.winner === "teamB" ? m.winner : newName;
+            m.winner === "teamA" || m.winner === "teamB"
+              ? m.winner
+              : newName.toLowerCase();
         }
 
         // Update Feedback
         const newFeedback = m.feedback ? { ...m.feedback } : undefined;
         if (m.feedback) {
           const oldFeedbackKeys = Object.keys(m.feedback);
-          const oldKey = oldFeedbackKeys.find(
-            (k) =>
-              k.toLowerCase() === lowerTarget ||
-              k.toLowerCase() === actualOldDocId.toLowerCase(),
-          );
+          const keysToMigrate = oldFeedbackKeys.filter(isMatch);
 
-          if (oldKey) {
+          if (keysToMigrate.length > 0) {
             changed = true;
-            const voteData = m.feedback[oldKey];
-            newFeedback[lowerNewId] = voteData;
-            delete newFeedback[oldKey];
+            keysToMigrate.forEach((oldKey) => {
+              const voteData = m.feedback[oldKey];
+              newFeedback[lowerNewId] = voteData;
+              delete newFeedback[oldKey];
+            });
           }
         }
 
@@ -386,11 +395,7 @@ export default function MigratePage() {
         const updateStatArray = (arr: SeasonPlayerStat[] | undefined) => {
           if (!arr) return arr;
           return arr.map((p) => {
-            if (
-              p.id?.toLowerCase() === lowerTarget ||
-              p.id?.toLowerCase() === actualOldDocId.toLowerCase() ||
-              p.name?.toLowerCase() === lowerTarget
-            ) {
+            if ((p.id && isMatch(p.id)) || (p.name && isMatch(p.name))) {
               changed = true;
               return {
                 ...p,
@@ -408,9 +413,9 @@ export default function MigratePage() {
 
         let newLastPlace = s.lastPlace;
         if (
-          s.lastPlace?.id?.toLowerCase() === lowerTarget ||
-          s.lastPlace?.id?.toLowerCase() === actualOldDocId.toLowerCase() ||
-          s.lastPlace?.name?.toLowerCase() === lowerTarget
+          s.lastPlace &&
+          ((s.lastPlace.id && isMatch(s.lastPlace.id)) ||
+            (s.lastPlace.name && isMatch(s.lastPlace.name)))
         ) {
           changed = true;
           newLastPlace = {
@@ -448,10 +453,7 @@ export default function MigratePage() {
 
         // Update mentionedPlayers array
         const newMentionedPlayers = p.mentionedPlayers?.map((name: string) => {
-          if (
-            name.toLowerCase() === lowerTarget ||
-            name.toLowerCase() === actualOldDocId.toLowerCase()
-          ) {
+          if (isMatch(name)) {
             changed = true;
             return lowerNewId; // replace with new lowercase ID
           }
@@ -461,15 +463,22 @@ export default function MigratePage() {
         // Update description string to replace @player:old_id with @player:new_id
         let newDescription = p.description;
         if (p.description) {
-          const oldMentionPattern1 = `@player:${targetId.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`;
-          const oldMentionPattern2 = `@player:${actualOldDocId.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`;
-          
-          const regex1 = new RegExp(oldMentionPattern1, "gi");
-          const regex2 = new RegExp(oldMentionPattern2, "gi");
-          
-          let tempDesc = p.description.replace(regex1, `@player:${lowerNewId}`);
-          tempDesc = tempDesc.replace(regex2, `@player:${lowerNewId}`);
-          
+          let tempDesc = p.description;
+
+          const replacePattern = (pattern: string) => {
+            if (!pattern) return;
+            const regex = new RegExp(
+              `@player:${pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}`,
+              "gi",
+            );
+            tempDesc = tempDesc.replace(regex, `@player:${lowerNewId}`);
+          };
+
+          replacePattern(targetId);
+          if (oldId) replacePattern(oldId);
+          if (oldName) replacePattern(oldName);
+          if (oldAlias) replacePattern(oldAlias);
+
           if (tempDesc !== p.description) {
             changed = true;
             newDescription = tempDesc;
@@ -482,7 +491,10 @@ export default function MigratePage() {
             description: newDescription,
           });
           postsUpdated++;
-          addLog(`Scheduled updates for forum post ID "${postDoc.id}"`, "success");
+          addLog(
+            `Scheduled updates for forum post ID "${postDoc.id}"`,
+            "success",
+          );
         }
       });
 
@@ -492,6 +504,11 @@ export default function MigratePage() {
       addLog("Committing migration transaction batch to Firestore...");
       await batch.commit();
       addLog("Firestore migration committed successfully!", "success");
+
+      // Recalculate database stats immediately so they are fresh
+      addLog("Recalculating database ranks and stats for all fighters...");
+      await recalculateRanks();
+      addLog("Database stats recalculated successfully!", "success");
 
       // Clear LocalStorage cache to force refresh
       if (typeof window !== "undefined") {

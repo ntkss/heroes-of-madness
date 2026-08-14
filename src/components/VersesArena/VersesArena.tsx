@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import {
   playLockName,
   playExplosion,
@@ -8,7 +8,8 @@ import {
   playBeep,
 } from "@/utils/audio";
 import { SQUAD_NAMES } from "@/constants/players";
-import { DbPlayer, RankConfig } from "@/utils/firebase";
+import { DbPlayer, RankConfig, Match } from "@/utils/firebase";
+import { calculateTeamWinRates, PlayerLaneStats } from "@/utils/winrate";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
@@ -22,6 +23,7 @@ interface VersesArenaProps {
   triggerScreenShake: () => void;
   squad: DbPlayer[];
   rankConfig: RankConfig;
+  matches?: Match[];
 }
 
 // ─── Team Row ──────────────────────────────────────────────────────────────────
@@ -36,6 +38,9 @@ interface TeamRowProps {
   squad: DbPlayer[];
   percentages: number[];
   rankConfig: RankConfig;
+  teamWinRate: number;
+  isFavored: boolean;
+  laneStats: PlayerLaneStats[];
 }
 
 function TeamRow({
@@ -49,6 +54,9 @@ function TeamRow({
   squad,
   percentages,
   rankConfig,
+  teamWinRate,
+  isFavored,
+  laneStats,
 }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
@@ -83,20 +91,36 @@ function TeamRow({
           isBlue ? styles.teamRowHeaderBlue : styles.teamRowHeaderRed
         }`}
       >
-        <span
-          className={`${styles.teamLabel} ${
-            isBlue ? styles.teamLabelBlue : styles.teamLabelRed
-          }`}
-        >
-          {label}
-        </span>
-        <span
-          className={`${styles.teamBadge} ${
-            isBlue ? styles.teamBadgeBlue : styles.teamBadgeRed
-          }`}
-        >
-          TEAM {side}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`${styles.teamLabel} ${
+              isBlue ? styles.teamLabelBlue : styles.teamLabelRed
+            }`}
+          >
+            {label}
+          </span>
+          <span
+            className={`${styles.teamBadge} ${
+              isBlue ? styles.teamBadgeBlue : styles.teamBadgeRed
+            }`}
+          >
+            TEAM {side}
+          </span>
+        </div>
+
+        {/* Win Rate Percentage & Higher Win Rate Indicator */}
+        <div className="flex items-center gap-1.5">
+          {isFavored && (
+            <span className={styles.favoredBadge}>🔥 HIGHER WIN RATE</span>
+          )}
+          <span
+            className={`${styles.teamWinrateBadge} ${
+              isBlue ? styles.teamWinrateBadgeBlue : styles.teamWinrateBadgeRed
+            }`}
+          >
+            EST. WIN RATE: {teamWinRate}%
+          </span>
+        </div>
       </div>
 
       {/* 5 slanted cards - staggered left (Blue) or right (Red) on large screens, centered on mobile */}
@@ -122,6 +146,7 @@ function TeamRow({
               percentage={percentages[idx + lockedOffset]}
               currentRank={player?.current_rank}
               rankClass={rankClass}
+              laneWinRate={laneStats?.[idx]?.laneWinRate}
             />
           );
         })}
@@ -150,6 +175,7 @@ export default function VersesArena({
   triggerScreenShake,
   squad,
   rankConfig,
+  matches,
 }: VersesArenaProps) {
   const [dispA, setDispA] = useState<string[]>(Array(5).fill("???"));
   const [dispB, setDispB] = useState<string[]>(Array(5).fill("???"));
@@ -178,6 +204,19 @@ export default function VersesArena({
       pctIntervalRef.current = null;
     }
   };
+
+  const winRateSummary = useMemo(() => {
+    if (!teamA.length || !teamB.length) {
+      return {
+        teamAWinRate: 50,
+        teamBWinRate: 50,
+        teamALaneStats: [],
+        teamBLaneStats: [],
+        favoredTeam: "tie" as const,
+      };
+    }
+    return calculateTeamWinRates(teamA, teamB, matches || [], squad);
+  }, [teamA, teamB, matches, squad]);
 
   useEffect(() => {
     if (isGenerating) {
@@ -335,9 +374,12 @@ export default function VersesArena({
         squad={squad}
         percentages={percentages}
         rankConfig={rankConfig}
+        teamWinRate={winRateSummary.teamAWinRate}
+        isFavored={winRateSummary.favoredTeam === "teamA"}
+        laneStats={winRateSummary.teamALaneStats}
       />
 
-      {/* VS Banner Separator */}
+      {/* VS Banner & Win Rate Prediction Section */}
       <div className={styles.vsContainer}>
         {/* VS emblem and dividing lines */}
         <div className={styles.vsWrapper}>
@@ -353,6 +395,62 @@ export default function VersesArena({
           </div>
           <div className={styles.vsLineRed} />
         </div>
+
+        {/* Win Rate Comparison Prediction Banner */}
+        <div className={styles.predictionContainer}>
+          <div className={styles.predictionHeader}>
+            <span className={styles.predTeamBlue}>
+              🔵 BLUE: {winRateSummary.teamAWinRate}%
+            </span>
+            <span className={styles.predFavoredTag}>
+              {isGenerating
+                ? "⚡ ANALYZING LANE WIN RATES..."
+                : winRateSummary.favoredTeam === "teamA"
+                  ? "👑 BLUE DRAGON FAVORED TO WIN"
+                  : winRateSummary.favoredTeam === "teamB"
+                    ? "👑 RED TIGER FAVORED TO WIN"
+                    : "⚖️ EVEN MATCHUP (50/50)"}
+            </span>
+            <span className={styles.predTeamRed}>
+              🔴 RED: {winRateSummary.teamBWinRate}%
+            </span>
+          </div>
+
+          {/* Visual Dual-Colored Split Win Rate Progress Bar */}
+          <div className={styles.predictionBarOuter}>
+            <div
+              className={styles.predictionBarBlue}
+              style={{
+                width: `${
+                  winRateSummary.teamAWinRate + winRateSummary.teamBWinRate > 0
+                    ? Math.round(
+                        (winRateSummary.teamAWinRate /
+                          (winRateSummary.teamAWinRate +
+                            winRateSummary.teamBWinRate)) *
+                          100,
+                      )
+                    : 50
+                }%`,
+              }}
+            />
+            <div
+              className={styles.predictionBarRed}
+              style={{
+                width: `${
+                  winRateSummary.teamAWinRate + winRateSummary.teamBWinRate > 0
+                    ? 100 -
+                      Math.round(
+                        (winRateSummary.teamAWinRate /
+                          (winRateSummary.teamAWinRate +
+                            winRateSummary.teamBWinRate)) *
+                          100,
+                      )
+                    : 50
+                }%`,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Team B (Bottom Row) */}
@@ -367,6 +465,9 @@ export default function VersesArena({
         squad={squad}
         percentages={percentages}
         rankConfig={rankConfig}
+        teamWinRate={winRateSummary.teamBWinRate}
+        isFavored={winRateSummary.favoredTeam === "teamB"}
+        laneStats={winRateSummary.teamBLaneStats}
       />
 
       {/* Loading screen tips at the bottom */}

@@ -799,6 +799,7 @@ export default function Home() {
                 triggerScreenShake={triggerScreenShake}
                 squad={availablePlayers}
                 rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
+                matches={matches}
               />
             </div>
           </section>

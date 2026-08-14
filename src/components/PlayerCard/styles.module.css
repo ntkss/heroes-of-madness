@@ -205,3 +205,8 @@
 .cardWinner {
   @apply opacity-100;
 }
+
+.laneWrBadge {
+  @apply font-mono text-[6px] sm:text-[7.5px] md:text-[8.5px] text-emerald-400 font-bold tracking-wider leading-none mt-0.5 px-1 py-0.5 bg-slate-950/80 rounded border border-emerald-500/30;
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+}

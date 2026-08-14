@@ -111,9 +111,7 @@ function TeamRow({
         {/* Win Rate Percentage & Higher Win Rate Indicator */}
         <div className="flex items-center gap-1.5">
           {isFavored && (
-            <span className={styles.favoredBadge}>
-              🔥 HIGHER WIN RATE
-            </span>
+            <span className={styles.favoredBadge}>🔥 HIGHER WIN RATE</span>
           )}
           <span
             className={`${styles.teamWinrateBadge} ${
@@ -405,15 +403,13 @@ export default function VersesArena({
               🔵 BLUE: {winRateSummary.teamAWinRate}%
             </span>
             <span className={styles.predFavoredTag}>
-              {isGenerating ? (
-                "⚡ ANALYZING LANE WIN RATES..."
-              ) : winRateSummary.favoredTeam === "teamA" ? (
-                "👑 BLUE DRAGON FAVORED TO WIN"
-              ) : winRateSummary.favoredTeam === "teamB" ? (
-                "👑 RED TIGER FAVORED TO WIN"
-              ) : (
-                "⚖️ EVEN MATCHUP (50/50)"
-              )}
+              {isGenerating
+                ? "⚡ ANALYZING LANE WIN RATES..."
+                : winRateSummary.favoredTeam === "teamA"
+                  ? "👑 BLUE DRAGON FAVORED TO WIN"
+                  : winRateSummary.favoredTeam === "teamB"
+                    ? "👑 RED TIGER FAVORED TO WIN"
+                    : "⚖️ EVEN MATCHUP (50/50)"}
             </span>
             <span className={styles.predTeamRed}>
               🔴 RED: {winRateSummary.teamBWinRate}%

@@ -723,7 +723,7 @@ export default function Home() {
         </header>
 
         {/* Dashboard Main Area */}
-        <main className="mx-auto w-full p-4 md:p-8 flex-grow flex flex-col gap-8 items-center">
+        <main className="mx-auto w-full p-4 md:p-6 flex-grow flex flex-col gap-4 lg:gap-6 items-center">
           {/* Top Section: PlayerInput (Centered, Max 800px) */}
           <section className="container">
             <PlayerInput
@@ -744,11 +744,11 @@ export default function Home() {
             ref={arenaRef}
             className={`w-full transition-all duration-700 ease-out origin-top overflow-hidden ${
               showArena
-                ? "max-h-[1000px] opacity-100 my-8 scale-y-100"
+                ? "max-h-[1000px] lg:max-h-none opacity-100 my-4 lg:my-5 scale-y-100"
                 : "max-h-0 opacity-0 my-0 scale-y-0 pointer-events-none"
             }`}
           >
-            <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] rounded-md transition-all duration-300">
+            <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] lg:h-screen rounded-md transition-all duration-300">
               {/* Cabinet Frame Header */}
               <div className="bg-[#161622] border-b-4 border-slate-700/80 px-6 py-2 flex items-center justify-between">
                 <div className="flex gap-2 items-center">

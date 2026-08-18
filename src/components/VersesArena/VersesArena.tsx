@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import {
   playLockName,
   playExplosion,
@@ -41,6 +41,7 @@ interface TeamRowProps {
   teamWinRate: number;
   isFavored: boolean;
   laneStats: PlayerOverallStats[];
+  showShine: boolean;
 }
 
 function TeamRow({
@@ -57,6 +58,7 @@ function TeamRow({
   teamWinRate,
   isFavored,
   laneStats,
+  showShine,
 }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
@@ -123,33 +125,68 @@ function TeamRow({
         </div>
       </div>
 
-      {/* 5 slanted cards - staggered left (Blue) or right (Red) on large screens, centered on mobile */}
-      <div
-        className={`${styles.cardsRow} ${
-          isBlue ? styles.cardsRowBlue : styles.cardsRowRed
-        }`}
-      >
-        {finalNames.map((name, idx) => {
-          const player = getPlayer(name);
-          const rankClass = getPlayerRankClass(player);
-          return (
-            <PlayerCard
-              key={idx}
-              name={name}
-              displayName={player ? player.name : displayNames[idx]}
-              role={ROLES[idx]}
-              locked={locked[idx + lockedOffset]}
-              team={side}
-              imageURL={player?.imageURL}
-              isWinner={isWinner}
-              isLoser={isLoser}
-              percentage={percentages[idx + lockedOffset]}
-              currentRank={player?.current_rank}
-              rankClass={rankClass}
-              overallWinRate={laneStats?.[idx]?.winRate}
-            />
-          );
-        })}
+      {/* 5 slanted cards wrapped in relative container to position the side winrate overlay */}
+      <div className="relative w-full">
+        {/* Big Winrate Display (Desktop only) */}
+        <div
+          className={`${styles.bigWinrateContainer} ${
+            isBlue ? styles.bigWinrateLeft : styles.bigWinrateRight
+          } ${isBlue ? styles.bigWinrateBlue : styles.bigWinrateRed}`}
+        >
+          <span className={styles.bigWinrateLabel}>EST. WINRATE</span>
+          <span
+            className={`${styles.bigWinrateValue} ${
+              isBlue ? styles.bigWinrateValueBlue : styles.bigWinrateValueRed
+            } ${
+              showShine
+                ? isBlue
+                  ? styles.shiningNumberBlue
+                  : styles.shiningNumberRed
+                : ""
+            }`}
+          >
+            {teamWinRate}%
+          </span>
+          {isFavored && (
+            <span
+              className={`${styles.bigWinrateFavored} ${
+                isBlue
+                  ? styles.bigWinrateFavoredBlue
+                  : styles.bigWinrateFavoredRed
+              }`}
+            >
+              FAVORED
+            </span>
+          )}
+        </div>
+
+        <div
+          className={`${styles.cardsRow} ${
+            isBlue ? styles.cardsRowBlue : styles.cardsRowRed
+          }`}
+        >
+          {finalNames.map((name, idx) => {
+            const player = getPlayer(name);
+            const rankClass = getPlayerRankClass(player);
+            return (
+              <PlayerCard
+                key={idx}
+                name={name}
+                displayName={player ? player.name : displayNames[idx]}
+                role={ROLES[idx]}
+                locked={locked[idx + lockedOffset]}
+                team={side}
+                imageURL={player?.imageURL}
+                isWinner={isWinner}
+                isLoser={isLoser}
+                percentage={percentages[idx + lockedOffset]}
+                currentRank={player?.current_rank}
+                rankClass={rankClass}
+                laneWinRate={laneStats?.[idx]?.laneWinRate}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -188,6 +225,11 @@ export default function VersesArena({
 
   const [currentTip, setCurrentTip] = useState(TIPS[0]);
 
+  // Animated team win rates states
+  const [animatedWinRateA, setAnimatedWinRateA] = useState(50);
+  const [animatedWinRateB, setAnimatedWinRateB] = useState(50);
+  const [showShine, setShowShine] = useState(false);
+
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
   const lockTimersRef = useRef<NodeJS.Timeout[]>([]);
 
@@ -217,6 +259,48 @@ export default function VersesArena({
     }
     return calculateTeamWinRates(teamA, teamB, matches || [], squad);
   }, [teamA, teamB, matches, squad]);
+
+  // Synchronize or reset animation win rates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isGenerating) {
+        setAnimatedWinRateA(winRateSummary.teamAWinRate);
+        setAnimatedWinRateB(winRateSummary.teamBWinRate);
+        setShowShine(true);
+      } else {
+        setAnimatedWinRateA(0);
+        setAnimatedWinRateB(0);
+        setShowShine(false);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [isGenerating, winRateSummary.teamAWinRate, winRateSummary.teamBWinRate]);
+
+  // Count up animation utilizing requestAnimationFrame for buttery 60fps
+  const animateWinrates = useCallback(() => {
+    const targetA = winRateSummary.teamAWinRate;
+    const targetB = winRateSummary.teamBWinRate;
+    const duration = 1200; // 1.2 seconds count up duration
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = progress * (2 - progress); // Ease out quad
+
+      setAnimatedWinRateA(Math.round(easeProgress * targetA));
+      setAnimatedWinRateB(Math.round(easeProgress * targetB));
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        setShowShine(true);
+        playBeep(880, 0.35, "sine");
+      }
+    };
+
+    requestAnimationFrame(step);
+  }, [winRateSummary.teamAWinRate, winRateSummary.teamBWinRate]);
 
   useEffect(() => {
     if (isGenerating) {
@@ -329,6 +413,7 @@ export default function VersesArena({
               clearInterval(pctIntervalRef.current);
               pctIntervalRef.current = null;
             }
+            animateWinrates();
             setTimeout(() => {
               speakAnnounce("ROUND ONE. FIGHT!");
             }, 300);
@@ -353,7 +438,7 @@ export default function VersesArena({
       }
     }
     return clearAllTimers;
-  }, [isGenerating, teamA, teamB, triggerScreenShake, squad]);
+  }, [isGenerating, teamA, teamB, triggerScreenShake, squad, animateWinrates]);
 
   return (
     <div className={styles.arenaBackground}>
@@ -374,9 +459,10 @@ export default function VersesArena({
         squad={squad}
         percentages={percentages}
         rankConfig={rankConfig}
-        teamWinRate={winRateSummary.teamAWinRate}
+        teamWinRate={animatedWinRateA}
         isFavored={winRateSummary.favoredTeam === "teamA"}
         laneStats={winRateSummary.teamALaneStats}
+        showShine={showShine}
       />
 
       {/* VS Banner & Win Rate Prediction Section */}
@@ -400,7 +486,7 @@ export default function VersesArena({
         <div className={styles.predictionContainer}>
           <div className={styles.predictionHeader}>
             <span className={styles.predTeamBlue}>
-              🔵 BLUE: {winRateSummary.teamAWinRate}%
+              🔵 BLUE: {animatedWinRateA}%
             </span>
             <span className={styles.predFavoredTag}>
               {isGenerating
@@ -412,7 +498,7 @@ export default function VersesArena({
                     : "⚖️ EVEN MATCHUP (50/50)"}
             </span>
             <span className={styles.predTeamRed}>
-              🔴 RED: {winRateSummary.teamBWinRate}%
+              🔴 RED: {animatedWinRateB}%
             </span>
           </div>
 
@@ -422,11 +508,11 @@ export default function VersesArena({
               className={styles.predictionBarBlue}
               style={{
                 width: `${
-                  winRateSummary.teamAWinRate + winRateSummary.teamBWinRate > 0
+                  animatedWinRateA + animatedWinRateB > 0
                     ? Math.round(
-                        (winRateSummary.teamAWinRate /
-                          (winRateSummary.teamAWinRate +
-                            winRateSummary.teamBWinRate)) *
+                        (animatedWinRateA /
+                          (animatedWinRateA +
+                            animatedWinRateB)) *
                           100,
                       )
                     : 50
@@ -437,12 +523,12 @@ export default function VersesArena({
               className={styles.predictionBarRed}
               style={{
                 width: `${
-                  winRateSummary.teamAWinRate + winRateSummary.teamBWinRate > 0
+                  animatedWinRateA + animatedWinRateB > 0
                     ? 100 -
                       Math.round(
-                        (winRateSummary.teamAWinRate /
-                          (winRateSummary.teamAWinRate +
-                            winRateSummary.teamBWinRate)) *
+                        (animatedWinRateA /
+                          (animatedWinRateA +
+                            animatedWinRateB)) *
                           100,
                       )
                     : 50
@@ -465,9 +551,10 @@ export default function VersesArena({
         squad={squad}
         percentages={percentages}
         rankConfig={rankConfig}
-        teamWinRate={winRateSummary.teamBWinRate}
+        teamWinRate={animatedWinRateB}
         isFavored={winRateSummary.favoredTeam === "teamB"}
         laneStats={winRateSummary.teamBLaneStats}
+        showShine={showShine}
       />
 
       {/* Loading screen tips at the bottom */}

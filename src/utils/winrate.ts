@@ -196,6 +196,7 @@ export function getPlayerOverallWinRate(
   laneIndex: number,
 ): PlayerOverallStats {
   const laneName = ROLE_NAMES[laneIndex] || DEFAULT_LANES[laneIndex] || "LANE";
+  const laneStats = getPlayerLaneWinRate(playerIdOrName, laneIndex, matches, squad);
 
   let totalMatches = 0;
   let totalWins = 0;
@@ -241,9 +242,9 @@ export function getPlayerOverallWinRate(
       wins: totalWins,
       laneName,
       isFallback: false,
-      laneWinRate: wr,
-      laneMatches: totalMatches,
-      laneWins: totalWins,
+      laneWinRate: laneStats.laneWinRate,
+      laneMatches: laneStats.laneMatches,
+      laneWins: laneStats.laneWins,
     };
   }
 
@@ -271,9 +272,9 @@ export function getPlayerOverallWinRate(
     wins: 0,
     laneName,
     isFallback: true,
-    laneWinRate: fallbackWr,
-    laneMatches: 0,
-    laneWins: 0,
+    laneWinRate: laneStats.laneWinRate,
+    laneMatches: laneStats.laneMatches,
+    laneWins: laneStats.laneWins,
   };
 }
 

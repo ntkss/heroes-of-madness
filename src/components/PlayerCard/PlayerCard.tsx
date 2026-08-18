@@ -58,7 +58,7 @@ export interface PlayerCardProps {
   percentage: number;
   currentRank?: string;
   rankClass?: "high" | "normal" | "low" | null;
-  overallWinRate?: number;
+  laneWinRate?: number;
 }
 
 export default function PlayerCard({
@@ -73,7 +73,7 @@ export default function PlayerCard({
   percentage,
   currentRank,
   rankClass,
-  overallWinRate,
+  laneWinRate,
 }: PlayerCardProps) {
   const isBlue = team === "A";
   const rolling = !locked;
@@ -188,11 +188,11 @@ export default function PlayerCard({
             <div className="flex flex-col items-center justify-center">
               <span className={styles.playerRole}>{role}</span>
               {locked &&
-                overallWinRate !== undefined &&
+                laneWinRate !== undefined &&
                 name !== "???" &&
                 name !== "DRAFTING" && (
                   <span className={styles.laneWrBadge}>
-                    OVERALL WR: {overallWinRate}%
+                    LANE WR: {laneWinRate}%
                   </span>
                 )}
             </div>

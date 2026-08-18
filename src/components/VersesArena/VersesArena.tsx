@@ -9,7 +9,7 @@ import {
 } from "@/utils/audio";
 import { SQUAD_NAMES } from "@/constants/players";
 import { DbPlayer, RankConfig, Match } from "@/utils/firebase";
-import { calculateTeamWinRates, PlayerLaneStats } from "@/utils/winrate";
+import { calculateTeamWinRates, PlayerOverallStats } from "@/utils/winrate";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
@@ -40,7 +40,7 @@ interface TeamRowProps {
   rankConfig: RankConfig;
   teamWinRate: number;
   isFavored: boolean;
-  laneStats: PlayerLaneStats[];
+  laneStats: PlayerOverallStats[];
 }
 
 function TeamRow({
@@ -146,7 +146,7 @@ function TeamRow({
               percentage={percentages[idx + lockedOffset]}
               currentRank={player?.current_rank}
               rankClass={rankClass}
-              laneWinRate={laneStats?.[idx]?.laneWinRate}
+              overallWinRate={laneStats?.[idx]?.winRate}
             />
           );
         })}
@@ -404,7 +404,7 @@ export default function VersesArena({
             </span>
             <span className={styles.predFavoredTag}>
               {isGenerating
-                ? "⚡ ANALYZING LANE WIN RATES..."
+                ? "⚡ ANALYZING OVERALL WIN RATES..."
                 : winRateSummary.favoredTeam === "teamA"
                   ? "👑 BLUE DRAGON FAVORED TO WIN"
                   : winRateSummary.favoredTeam === "teamB"

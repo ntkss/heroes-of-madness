@@ -1,13 +1,22 @@
 @reference "../../app/globals.css";
 
 .arenaBackground {
-  @apply flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 lg:aspect-[16/9] min-h-[380px] lg:min-h-[70vh];
+  @apply flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 min-h-[380px];
   background: linear-gradient(180deg, #0f172a 0%, #090d16 50%, #030712 100%);
   background-image: radial-gradient(
     circle at 50% 50%,
     #1e293b 0%,
     #020617 100%
   );
+}
+
+@media (min-width: 1024px) {
+  .arenaBackground {
+    height: 100%;
+    min-height: auto;
+    max-height: none;
+    @apply gap-4 p-6 justify-around;
+  }
 }
 
 .ambientBlue {
@@ -126,7 +135,7 @@
 }
 
 .teamWinrateBadge {
-  @apply font-mono text-[7px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-wider;
+  @apply font-mono text-[7px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-wider lg:hidden;
 }
 
 .teamWinrateBadgeBlue {
@@ -175,4 +184,161 @@
 .predictionBarRed {
   @apply h-full bg-gradient-to-r from-rose-500 to-red-600 transition-all duration-500 rounded-r-full;
   box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+}
+
+/* ─── Big Winrate Indicator Styles ───────────────────────────────────────────── */
+@keyframes neonPulseBlue {
+  0%,
+  100% {
+    box-shadow:
+      0 0 15px rgba(0, 210, 255, 0.15),
+      inset 0 0 10px rgba(0, 210, 255, 0.05);
+    border-color: rgba(0, 210, 255, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(0, 210, 255, 0.35),
+      inset 0 0 15px rgba(0, 210, 255, 0.1);
+    border-color: rgba(0, 210, 255, 0.4);
+  }
+}
+
+@keyframes neonPulseRed {
+  0%,
+  100% {
+    box-shadow:
+      0 0 15px rgba(255, 42, 95, 0.15),
+      inset 0 0 10px rgba(255, 42, 95, 0.05);
+    border-color: rgba(255, 42, 95, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(255, 42, 95, 0.35),
+      inset 0 0 15px rgba(255, 42, 95, 0.1);
+    border-color: rgba(255, 42, 95, 0.4);
+  }
+}
+
+.bigWinrateContainer {
+  @apply hidden lg:flex flex-col items-center justify-center p-5 rounded-lg border bg-slate-950/80 select-none z-10 transition-all duration-300 w-[150px] aspect-square;
+  backdrop-filter: blur(8px);
+}
+
+.bigWinrateLeft {
+  @apply lg:absolute lg:left-[1%] xl:left-[3%] lg:top-1/2 lg:-translate-y-1/2;
+}
+
+.bigWinrateRight {
+  @apply lg:absolute lg:right-[1%] xl:right-[3%] lg:top-1/2 lg:-translate-y-1/2;
+}
+
+.bigWinrateBlue {
+  @apply border-cyan-500/20;
+  animation: neonPulseBlue 4s infinite ease-in-out;
+}
+
+.bigWinrateRed {
+  @apply border-rose-500/20;
+  animation: neonPulseRed 4s infinite ease-in-out;
+}
+
+.bigWinrateLabel {
+  @apply font-pixel text-[8px] uppercase tracking-widest text-slate-400/80 mb-2;
+}
+
+.bigWinrateValue {
+  @apply font-action text-7xl font-black select-none leading-none italic;
+}
+
+.bigWinrateValueBlue {
+  @apply text-cyan-400;
+  text-shadow:
+    0 0 12px var(--color-neon-blue),
+    0 0 25px rgba(0, 210, 255, 0.4);
+}
+
+.bigWinrateValueRed {
+  @apply text-rose-500;
+  text-shadow:
+    0 0 12px var(--color-neon-red),
+    0 0 25px rgba(255, 42, 95, 0.4);
+}
+
+.bigWinrateFavored {
+  @apply font-pixel text-[6.5px] px-2 py-0.5 mt-2 rounded border animate-pulse tracking-wider font-bold;
+}
+
+.bigWinrateFavoredBlue {
+  @apply border-cyan-400/30 text-cyan-300 bg-cyan-950/40;
+  box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
+}
+
+.bigWinrateFavoredRed {
+  @apply border-rose-400/30 text-rose-300 bg-rose-950/40;
+  box-shadow: 0 0 8px rgba(255, 42, 95, 0.3);
+}
+
+/* ─── Shining & Laser Glow Effects ─────────────────────────────────────────── */
+@keyframes shineGlowBlue {
+  0% {
+    text-shadow:
+      0 0 12px var(--color-neon-blue),
+      0 0 25px rgba(0, 210, 255, 0.4);
+    filter: brightness(1);
+  }
+  15% {
+    text-shadow:
+      0 0 25px #ffffff,
+      0 0 50px var(--color-neon-blue),
+      0 0 85px var(--color-neon-blue);
+    filter: brightness(1.7);
+  }
+  30% {
+    text-shadow:
+      0 0 12px var(--color-neon-blue),
+      0 0 25px rgba(0, 210, 255, 0.4);
+    filter: brightness(1);
+  }
+  100% {
+    text-shadow:
+      0 0 12px var(--color-neon-blue),
+      0 0 25px rgba(0, 210, 255, 0.4);
+    filter: brightness(1);
+  }
+}
+
+@keyframes shineGlowRed {
+  0% {
+    text-shadow:
+      0 0 12px var(--color-neon-red),
+      0 0 25px rgba(255, 42, 95, 0.4);
+    filter: brightness(1);
+  }
+  15% {
+    text-shadow:
+      0 0 25px #ffffff,
+      0 0 50px var(--color-neon-red),
+      0 0 85px var(--color-neon-red);
+    filter: brightness(1.7);
+  }
+  30% {
+    text-shadow:
+      0 0 12px var(--color-neon-red),
+      0 0 25px rgba(255, 42, 95, 0.4);
+    filter: brightness(1);
+  }
+  100% {
+    text-shadow:
+      0 0 12px var(--color-neon-red),
+      0 0 25px rgba(255, 42, 95, 0.4);
+    filter: brightness(1);
+  }
+}
+
+.shiningNumberBlue {
+  animation: shineGlowBlue 3.5s infinite ease-in-out;
+}
+
+.shiningNumberRed {
+  animation: shineGlowRed 3.5s infinite ease-in-out;
 }

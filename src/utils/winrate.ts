@@ -1,5 +1,18 @@
 import { DbPlayer, Match } from "@/utils/firebase";
 
+export interface PlayerOverallStats {
+  winRate: number;
+  matches: number;
+  wins: number;
+  laneName: string;
+  isFallback: boolean;
+
+  // Backward compatibility fields
+  laneWinRate: number;
+  laneMatches: number;
+  laneWins: number;
+}
+
 export interface PlayerLaneStats {
   laneWinRate: number;
   laneMatches: number;
@@ -11,8 +24,8 @@ export interface PlayerLaneStats {
 export interface TeamWinRateSummary {
   teamAWinRate: number;
   teamBWinRate: number;
-  teamALaneStats: PlayerLaneStats[];
-  teamBLaneStats: PlayerLaneStats[];
+  teamALaneStats: PlayerOverallStats[];
+  teamBLaneStats: PlayerOverallStats[];
   favoredTeam: "teamA" | "teamB" | "tie";
 }
 
@@ -174,7 +187,104 @@ export function getPlayerLaneWinRate(
 }
 
 /**
- * Calculates win rates for Team A and Team B based on each player's assigned lane win rate.
+ * Calculates a player's overall win rate based on all matches.
+ */
+export function getPlayerOverallWinRate(
+  playerIdOrName: string,
+  matches: Match[],
+  squad: DbPlayer[],
+  laneIndex: number,
+): PlayerOverallStats {
+  const laneName = ROLE_NAMES[laneIndex] || DEFAULT_LANES[laneIndex] || "LANE";
+  const laneStats = getPlayerLaneWinRate(
+    playerIdOrName,
+    laneIndex,
+    matches,
+    squad,
+  );
+
+  let totalMatches = 0;
+  let totalWins = 0;
+
+  if (matches && matches.length > 0) {
+    matches.forEach((m) => {
+      // Only count finished matches
+      if (!m.winner || (m.winner !== "teamA" && m.winner !== "teamB")) return;
+
+      // Check Team A
+      if (m.teamA && m.teamA.length > 0) {
+        const pIdx = m.teamA.findIndex((p) =>
+          matchesPlayer(p, playerIdOrName, squad),
+        );
+        if (pIdx !== -1) {
+          totalMatches++;
+          if (m.winner === "teamA") {
+            totalWins++;
+          }
+        }
+      }
+
+      // Check Team B
+      if (m.teamB && m.teamB.length > 0) {
+        const pIdx = m.teamB.findIndex((p) =>
+          matchesPlayer(p, playerIdOrName, squad),
+        );
+        if (pIdx !== -1) {
+          totalMatches++;
+          if (m.winner === "teamB") {
+            totalWins++;
+          }
+        }
+      }
+    });
+  }
+
+  if (totalMatches > 0) {
+    const wr = Math.round((totalWins / totalMatches) * 100);
+    return {
+      winRate: wr,
+      matches: totalMatches,
+      wins: totalWins,
+      laneName,
+      isFallback: false,
+      laneWinRate: laneStats.laneWinRate,
+      laneMatches: laneStats.laneMatches,
+      laneWins: laneStats.laneWins,
+    };
+  }
+
+  // Fallback: Use player's overall win rate from squad (database stats)
+  const foundPlayer = squad.find(
+    (p) =>
+      p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
+      p.name.toLowerCase() === playerIdOrName.toLowerCase(),
+  );
+
+  let fallbackWr = 50; // Neutral default for bot/new player
+  if (foundPlayer) {
+    if (
+      foundPlayer.winrate !== undefined &&
+      foundPlayer.winrate !== null &&
+      foundPlayer.total_match_played > 0
+    ) {
+      fallbackWr = Math.round(foundPlayer.winrate);
+    }
+  }
+
+  return {
+    winRate: fallbackWr,
+    matches: 0,
+    wins: 0,
+    laneName,
+    isFallback: true,
+    laneWinRate: laneStats.laneWinRate,
+    laneMatches: laneStats.laneMatches,
+    laneWins: laneStats.laneWins,
+  };
+}
+
+/**
+ * Calculates win rates for Team A and Team B based on each player's overall win rate.
  */
 export function calculateTeamWinRates(
   teamA: string[],
@@ -182,27 +292,36 @@ export function calculateTeamWinRates(
   matches: Match[],
   squad: DbPlayer[],
 ): TeamWinRateSummary {
-  const teamALaneStats: PlayerLaneStats[] = [];
-  const teamBLaneStats: PlayerLaneStats[] = [];
+  const teamALaneStats: PlayerOverallStats[] = [];
+  const teamBLaneStats: PlayerOverallStats[] = [];
 
   // Team A
   for (let i = 0; i < 5; i++) {
     const player = teamA[i] || "";
-    teamALaneStats.push(getPlayerLaneWinRate(player, i, matches, squad));
+    teamALaneStats.push(getPlayerOverallWinRate(player, matches, squad, i));
   }
 
   // Team B
   for (let i = 0; i < 5; i++) {
     const player = teamB[i] || "";
-    teamBLaneStats.push(getPlayerLaneWinRate(player, i, matches, squad));
+    teamBLaneStats.push(getPlayerOverallWinRate(player, matches, squad, i));
   }
 
-  const teamAWinRate = Math.round(
-    teamALaneStats.reduce((sum, s) => sum + s.laneWinRate, 0) / 5,
-  );
-  const teamBWinRate = Math.round(
-    teamBLaneStats.reduce((sum, s) => sum + s.laneWinRate, 0) / 5,
-  );
+  // Calculate average overall win rates for Team A and Team B
+  const teamAAvgOverall =
+    teamALaneStats.reduce((sum, s) => sum + s.winRate, 0) / 5;
+  const teamBAvgOverall =
+    teamBLaneStats.reduce((sum, s) => sum + s.winRate, 0) / 5;
+
+  let teamAWinRate = 50;
+  let teamBWinRate = 50;
+
+  if (teamAAvgOverall + teamBAvgOverall > 0) {
+    teamAWinRate = Math.round(
+      (teamAAvgOverall / (teamAAvgOverall + teamBAvgOverall)) * 100,
+    );
+    teamBWinRate = 100 - teamAWinRate;
+  }
 
   let favoredTeam: "teamA" | "teamB" | "tie" = "tie";
   if (teamAWinRate > teamBWinRate) {

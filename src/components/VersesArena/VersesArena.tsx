@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   playLockName,
   playExplosion,
@@ -511,8 +517,7 @@ export default function VersesArena({
                   animatedWinRateA + animatedWinRateB > 0
                     ? Math.round(
                         (animatedWinRateA /
-                          (animatedWinRateA +
-                            animatedWinRateB)) *
+                          (animatedWinRateA + animatedWinRateB)) *
                           100,
                       )
                     : 50
@@ -527,8 +532,7 @@ export default function VersesArena({
                     ? 100 -
                       Math.round(
                         (animatedWinRateA /
-                          (animatedWinRateA +
-                            animatedWinRateB)) *
+                          (animatedWinRateA + animatedWinRateB)) *
                           100,
                       )
                     : 50

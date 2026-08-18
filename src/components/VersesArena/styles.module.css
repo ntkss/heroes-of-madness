@@ -281,38 +281,56 @@
 /* ─── Shining & Laser Glow Effects ─────────────────────────────────────────── */
 @keyframes shineGlowBlue {
   0% {
-    text-shadow: 0 0 12px var(--color-neon-blue), 0 0 25px rgba(0, 210, 255, 0.4);
+    text-shadow:
+      0 0 12px var(--color-neon-blue),
+      0 0 25px rgba(0, 210, 255, 0.4);
     filter: brightness(1);
   }
   15% {
-    text-shadow: 0 0 25px #ffffff, 0 0 50px var(--color-neon-blue), 0 0 85px var(--color-neon-blue);
+    text-shadow:
+      0 0 25px #ffffff,
+      0 0 50px var(--color-neon-blue),
+      0 0 85px var(--color-neon-blue);
     filter: brightness(1.7);
   }
   30% {
-    text-shadow: 0 0 12px var(--color-neon-blue), 0 0 25px rgba(0, 210, 255, 0.4);
+    text-shadow:
+      0 0 12px var(--color-neon-blue),
+      0 0 25px rgba(0, 210, 255, 0.4);
     filter: brightness(1);
   }
   100% {
-    text-shadow: 0 0 12px var(--color-neon-blue), 0 0 25px rgba(0, 210, 255, 0.4);
+    text-shadow:
+      0 0 12px var(--color-neon-blue),
+      0 0 25px rgba(0, 210, 255, 0.4);
     filter: brightness(1);
   }
 }
 
 @keyframes shineGlowRed {
   0% {
-    text-shadow: 0 0 12px var(--color-neon-red), 0 0 25px rgba(255, 42, 95, 0.4);
+    text-shadow:
+      0 0 12px var(--color-neon-red),
+      0 0 25px rgba(255, 42, 95, 0.4);
     filter: brightness(1);
   }
   15% {
-    text-shadow: 0 0 25px #ffffff, 0 0 50px var(--color-neon-red), 0 0 85px var(--color-neon-red);
+    text-shadow:
+      0 0 25px #ffffff,
+      0 0 50px var(--color-neon-red),
+      0 0 85px var(--color-neon-red);
     filter: brightness(1.7);
   }
   30% {
-    text-shadow: 0 0 12px var(--color-neon-red), 0 0 25px rgba(255, 42, 95, 0.4);
+    text-shadow:
+      0 0 12px var(--color-neon-red),
+      0 0 25px rgba(255, 42, 95, 0.4);
     filter: brightness(1);
   }
   100% {
-    text-shadow: 0 0 12px var(--color-neon-red), 0 0 25px rgba(255, 42, 95, 0.4);
+    text-shadow:
+      0 0 12px var(--color-neon-red),
+      0 0 25px rgba(255, 42, 95, 0.4);
     filter: brightness(1);
   }
 }
@@ -324,4 +342,3 @@
 .shiningNumberRed {
   animation: shineGlowRed 3.5s infinite ease-in-out;
 }
-

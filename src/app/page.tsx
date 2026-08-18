@@ -575,14 +575,14 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
             {/* Google Authentication Control */}
             {loading ? (
-              <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none">
+              <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none shrink-0">
                 LOADING AUTH...
               </div>
             ) : user ? (
-              <div className="flex items-center gap-3 border border-slate-700 bg-slate-900/50 p-1 px-2.5 rounded-none">
+              <div className="flex items-center gap-3 border border-slate-700 bg-slate-900/50 p-1 px-2.5 rounded-none shrink-0">
                 <img
                   src={
                     user.photoURL ||
@@ -647,18 +647,11 @@ export default function Home() {
                   playCoin();
                   login();
                 }}
-                className="border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-3.5 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none"
+                className="border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-3.5 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none shrink-0"
               >
                 🔐 LOGIN GOOGLE
               </button>
             )}
-
-            <div className="flex flex-col items-end text-[9px] font-pixel text-[#a0a0c0] uppercase text-right select-none">
-              <span className="text-neon-blue glow-blue">
-                CRT SYSTEM CONNECTED
-              </span>
-              <span className="text-slate-500 mt-1">DIAGNOSTOK</span>
-            </div>
 
             {/* Seasons History Dashboard Link */}
             <Link
@@ -666,7 +659,7 @@ export default function Home() {
               onClick={() => {
                 playBeep(300, 0.15, "sawtooth");
               }}
-              className="flex items-center gap-1.5 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide"
+              className="flex items-center gap-1.5 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide shrink-0"
               title="Browse Seasons History"
             >
               🏆 SEASONS
@@ -678,7 +671,7 @@ export default function Home() {
               onClick={() => {
                 playBeep(300, 0.15, "sawtooth");
               }}
-              className="flex items-center gap-1.5 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none uppercase tracking-wide"
+              className="flex items-center gap-1.5 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none uppercase tracking-wide shrink-0"
               title="Browse Forums Board"
             >
               💬 FORUMS
@@ -692,7 +685,7 @@ export default function Home() {
                 playCoin();
                 speakAnnounce("VOICE LOG INITIALIZED");
               }}
-              className={`w-10 h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 ${
+              className={`w-10 h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 ${
                 audioInitialized
                   ? "border-neon-yellow text-neon-yellow bg-neon-yellow/10 glow-yellow"
                   : "border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300"
@@ -711,11 +704,11 @@ export default function Home() {
                 onClick={() => {
                   playBeep(300, 0.15, "sawtooth");
                 }}
-                className="w-10 h-10 border-2 border-slate-600 text-slate-500 hover:border-neon-yellow hover:text-neon-yellow hover:bg-neon-yellow/10 hover:glow-yellow rounded-none flex items-center justify-center cursor-pointer transition-all duration-200"
+                className="w-10 h-10 border-2 border-slate-600 text-slate-500 hover:border-neon-yellow hover:text-neon-yellow hover:bg-neon-yellow/10 hover:glow-yellow rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
                 title="Configure Ranks Settings"
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                  <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
                 </svg>
               </Link>
             )}

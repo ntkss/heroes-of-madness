@@ -8,6 +8,7 @@ import {
   DbPlayer,
   Match,
   ForumPost,
+  uploadBase64Image,
 } from "@/utils/firebase";
 import { playBeep, playCoin } from "@/utils/audio";
 import styles from "./styles.module.css";
@@ -209,11 +210,17 @@ export default function PostCreationModal({
         automaticTags.push("match");
       }
 
+      let uploadedUrl: string | undefined = undefined;
+      if (postImageBase64) {
+        const storagePath = `forums/${user.uid}-${Date.now()}.jpg`;
+        uploadedUrl = await uploadBase64Image(postImageBase64, storagePath);
+      }
+
       const saved = await savePost({
         title: titleTrimmed,
         description: descTrimmed,
         type: postType,
-        imageUrl: postImageBase64 || undefined,
+        imageUrl: uploadedUrl,
         tags: automaticTags,
         mentionedPlayers,
         mentionedMatches,

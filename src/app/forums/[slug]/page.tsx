@@ -6,7 +6,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const post = await fetchPostBySlug(resolvedParams.slug);
 
@@ -31,10 +33,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? post.imageUrl
       : undefined;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL 
-    ? process.env.NEXT_PUBLIC_SITE_URL 
-    : process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000";
 
   return {

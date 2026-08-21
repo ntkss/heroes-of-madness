@@ -385,7 +385,11 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
     playCoin();
 
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+    if (
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare(shareData)
+    ) {
       try {
         await navigator.share(shareData);
         setShareText("🔗 SHARED!");

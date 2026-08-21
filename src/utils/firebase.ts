@@ -2810,7 +2810,10 @@ export async function updatePost(
 }
 
 // Upload base64 image helper for Firebase Storage
-export async function uploadBase64Image(base64DataUrl: string, path: string): Promise<string> {
+export async function uploadBase64Image(
+  base64DataUrl: string,
+  path: string,
+): Promise<string> {
   if (!storage) {
     throw new Error("Firebase Storage is not initialized.");
   }

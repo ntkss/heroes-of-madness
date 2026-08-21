@@ -30,6 +30,7 @@ import {
   getStorage,
   ref,
   uploadBytes,
+  uploadString,
   getDownloadURL,
   FirebaseStorage,
 } from "firebase/storage";
@@ -169,7 +170,7 @@ console.log("🔍 [Firebase Diagnostic] Keys resolved:", {
 
 export let db: Firestore | null = null;
 export let auth: Auth | null = null;
-let storage: FirebaseStorage | null = null;
+export let storage: FirebaseStorage | null = null;
 
 if (isFirebaseConfigured) {
   try {
@@ -2806,4 +2807,21 @@ export async function updatePost(
     }
   }
   return false;
+}
+
+// Upload base64 image helper for Firebase Storage
+export async function uploadBase64Image(
+  base64DataUrl: string,
+  path: string,
+): Promise<string> {
+  if (!storage) {
+    throw new Error("Firebase Storage is not initialized.");
+  }
+  const storageRef = ref(storage, path);
+  const metadata = {
+    contentType: "image/jpeg",
+  };
+  await uploadString(storageRef, base64DataUrl, "data_url", metadata);
+  const downloadUrl = await getDownloadURL(storageRef);
+  return downloadUrl;
 }

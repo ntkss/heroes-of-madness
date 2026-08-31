@@ -504,13 +504,22 @@ export default function HistoryDashboard({
       };
     });
 
-    // Sort based on the selected sub-tab using fair weighted win rate (consider sample size)
+    // Sort based on the selected sub-tab using fair weighted win rate (consider sample size).
+    // Ranked players (matches >= rankConfig.minMatches) must stay at the top.
+    // Unranked players must always stay at the bottom.
     return statsList.sort((a, b) => {
       const isSeason = statsSubTab === "season";
       const aWins = isSeason ? a.wins : a.allTimeWins;
       const bWins = isSeason ? b.wins : b.allTimeWins;
       const aMatches = isSeason ? a.matches : a.allTimeMatches;
       const bMatches = isSeason ? b.matches : b.allTimeMatches;
+
+      const aRanked = aMatches >= rankConfig.minMatches;
+      const bRanked = bMatches >= rankConfig.minMatches;
+
+      if (aRanked !== bRanked) {
+        return aRanked ? -1 : 1;
+      }
 
       const aWeighted = getWeightedWinrate(aWins, aMatches);
       const bWeighted = getWeightedWinrate(bWins, bMatches);
@@ -523,7 +532,7 @@ export default function HistoryDashboard({
       }
       return a.name.localeCompare(b.name);
     });
-  }, [matches, availablePlayers, statsSubTab]);
+  }, [matches, availablePlayers, statsSubTab, rankConfig.minMatches]);
 
   // Dynamically compute podium positions for the winrates tab based on statsSubTab selection
   const podiumData = React.useMemo(() => {
@@ -536,16 +545,17 @@ export default function HistoryDashboard({
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
       const wins = isSeason ? stat.wins : stat.allTimeWins;
       const losses = isSeason ? stat.losses : stat.allTimeLosses;
+      const isRanked = totalMatches >= rankConfig.minMatches;
       const currentRank = stat.dbPlayer
         ? stat.dbPlayer.current_rank
-        : totalMatches >= rankConfig.minMatches
+        : isRanked
           ? "Normal"
           : "Unranked";
 
       let matchesToNextRank = undefined;
       let nextRankTarget = undefined;
 
-      if (index > 0) {
+      if (index > 0 && isRanked) {
         const targetStat = allStats[index - 1];
         const targetWins = isSeason ? targetStat.wins : targetStat.allTimeWins;
         const targetMatches = isSeason
@@ -582,16 +592,26 @@ export default function HistoryDashboard({
       };
     };
 
+    const isSeason = statsSubTab === "season";
+    const isPlayerRanked = (stat?: (typeof playerStats)[0]) => {
+      if (!stat) return false;
+      const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
+      return totalMatches >= rankConfig.minMatches;
+    };
+
     return {
-      firstPlace: playerStats[0]
-        ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats)
-        : null,
-      secondPlace: playerStats[1]
-        ? mapToSeasonPlayerStat(playerStats[1], 1, playerStats)
-        : null,
-      thirdPlace: playerStats[2]
-        ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats)
-        : null,
+      firstPlace:
+        playerStats[0] && isPlayerRanked(playerStats[0])
+          ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats)
+          : null,
+      secondPlace:
+        playerStats[1] && isPlayerRanked(playerStats[1])
+          ? mapToSeasonPlayerStat(playerStats[1], 1, playerStats)
+          : null,
+      thirdPlace:
+        playerStats[2] && isPlayerRanked(playerStats[2])
+          ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats)
+          : null,
       lastPlace:
         playerStats.length > 3
           ? mapToSeasonPlayerStat(
@@ -785,14 +805,15 @@ export default function HistoryDashboard({
 
               {/* Leaderboard Cards */}
               {playerStats.map((stats, index) => {
-                if (index < 3) return null;
-                const rankLabel = `${index + 1}TH`;
-                const rankColorStyle = styles.rankBadgeNormal;
-
                 const displayMatches =
                   statsSubTab === "season"
                     ? stats.matches
                     : stats.allTimeMatches;
+                const isRanked = displayMatches >= rankConfig.minMatches;
+
+                // Ranked players in top 3 are displayed on the PodiumStandings above
+                if (index < 3 && isRanked) return null;
+
                 const displayWins =
                   statsSubTab === "season" ? stats.wins : stats.allTimeWins;
                 const displayLosses =
@@ -802,38 +823,58 @@ export default function HistoryDashboard({
                     ? stats.winrate
                     : stats.allTimeWinrate;
 
+                let rankLabel = "UNRANKED";
+                let rankColorStyle = styles.rankBadgeNormal;
                 let nextRankMsg = "";
-                if (displayMatches < rankConfig.minMatches) {
+
+                if (!isRanked) {
                   const needed = rankConfig.minMatches - displayMatches;
                   nextRankMsg = `NEEDS ${needed} MATCH${needed > 1 ? "ES" : ""} FOR RANK`;
-                } else if (index > 0) {
-                  const targetStat = playerStats[index - 1];
-                  const targetWins =
-                    statsSubTab === "season"
-                      ? targetStat.wins
-                      : targetStat.allTimeWins;
-                  const targetMatches =
-                    statsSubTab === "season"
-                      ? targetStat.matches
-                      : targetStat.allTimeMatches;
-                  const targetScore = getWeightedWinrate(
-                    targetWins,
-                    targetMatches,
-                  );
-
-                  let extraWins = 1;
-                  while (true) {
-                    const score = getWeightedWinrate(
-                      displayWins + extraWins,
-                      displayMatches + extraWins,
-                    );
-                    if (score > targetScore) break;
-                    extraWins++;
-                    if (extraWins > 1000) break;
-                  }
-                  nextRankMsg = `NEEDS ${extraWins} WIN${extraWins > 1 ? "S" : ""} FOR RANK ${index}`;
                 } else {
-                  nextRankMsg = "MAX RANK ACHIEVED";
+                  const rankPos = index + 1;
+                  const suffixes = ["TH", "ST", "ND", "RD"];
+                  const v = rankPos % 100;
+                  rankLabel =
+                    rankPos +
+                    (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+
+                  if (rankPos === 1) {
+                    rankColorStyle = styles.rankBadgeGold;
+                  } else if (rankPos === 2) {
+                    rankColorStyle = styles.rankBadgeSilver;
+                  } else if (rankPos === 3) {
+                    rankColorStyle = styles.rankBadgeBronze;
+                  }
+
+                  if (index > 0) {
+                    const targetStat = playerStats[index - 1];
+                    const targetWins =
+                      statsSubTab === "season"
+                        ? targetStat.wins
+                        : targetStat.allTimeWins;
+                    const targetMatches =
+                      statsSubTab === "season"
+                        ? targetStat.matches
+                        : targetStat.allTimeMatches;
+                    const targetScore = getWeightedWinrate(
+                      targetWins,
+                      targetMatches,
+                    );
+
+                    let extraWins = 1;
+                    while (true) {
+                      const score = getWeightedWinrate(
+                        displayWins + extraWins,
+                        displayMatches + extraWins,
+                      );
+                      if (score > targetScore) break;
+                      extraWins++;
+                      if (extraWins > 1000) break;
+                    }
+                    nextRankMsg = `NEEDS ${extraWins} WIN${extraWins > 1 ? "S" : ""} FOR RANK ${index}`;
+                  } else {
+                    nextRankMsg = "MAX RANK ACHIEVED";
+                  }
                 }
 
                 return (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import CRTOverlay from "@/components/CRTOverlay";
@@ -10,8 +10,10 @@ import styles from "./styles.module.css";
 import {
   Season,
   Match,
+  RankConfig,
   fetchSeasons,
   fetchAllMatches,
+  fetchRankConfig,
   getWeightedWinrate,
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
@@ -19,6 +21,7 @@ import { playBeep } from "@/utils/audio";
 export default function SeasonsPage() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"leaderboard" | "matches">(
@@ -29,12 +32,14 @@ export default function SeasonsPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [archive, allMatches] = await Promise.all([
+        const [archive, allMatches, rConfig] = await Promise.all([
           fetchSeasons(),
           fetchAllMatches(),
+          fetchRankConfig(),
         ]);
         setSeasons(archive);
         setMatches(allMatches);
+        setRankConfig(rConfig);
 
         if (archive.length > 0) {
           // Select the latest archived season by default
@@ -57,6 +62,32 @@ export default function SeasonsPage() {
   };
 
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId) || null;
+
+  const minMatches = rankConfig?.minMatches ?? 3;
+
+  const sortedFighterStats = useMemo(() => {
+    if (!selectedSeason) return [];
+    return [...selectedSeason.fighterStats].sort((a, b) => {
+      const aRanked =
+        a.current_rank !== "Unranked" && a.total_match_played >= minMatches;
+      const bRanked =
+        b.current_rank !== "Unranked" && b.total_match_played >= minMatches;
+
+      if (aRanked !== bRanked) {
+        return aRanked ? -1 : 1;
+      }
+
+      const aWins = Math.round((a.winrate / 100) * a.total_match_played);
+      const bWins = Math.round((b.winrate / 100) * b.total_match_played);
+      const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
+      const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+
+      if (bWeighted !== aWeighted) {
+        return bWeighted - aWeighted;
+      }
+      return b.total_match_played - a.total_match_played;
+    });
+  }, [selectedSeason, minMatches]);
 
   // Filter matches of selected season
   const seasonMatches =
@@ -238,61 +269,60 @@ export default function SeasonsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {[...selectedSeason.fighterStats]
-                          .sort((a, b) => {
-                            const aWins = Math.round(
-                              (a.winrate / 100) * a.total_match_played,
-                            );
-                            const bWins = Math.round(
-                              (b.winrate / 100) * b.total_match_played,
-                            );
-                            const aWeighted = getWeightedWinrate(
-                              aWins,
-                              a.total_match_played,
-                            );
-                            const bWeighted = getWeightedWinrate(
-                              bWins,
-                              b.total_match_played,
-                            );
+                        {(() => {
+                          let rankedCounter = 0;
+                          return sortedFighterStats.map((stat) => {
+                            const isRanked =
+                              stat.current_rank !== "Unranked" &&
+                              stat.total_match_played >= minMatches;
 
-                            if (bWeighted !== aWeighted) {
-                              return bWeighted - aWeighted;
+                            if (isRanked) {
+                              rankedCounter++;
                             }
-                            return b.total_match_played - a.total_match_played;
-                          })
-                          .map((stat, idx) => (
-                            <tr key={stat.id} className={styles.tableBodyRow}>
-                              <td className={styles.rankCell}>#{idx + 1}</td>
-                              <td className={styles.fighterCell}>
-                                <div className={styles.miniAvatarWrapper}>
-                                  <Image
-                                    src={
-                                      stat.avatar ||
-                                      `https://api.dicebear.com/9.x/pixel-art/svg?seed=${stat.name.toLowerCase()}`
-                                    }
-                                    alt={stat.name}
-                                    fill
-                                    className={styles.avatarImage}
-                                    unoptimized
-                                  />
-                                </div>
-                                <span className={styles.fighterCellName}>
-                                  {stat.name}
-                                </span>
-                              </td>
-                              <td className={styles.matchesCell}>
-                                {stat.total_match_played} M
-                              </td>
-                              <td className={styles.winrateCell}>
-                                {stat.winrate}%
-                              </td>
-                              <td className={styles.rankCellWrapper}>
-                                <span className={styles.rankBadge}>
-                                  {stat.current_rank}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                            const rankLabel = isRanked
+                              ? `#${rankedCounter}`
+                              : "UNRANKED";
+
+                            return (
+                              <tr
+                                key={stat.id}
+                                className={styles.tableBodyRow}
+                              >
+                                <td className={styles.rankCell}>
+                                  {rankLabel}
+                                </td>
+                                <td className={styles.fighterCell}>
+                                  <div className={styles.miniAvatarWrapper}>
+                                    <Image
+                                      src={
+                                        stat.avatar ||
+                                        `https://api.dicebear.com/9.x/pixel-art/svg?seed=${stat.name.toLowerCase()}`
+                                      }
+                                      alt={stat.name}
+                                      fill
+                                      className={styles.avatarImage}
+                                      unoptimized
+                                    />
+                                  </div>
+                                  <span className={styles.fighterCellName}>
+                                    {stat.name}
+                                  </span>
+                                </td>
+                                <td className={styles.matchesCell}>
+                                  {stat.total_match_played} M
+                                </td>
+                                <td className={styles.winrateCell}>
+                                  {stat.winrate}%
+                                </td>
+                                <td className={styles.rankCellWrapper}>
+                                  <span className={styles.rankBadge}>
+                                    {stat.current_rank}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
                       </tbody>
                     </table>
                   </div>

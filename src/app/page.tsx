@@ -807,6 +807,7 @@ export default function Home() {
               availablePlayers={availablePlayers}
               rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
               isAdmin={isAdmin}
+              activeSeasonId={activeSeasonId}
             />
           </section>
         </main>

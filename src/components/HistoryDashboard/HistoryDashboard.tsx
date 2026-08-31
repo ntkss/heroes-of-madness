@@ -25,6 +25,7 @@ interface HistoryDashboardProps {
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
   isAdmin?: boolean;
+  activeSeasonId?: number;
 }
 
 interface MatchCardProps {
@@ -302,6 +303,7 @@ export default function HistoryDashboard({
   availablePlayers,
   rankConfig,
   isAdmin = false,
+  activeSeasonId,
 }: HistoryDashboardProps) {
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
     "history",
@@ -427,9 +429,21 @@ export default function HistoryDashboard({
       return found ? found.id : nameOrId.toLowerCase();
     };
 
+    // Determine current active season ID
+    const currentSeasonId =
+      activeSeasonId !== undefined
+        ? activeSeasonId
+        : matches.length > 0
+          ? Math.max(1, ...matches.map((m) => Number(m.seasonId) || 1))
+          : 1;
+
     // 2. Accumulate stats from matches log ONLY for unregistered players/bots (to avoid double-counting)
     matches.forEach((match) => {
       if (!match.winner) return;
+
+      const matchSeasonId =
+        match.seasonId !== undefined ? Number(match.seasonId) : 1;
+      const isCurrentSeason = matchSeasonId === currentSeasonId;
 
       const teamAPlayers = match.teamA || [];
       const teamBPlayers = match.teamB || [];
@@ -451,8 +465,10 @@ export default function HistoryDashboard({
           };
         }
         if (!statsMap[key].dbPlayer) {
-          statsMap[key].wins += 1;
-          statsMap[key].matches += 1;
+          if (isCurrentSeason) {
+            statsMap[key].wins += 1;
+            statsMap[key].matches += 1;
+          }
           statsMap[key].allTimeWins += 1;
           statsMap[key].allTimeMatches += 1;
         }
@@ -471,8 +487,10 @@ export default function HistoryDashboard({
           };
         }
         if (!statsMap[key].dbPlayer) {
-          statsMap[key].losses += 1;
-          statsMap[key].matches += 1;
+          if (isCurrentSeason) {
+            statsMap[key].losses += 1;
+            statsMap[key].matches += 1;
+          }
           statsMap[key].allTimeLosses += 1;
           statsMap[key].allTimeMatches += 1;
         }
@@ -504,10 +522,17 @@ export default function HistoryDashboard({
       };
     });
 
+    // Filter out unregistered players with 0 matches in the selected tab view
+    const filteredStatsList = statsList.filter((stat) => {
+      const displayMatches =
+        statsSubTab === "season" ? stat.matches : stat.allTimeMatches;
+      return displayMatches > 0 || stat.dbPlayer !== undefined;
+    });
+
     // Sort based on the selected sub-tab using fair weighted win rate (consider sample size).
     // Ranked players (matches >= rankConfig.minMatches) must stay at the top.
     // Unranked players must always stay at the bottom.
-    return statsList.sort((a, b) => {
+    return filteredStatsList.sort((a, b) => {
       const isSeason = statsSubTab === "season";
       const aWins = isSeason ? a.wins : a.allTimeWins;
       const bWins = isSeason ? b.wins : b.allTimeWins;

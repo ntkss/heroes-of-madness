@@ -20,8 +20,8 @@ export async function generateMetadata({
 
   // Strip mentions placeholders or markdown if any
   const cleanDescription = post.description
-    .replace(/@player:([\w\d_-]+)/g, "@$1")
-    .replace(/@match:([\w\d_-]+)/g, "Match #$1");
+    .replace(/@player:([\w\d_\-\u0E00-\u0E7F\p{L}\p{N}]+)/gu, "@$1")
+    .replace(/@match:([\w\d_\-\u0E00-\u0E7F\p{L}\p{N}]+)/gu, "Match #$1");
 
   const shortDesc =
     cleanDescription.substring(0, 150) +

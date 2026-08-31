@@ -56,133 +56,135 @@ export default function ForumsPage() {
   });
 
   return (
-    <CRTOverlay>
-      <div className={styles.container}>
-        {/* Navigation Breadcrumb */}
-        <Link
-          href="/"
-          className={styles.backLink}
-          onClick={() => playBeep(200, 0.1, "sine")}
-        >
-          ◀ BACK
-        </Link>
+    <>
+      <CRTOverlay>
+        <div className={styles.container}>
+          {/* Navigation Breadcrumb */}
+          <Link
+            href="/"
+            className={styles.backLink}
+            onClick={() => playBeep(200, 0.1, "sine")}
+          >
+            ◀ BACK
+          </Link>
 
-        {/* Header bar */}
-        <header className={styles.header}>
-          <div>
-            <h1 className={styles.title}>FORUMS & NEWS</h1>
-            <p className="text-xs text-[#a0a0c0] mt-1 font-mono tracking-wider">
-              HEROES COMMUNITY
-            </p>
-          </div>
-          <div className={styles.headerActions}>
-            {user ? (
+          {/* Header bar */}
+          <header className={styles.header}>
+            <div>
+              <h1 className={styles.title}>FORUMS & NEWS</h1>
+              <p className="text-xs text-[#a0a0c0] mt-1 font-mono tracking-wider">
+                HEROES COMMUNITY
+              </p>
+            </div>
+            <div className={styles.headerActions}>
+              {user ? (
+                <button
+                  onClick={() => {
+                    playBeep(440, 0.15, "triangle");
+                    setIsModalOpen(true);
+                  }}
+                  className={styles.actionBtnYellow}
+                >
+                  📝 CREATE THREAD
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    playCoin();
+                    login();
+                  }}
+                  className={styles.actionBtn}
+                >
+                  🔐 LOGIN GOOGLE TO POST
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* Filters Panel */}
+          <div className={styles.filterRow}>
+            <div className={styles.tabGroup}>
               <button
                 onClick={() => {
-                  playBeep(440, 0.15, "triangle");
-                  setIsModalOpen(true);
+                  playBeep(600, 0.05, "sine");
+                  setActiveTab("all");
                 }}
-                className={styles.actionBtnYellow}
+                className={`${styles.tabBtn} ${activeTab === "all" ? styles.tabBtnActive : ""}`}
               >
-                📝 CREATE THREAD
+                ALL POSTS
               </button>
-            ) : (
               <button
                 onClick={() => {
-                  playCoin();
-                  login();
+                  playBeep(600, 0.05, "sine");
+                  setActiveTab("news");
                 }}
-                className={styles.actionBtn}
+                className={`${styles.tabBtn} ${activeTab === "news" ? styles.tabBtnActive : ""}`}
               >
-                🔐 LOGIN GOOGLE TO POST
+                📢 NEWS / EVENTS
               </button>
-            )}
-          </div>
-        </header>
+              <button
+                onClick={() => {
+                  playBeep(600, 0.05, "sine");
+                  setActiveTab("forum");
+                }}
+                className={`${styles.tabBtn} ${activeTab === "forum" ? styles.tabBtnActive : ""}`}
+              >
+                💬 DISCUSSIONS
+              </button>
+            </div>
 
-        {/* Filters Panel */}
-        <div className={styles.filterRow}>
-          <div className={styles.tabGroup}>
-            <button
-              onClick={() => {
-                playBeep(600, 0.05, "sine");
-                setActiveTab("all");
-              }}
-              className={`${styles.tabBtn} ${activeTab === "all" ? styles.tabBtnActive : ""}`}
-            >
-              ALL POSTS
-            </button>
-            <button
-              onClick={() => {
-                playBeep(600, 0.05, "sine");
-                setActiveTab("news");
-              }}
-              className={`${styles.tabBtn} ${activeTab === "news" ? styles.tabBtnActive : ""}`}
-            >
-              📢 NEWS / EVENTS
-            </button>
-            <button
-              onClick={() => {
-                playBeep(600, 0.05, "sine");
-                setActiveTab("forum");
-              }}
-              className={`${styles.tabBtn} ${activeTab === "forum" ? styles.tabBtnActive : ""}`}
-            >
-              💬 DISCUSSIONS
-            </button>
+            <div className={styles.searchBar}>
+              <input
+                type="text"
+                placeholder="SEARCH..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={styles.searchInput}
+              />
+              <div className={styles.searchIcon}>🔍</div>
+            </div>
           </div>
 
-          <div className={styles.searchBar}>
-            <input
-              type="text"
-              placeholder="SEARCH..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
+          {/* Content Section */}
+          <div className={styles.board}>
+            {/* Main Feed */}
+            <div>
+              {loading ? (
+                <div className="text-center font-pixel text-xs text-[#a0a0c0] py-16 animate-pulse select-none">
+                  CONNECTING TERMINAL...
+                </div>
+              ) : filteredPosts.length === 0 ? (
+                <div className="text-center text-slate-500 font-pixel text-[11px] border border-dashed border-slate-800 py-16 uppercase">
+                  NO THREADS FOUND
+                </div>
+              ) : (
+                <div className={styles.postList}>
+                  {filteredPosts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar widget panel */}
+            <SidebarWidgetPanel
+              posts={posts}
+              allDistinctTags={allDistinctTags}
+              selectedTag={selectedTag}
+              onSelectTag={setSelectedTag}
             />
-            <div className={styles.searchIcon}>🔍</div>
           </div>
         </div>
+      </CRTOverlay>
 
-        {/* Content Section */}
-        <div className={styles.board}>
-          {/* Main Feed */}
-          <div>
-            {loading ? (
-              <div className="text-center font-pixel text-xs text-[#a0a0c0] py-16 animate-pulse select-none">
-                CONNECTING TERMINAL...
-              </div>
-            ) : filteredPosts.length === 0 ? (
-              <div className="text-center text-slate-500 font-pixel text-[11px] border border-dashed border-slate-800 py-16 uppercase">
-                NO THREADS FOUND
-              </div>
-            ) : (
-              <div className={styles.postList}>
-                {filteredPosts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar widget panel */}
-          <SidebarWidgetPanel
-            posts={posts}
-            allDistinctTags={allDistinctTags}
-            selectedTag={selectedTag}
-            onSelectTag={setSelectedTag}
-          />
-        </div>
-
-        {/* POST CREATION MODAL */}
-        {isModalOpen && (
-          <PostCreationModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSuccess={(newPost) => setPosts((prev) => [newPost, ...prev])}
-          />
-        )}
-      </div>
-    </CRTOverlay>
+      {/* POST CREATION MODAL */}
+      {isModalOpen && (
+        <PostCreationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={(newPost) => setPosts((prev) => [newPost, ...prev])}
+        />
+      )}
+    </>
   );
 }

@@ -17,10 +17,11 @@ export function PlayerMentionBadge({ playerId }: { playerId: string }) {
     const load = async () => {
       try {
         const list = await fetchPlayers();
+        const decodedId = decodeURIComponent(playerId);
         const found = list.find(
           (p) =>
-            p.id.toLowerCase() === playerId.toLowerCase() ||
-            p.name.toLowerCase() === playerId.toLowerCase(),
+            p.id.toLowerCase() === decodedId.toLowerCase() ||
+            p.name.toLowerCase() === decodedId.toLowerCase(),
         );
         if (found) setPlayer(found);
       } catch (e) {
@@ -30,13 +31,19 @@ export function PlayerMentionBadge({ playerId }: { playerId: string }) {
     load();
   }, [playerId]);
 
+  const displayName = player ? player.name : playerId;
+  const isThai = /[\u0E00-\u0E7F]/.test(displayName);
+  const fontClass = isThai
+    ? "font-thai font-bold text-[12px]"
+    : "font-tech text-[11px] uppercase tracking-wide font-semibold";
+
   return (
     <Link
-      href={`/players/${playerId}`}
-      className="inline-flex items-center gap-1 bg-sky-500/10 border border-sky-500/30 text-sky-400 px-1.5 py-0.5 rounded-none font-tech text-[11px] uppercase tracking-wide hover:bg-sky-500 hover:text-black transition-all duration-150 select-none mx-0.5 align-middle font-semibold"
+      href={`/players/${encodeURIComponent(player?.id || playerId)}`}
+      className={`inline-flex items-center gap-1 bg-sky-500/10 border border-sky-500/30 text-sky-400 px-1.5 py-0.5 rounded-none hover:bg-sky-500 hover:text-black transition-all duration-150 select-none mx-0.5 align-middle ${fontClass}`}
     >
       <span className="text-[10px]">👤</span>
-      <span>{player ? player.name : playerId}</span>
+      <span>{displayName}</span>
     </Link>
   );
 }
@@ -163,7 +170,7 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
 export function parseMentions(text: string): React.ReactNode[] {
   if (!text) return [];
 
-  const regex = /@(player|match):([\w\d_-]+)/g;
+  const regex = /@(player|match):([\w\d_\-\u0E00-\u0E7F\p{L}\p{N}]+)/gu;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match;

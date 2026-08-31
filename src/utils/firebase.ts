@@ -997,15 +997,21 @@ export async function endCurrentSeason(): Promise<boolean> {
     // Form Podium (Top 3)
     const podium: SeasonPlayerStat[] = qualifiedPlayers
       .slice(0, 3)
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        alias: p.alias,
-        avatar: p.avatar,
-        winrate: p.winrate,
-        total_match_played: p.total_match_played,
-        current_rank: p.current_rank,
-      }));
+      .map((p) => {
+        const wins = Math.round((p.winrate / 100) * p.total_match_played);
+        const losses = Math.max(0, p.total_match_played - wins);
+        return {
+          id: p.id,
+          name: p.name,
+          alias: p.alias,
+          avatar: p.avatar,
+          winrate: p.winrate,
+          total_match_played: p.total_match_played,
+          current_rank: p.current_rank,
+          wins,
+          losses,
+        };
+      });
 
     // Find Last Place (Worst performer with at least 1 match played)
     const activePlayers = players.filter((p) => p.total_match_played > 0);
@@ -1023,6 +1029,10 @@ export async function endCurrentSeason(): Promise<boolean> {
         return a.total_match_played - b.total_match_played;
       });
       const worstPlayer = sortedWorst[0];
+      const wins = Math.round(
+        (worstPlayer.winrate / 100) * worstPlayer.total_match_played,
+      );
+      const losses = Math.max(0, worstPlayer.total_match_played - wins);
       lastPlace = {
         id: worstPlayer.id,
         name: worstPlayer.name,
@@ -1031,19 +1041,27 @@ export async function endCurrentSeason(): Promise<boolean> {
         winrate: worstPlayer.winrate,
         total_match_played: worstPlayer.total_match_played,
         current_rank: worstPlayer.current_rank,
+        wins,
+        losses,
       };
     }
 
     // Capture all fighter stats
-    const fighterStats: SeasonPlayerStat[] = players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      alias: p.alias,
-      avatar: p.avatar,
-      winrate: p.winrate,
-      total_match_played: p.total_match_played,
-      current_rank: p.current_rank,
-    }));
+    const fighterStats: SeasonPlayerStat[] = players.map((p) => {
+      const wins = Math.round((p.winrate / 100) * p.total_match_played);
+      const losses = Math.max(0, p.total_match_played - wins);
+      return {
+        id: p.id,
+        name: p.name,
+        alias: p.alias,
+        avatar: p.avatar,
+        winrate: p.winrate,
+        total_match_played: p.total_match_played,
+        current_rank: p.current_rank,
+        wins,
+        losses,
+      };
+    });
 
     const archivedSeason: Season = {
       id: activeSeasonId,

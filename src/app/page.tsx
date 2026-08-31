@@ -556,13 +556,21 @@ export default function Home() {
   };
 
   return (
-    <CRTOverlay isShaking={isShaking}>
-      <div
-        className="flex-grow flex flex-col justify-between"
-        onClick={initAudioFeedback}
-      >
-        {/* Esports Header */}
-        <header className="border-b-4 border-neon-red bg-slate-950 py-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative">
+    <>
+      {/* Floating Top-Left Season Ribbon Badge */}
+      <div className="fixed top-0 left-0 z-[100] flex items-center gap-1.5 bg-[#ffd200] border-r-2 border-b-2 border-white text-black font-pixel text-[10px] font-bold px-3.5 py-1 uppercase tracking-wider shadow-[0_4px_20px_rgba(255,210,0,0.6)] rounded-br-sm select-none">
+        <span className="text-xs">🏆</span>
+        <span>SEASON {activeSeasonId}</span>
+      </div>
+
+      <CRTOverlay isShaking={isShaking}>
+        <div
+          className="flex-grow flex flex-col justify-between"
+          onClick={initAudioFeedback}
+        >
+          {/* Esports Header */}
+        <header className="border-b-4 border-neon-red bg-slate-950 pt-7 pb-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative">
+
           {/* Decorative neon bottom bar line */}
           <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red" />
 
@@ -848,6 +856,7 @@ export default function Home() {
           </div>
         )}
       </div>
-    </CRTOverlay>
+      </CRTOverlay>
+    </>
   );
 }

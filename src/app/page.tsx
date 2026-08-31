@@ -556,298 +556,306 @@ export default function Home() {
   };
 
   return (
-    <CRTOverlay isShaking={isShaking}>
-      <div
-        className="flex-grow flex flex-col justify-between"
-        onClick={initAudioFeedback}
-      >
-        {/* Esports Header */}
-        <header className="border-b-4 border-neon-red bg-slate-950 py-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative">
-          {/* Decorative neon bottom bar line */}
-          <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red" />
+    <>
+      {/* Floating Top-Left Season Ribbon Badge */}
+      <div className="fixed top-0 left-0 z-[100] flex items-center gap-1.5 bg-[#ffd200] border-r-2 border-b-2 border-white text-black font-pixel text-[10px] font-bold px-3.5 py-1 uppercase tracking-wider shadow-[0_4px_20px_rgba(255,210,0,0.6)] rounded-br-sm select-none">
+        <span className="text-xs">🏆</span>
+        <span>SEASON {activeSeasonId}</span>
+      </div>
 
-          <div className="flex flex-col items-center md:items-start text-center md:text-left select-none">
-            <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red">
-              HEROES OF MADNESS
-            </h1>
-            <p className="text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase glow-yellow">
-              MLBB RANDOM TEAM GENERATOR • ACTIVE SEASON {activeSeasonId}
-            </p>
-          </div>
+      <CRTOverlay isShaking={isShaking}>
+        <div
+          className="flex-grow flex flex-col justify-between"
+          onClick={initAudioFeedback}
+        >
+          {/* Esports Header */}
+          <header className="border-b-4 border-neon-red bg-slate-950 pt-7 pb-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative">
+            {/* Decorative neon bottom bar line */}
+            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red" />
 
-          <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
-            {/* Google Authentication Control */}
-            {loading ? (
-              <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none shrink-0">
-                LOADING AUTH...
-              </div>
-            ) : user ? (
-              <div className="flex items-center gap-3 border border-slate-700 bg-slate-900/50 p-1 px-2.5 rounded-none shrink-0">
-                <img
-                  src={
-                    user.photoURL ||
-                    `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}`
-                  }
-                  alt={user.displayName || "User"}
-                  className="w-6 h-6 border border-neon-blue rounded-none object-cover"
-                />
-                <div className="flex flex-col items-start leading-none select-none">
-                  <span className="text-[9px] font-mono text-white max-w-[90px] truncate">
-                    {user.displayName || user.email}
-                  </span>
-                  <span
-                    className={`text-[7px] font-pixel mt-0.5 ${isAdmin ? "text-neon-yellow glow-yellow" : "text-neon-blue glow-blue"}`}
-                  >
-                    {isAdmin ? "SYS_ADMIN" : "USER_GUEST"}
-                  </span>
+            <div className="flex flex-col items-center md:items-start text-center md:text-left select-none">
+              <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red">
+                HEROES OF MADNESS
+              </h1>
+              <p className="text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase glow-yellow">
+                MLBB RANDOM TEAM GENERATOR • ACTIVE SEASON {activeSeasonId}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
+              {/* Google Authentication Control */}
+              {loading ? (
+                <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none shrink-0">
+                  LOADING AUTH...
                 </div>
+              ) : user ? (
+                <div className="flex items-center gap-3 border border-slate-700 bg-slate-900/50 p-1 px-2.5 rounded-none shrink-0">
+                  <img
+                    src={
+                      user.photoURL ||
+                      `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.uid}`
+                    }
+                    alt={user.displayName || "User"}
+                    className="w-6 h-6 border border-neon-blue rounded-none object-cover"
+                  />
+                  <div className="flex flex-col items-start leading-none select-none">
+                    <span className="text-[9px] font-mono text-white max-w-[90px] truncate">
+                      {user.displayName || user.email}
+                    </span>
+                    <span
+                      className={`text-[7px] font-pixel mt-0.5 ${isAdmin ? "text-neon-yellow glow-yellow" : "text-neon-blue glow-blue"}`}
+                    >
+                      {isAdmin ? "SYS_ADMIN" : "USER_GUEST"}
+                    </span>
+                  </div>
 
-                {isBootstrapPending && (
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      playCoin();
-                      const confirmClaim = window.confirm(
-                        "Do you want to initialize this database and claim the primary administrator role?",
-                      );
-                      if (confirmClaim) {
-                        const success = await bootstrapAdmin();
-                        if (success) {
-                          alert(
-                            "SUCCESS! You are now the primary System Administrator.",
-                          );
-                        } else {
-                          alert(
-                            "Bootstrapping failed. A primary administrator might already exist.",
-                          );
+                  {isBootstrapPending && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        playCoin();
+                        const confirmClaim = window.confirm(
+                          "Do you want to initialize this database and claim the primary administrator role?",
+                        );
+                        if (confirmClaim) {
+                          const success = await bootstrapAdmin();
+                          if (success) {
+                            alert(
+                              "SUCCESS! You are now the primary System Administrator.",
+                            );
+                          } else {
+                            alert(
+                              "Bootstrapping failed. A primary administrator might already exist.",
+                            );
+                          }
                         }
-                      }
-                    }}
-                    className="ml-1 border border-neon-yellow bg-neon-yellow/10 hover:bg-neon-yellow hover:text-black text-neon-yellow text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
-                  >
-                    CLAIM ADMIN
-                  </button>
-                )}
+                      }}
+                      className="ml-1 border border-neon-yellow bg-neon-yellow/10 hover:bg-neon-yellow hover:text-black text-neon-yellow text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
+                    >
+                      CLAIM ADMIN
+                    </button>
+                  )}
 
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playBeep(200, 0.1, "sawtooth");
+                      logout();
+                    }}
+                    className="ml-1 border border-slate-600 hover:border-neon-red text-slate-400 hover:text-neon-red text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
+                  >
+                    ✕ OUT
+                  </button>
+                </div>
+              ) : (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    playBeep(200, 0.1, "sawtooth");
-                    logout();
+                    playCoin();
+                    login();
                   }}
-                  className="ml-1 border border-slate-600 hover:border-neon-red text-slate-400 hover:text-neon-red text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
+                  className="border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-3.5 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none shrink-0"
                 >
-                  ✕ OUT
+                  🔐 LOGIN GOOGLE
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playCoin();
-                  login();
-                }}
-                className="border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-3.5 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none shrink-0"
-              >
-                🔐 LOGIN GOOGLE
-              </button>
-            )}
+              )}
 
-            {/* Seasons History Dashboard Link */}
-            <Link
-              href="/seasons"
-              onClick={() => {
-                playBeep(300, 0.15, "sawtooth");
-              }}
-              className="flex items-center gap-1.5 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide shrink-0"
-              title="Browse Seasons History"
-            >
-              🏆 SEASONS
-            </Link>
-
-            {/* Forums Board Link */}
-            <Link
-              href="/forums"
-              onClick={() => {
-                playBeep(300, 0.15, "sawtooth");
-              }}
-              className="flex items-center gap-1.5 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none uppercase tracking-wide shrink-0"
-              title="Browse Forums Board"
-            >
-              💬 FORUMS
-            </Link>
-
-            {/* Announcer Synth Activator */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setAudioInitialized(true);
-                playCoin();
-                speakAnnounce("VOICE LOG INITIALIZED");
-              }}
-              className={`w-10 h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 ${
-                audioInitialized
-                  ? "border-neon-yellow text-neon-yellow bg-neon-yellow/10 glow-yellow"
-                  : "border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300"
-              }`}
-              title="Click to boot cabinet announcer"
-            >
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M3 9v6h4l5 5V4L7 9H3z" />
-              </svg>
-            </button>
-
-            {/* Rank Config Settings Gear Button */}
-            {rankConfig && isAdmin && (
+              {/* Seasons History Dashboard Link */}
               <Link
-                href="/settings"
+                href="/seasons"
                 onClick={() => {
                   playBeep(300, 0.15, "sawtooth");
                 }}
-                className="w-10 h-10 border-2 border-slate-600 text-slate-500 hover:border-neon-yellow hover:text-neon-yellow hover:bg-neon-yellow/10 hover:glow-yellow rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
-                title="Configure Ranks Settings"
+                className="flex items-center gap-1.5 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide shrink-0"
+                title="Browse Seasons History"
+              >
+                🏆 SEASONS
+              </Link>
+
+              {/* Forums Board Link */}
+              <Link
+                href="/forums"
+                onClick={() => {
+                  playBeep(300, 0.15, "sawtooth");
+                }}
+                className="flex items-center gap-1.5 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none uppercase tracking-wide shrink-0"
+                title="Browse Forums Board"
+              >
+                💬 FORUMS
+              </Link>
+
+              {/* Announcer Synth Activator */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAudioInitialized(true);
+                  playCoin();
+                  speakAnnounce("VOICE LOG INITIALIZED");
+                }}
+                className={`w-10 h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 ${
+                  audioInitialized
+                    ? "border-neon-yellow text-neon-yellow bg-neon-yellow/10 glow-yellow"
+                    : "border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300"
+                }`}
+                title="Click to boot cabinet announcer"
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                  <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M3 9v6h4l5 5V4L7 9H3z" />
                 </svg>
-              </Link>
-            )}
-          </div>
-        </header>
+              </button>
 
-        {/* Dashboard Main Area */}
-        <main className="mx-auto w-full p-4 md:p-6 flex-grow flex flex-col gap-4 lg:gap-6 items-center">
-          {/* Top Section: PlayerInput (Centered, Max 800px) */}
-          <section className="container">
-            <PlayerInput
-              names={names}
-              onChange={setNames}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-              availablePlayers={availablePlayers}
-              onAddPlayer={handleAddPlayer}
-              onDeletePlayer={handleDeletePlayer}
-              onUpdatePlayer={handleUpdatePlayer}
-              isAdmin={isAdmin}
-            />
-          </section>
-
-          {/* Middle Section: Verses Arena (Full Width, Animate Reveal) */}
-          <section
-            ref={arenaRef}
-            className={`w-full transition-all duration-700 ease-out origin-top overflow-hidden ${
-              showArena
-                ? "max-h-[1000px] lg:max-h-none opacity-100 my-4 lg:my-5 scale-y-100"
-                : "max-h-0 opacity-0 my-0 scale-y-0 pointer-events-none"
-            }`}
-          >
-            <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] lg:h-screen rounded-md transition-all duration-300">
-              {/* Cabinet Frame Header */}
-              <div className="bg-[#161622] border-b-4 border-slate-700/80 px-6 py-2 flex items-center justify-between">
-                <div className="flex gap-2 items-center">
-                  <div className="w-2.5 h-2.5 rounded-full bg-neon-red animate-pulse" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-neon-blue animate-pulse" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-neon-yellow animate-pulse" />
-                  <span className="font-pixel text-[9px] text-[#a0a0c0] uppercase tracking-widest ml-2">
-                    {isGenerating
-                      ? "DRAFT GENERATOR ACTIVE"
-                      : "VERSUS ARENA STANDARD"}
-                  </span>
-                </div>
-
-                {/* Share Result Button (Excluded from Screenshot) */}
-                {showArena && !isGenerating && (
-                  <button
-                    onClick={handleShareResult}
-                    disabled={isSharing}
-                    className="exclude-from-capture px-3 py-1 bg-emerald-950/40 border border-emerald-500/50 hover:border-emerald-400 text-emerald-400 hover:text-emerald-300 font-pixel text-[8px] tracking-wider uppercase transition-all duration-150 cursor-pointer flex items-center gap-1.5 hover:bg-emerald-950/80 disabled:opacity-50 disabled:cursor-not-allowed glow-emerald z-30"
-                    title="Copy or share generated matchup image"
-                  >
-                    {isSharing ? (
-                      <>
-                        <span className="inline-block w-1.5 h-1.5 bg-emerald-400 animate-ping rounded-full" />
-                        CAPTURING...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-3 h-3 fill-current"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" />
-                        </svg>
-                        SHARE RESULT
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {/* Arena Grid */}
-              <VersesArena
-                teamA={teamA}
-                teamB={teamB}
-                winner={activeWinner}
-                isGenerating={isGenerating}
-                triggerScreenShake={triggerScreenShake}
-                squad={availablePlayers}
-                rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
-                matches={matches}
-              />
+              {/* Rank Config Settings Gear Button */}
+              {rankConfig && isAdmin && (
+                <Link
+                  href="/settings"
+                  onClick={() => {
+                    playBeep(300, 0.15, "sawtooth");
+                  }}
+                  className="w-10 h-10 border-2 border-slate-600 text-slate-500 hover:border-neon-yellow hover:text-neon-yellow hover:bg-neon-yellow/10 hover:glow-yellow rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
+                  title="Configure Ranks Settings"
+                >
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                  </svg>
+                </Link>
+              )}
             </div>
-          </section>
+          </header>
 
-          {/* Bottom Section: History logs Dashboard */}
-          <section className="w-full max-w-5xl flex flex-col">
-            <HistoryDashboard
-              matches={matches}
-              onDeleteMatch={handleDeleteMatch}
-              onDeleteAllMatches={handleDeleteAllMatches}
-              onUpdateWinner={handleUpdatePastWinner}
-              availablePlayers={availablePlayers}
-              rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
-              isAdmin={isAdmin}
-              activeSeasonId={activeSeasonId}
-            />
-          </section>
-        </main>
+          {/* Dashboard Main Area */}
+          <main className="mx-auto w-full p-4 md:p-6 flex-grow flex flex-col gap-4 lg:gap-6 items-center">
+            {/* Top Section: PlayerInput (Centered, Max 800px) */}
+            <section className="container">
+              <PlayerInput
+                names={names}
+                onChange={setNames}
+                onGenerate={handleGenerate}
+                isGenerating={isGenerating}
+                availablePlayers={availablePlayers}
+                onAddPlayer={handleAddPlayer}
+                onDeletePlayer={handleDeletePlayer}
+                onUpdatePlayer={handleUpdatePlayer}
+                isAdmin={isAdmin}
+              />
+            </section>
 
-        {/* Footer banner */}
-        <footer className="border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none">
-          <span>
-            HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`
-          </span>
-        </footer>
-
-        {/* Floating Debug Bar Overlay */}
-        <DebugBar />
-
-        {/* Retro Share Toast Notification */}
-        {toast && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
-            <div
-              className={`border-4 px-6 py-3 font-pixel text-[9px] tracking-widest uppercase flex items-center gap-3 shadow-2xl select-none min-w-[280px] justify-center ${
-                toast.type === "success"
-                  ? "bg-emerald-950/90 border-emerald-500 text-emerald-400 glow-emerald"
-                  : toast.type === "error"
-                    ? "bg-rose-950/90 border-rose-500 text-rose-400 glow-rose"
-                    : "bg-slate-900/95 border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(255,210,0,0.3)]"
+            {/* Middle Section: Verses Arena (Full Width, Animate Reveal) */}
+            <section
+              ref={arenaRef}
+              className={`w-full transition-all duration-700 ease-out origin-top overflow-hidden ${
+                showArena
+                  ? "max-h-[1000px] lg:max-h-none opacity-100 my-4 lg:my-5 scale-y-100"
+                  : "max-h-0 opacity-0 my-0 scale-y-0 pointer-events-none"
               }`}
             >
-              {toast.type === "success" && (
-                <span className="text-sm font-bold">✓</span>
-              )}
-              {toast.type === "error" && (
-                <span className="text-sm font-bold">!</span>
-              )}
-              {toast.type === "info" && (
-                <span className="inline-block w-2 h-2 rounded-full bg-neon-yellow animate-ping" />
-              )}
-              <span>{toast.message}</span>
+              <div className="flex flex-col bg-slate-950/80 border-4 border-slate-700/80 shadow-2xl min-h-[500px] lg:h-screen rounded-md transition-all duration-300">
+                {/* Cabinet Frame Header */}
+                <div className="bg-[#161622] border-b-4 border-slate-700/80 px-6 py-2 flex items-center justify-between">
+                  <div className="flex gap-2 items-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-neon-red animate-pulse" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-neon-blue animate-pulse" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-neon-yellow animate-pulse" />
+                    <span className="font-pixel text-[9px] text-[#a0a0c0] uppercase tracking-widest ml-2">
+                      {isGenerating
+                        ? "DRAFT GENERATOR ACTIVE"
+                        : "VERSUS ARENA STANDARD"}
+                    </span>
+                  </div>
+
+                  {/* Share Result Button (Excluded from Screenshot) */}
+                  {showArena && !isGenerating && (
+                    <button
+                      onClick={handleShareResult}
+                      disabled={isSharing}
+                      className="exclude-from-capture px-3 py-1 bg-emerald-950/40 border border-emerald-500/50 hover:border-emerald-400 text-emerald-400 hover:text-emerald-300 font-pixel text-[8px] tracking-wider uppercase transition-all duration-150 cursor-pointer flex items-center gap-1.5 hover:bg-emerald-950/80 disabled:opacity-50 disabled:cursor-not-allowed glow-emerald z-30"
+                      title="Copy or share generated matchup image"
+                    >
+                      {isSharing ? (
+                        <>
+                          <span className="inline-block w-1.5 h-1.5 bg-emerald-400 animate-ping rounded-full" />
+                          CAPTURING...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-3 h-3 fill-current"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" />
+                          </svg>
+                          SHARE RESULT
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Arena Grid */}
+                <VersesArena
+                  teamA={teamA}
+                  teamB={teamB}
+                  winner={activeWinner}
+                  isGenerating={isGenerating}
+                  triggerScreenShake={triggerScreenShake}
+                  squad={availablePlayers}
+                  rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
+                  matches={matches}
+                />
+              </div>
+            </section>
+
+            {/* Bottom Section: History logs Dashboard */}
+            <section className="w-full max-w-5xl flex flex-col">
+              <HistoryDashboard
+                matches={matches}
+                onDeleteMatch={handleDeleteMatch}
+                onDeleteAllMatches={handleDeleteAllMatches}
+                onUpdateWinner={handleUpdatePastWinner}
+                availablePlayers={availablePlayers}
+                rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
+                isAdmin={isAdmin}
+                activeSeasonId={activeSeasonId}
+              />
+            </section>
+          </main>
+
+          {/* Footer banner */}
+          <footer className="border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none">
+            <span>
+              HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`
+            </span>
+          </footer>
+
+          {/* Floating Debug Bar Overlay */}
+          <DebugBar />
+
+          {/* Retro Share Toast Notification */}
+          {toast && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
+              <div
+                className={`border-4 px-6 py-3 font-pixel text-[9px] tracking-widest uppercase flex items-center gap-3 shadow-2xl select-none min-w-[280px] justify-center ${
+                  toast.type === "success"
+                    ? "bg-emerald-950/90 border-emerald-500 text-emerald-400 glow-emerald"
+                    : toast.type === "error"
+                      ? "bg-rose-950/90 border-rose-500 text-rose-400 glow-rose"
+                      : "bg-slate-900/95 border-neon-yellow text-neon-yellow shadow-[0_0_15px_rgba(255,210,0,0.3)]"
+                }`}
+              >
+                {toast.type === "success" && (
+                  <span className="text-sm font-bold">✓</span>
+                )}
+                {toast.type === "error" && (
+                  <span className="text-sm font-bold">!</span>
+                )}
+                {toast.type === "info" && (
+                  <span className="inline-block w-2 h-2 rounded-full bg-neon-yellow animate-ping" />
+                )}
+                <span>{toast.message}</span>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </CRTOverlay>
+          )}
+        </div>
+      </CRTOverlay>
+    </>
   );
 }

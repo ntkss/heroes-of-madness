@@ -191,8 +191,8 @@ export default function PostCreationModal({
       const mentionedPlayers: string[] = [];
       const mentionedMatches: string[] = [];
 
-      const playerRegex = /@player:([\w\d_-]+)/g;
-      const matchRegex = /@match:([\w\d_-]+)/g;
+      const playerRegex = /@player:([\w\d_\-\u0E00-\u0E7F\p{L}\p{N}]+)/gu;
+      const matchRegex = /@match:([\w\d_\-\u0E00-\u0E7F\p{L}\p{N}]+)/gu;
 
       let match;
       while ((match = playerRegex.exec(descTrimmed)) !== null) {

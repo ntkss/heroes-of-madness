@@ -56,8 +56,9 @@ export default function ForumsPage() {
   });
 
   return (
-    <CRTOverlay>
-      <div className={styles.container}>
+    <>
+      <CRTOverlay>
+        <div className={styles.container}>
         {/* Navigation Breadcrumb */}
         <Link
           href="/"
@@ -173,16 +174,17 @@ export default function ForumsPage() {
             onSelectTag={setSelectedTag}
           />
         </div>
-
-        {/* POST CREATION MODAL */}
-        {isModalOpen && (
-          <PostCreationModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSuccess={(newPost) => setPosts((prev) => [newPost, ...prev])}
-          />
-        )}
       </div>
     </CRTOverlay>
+
+      {/* POST CREATION MODAL */}
+      {isModalOpen && (
+        <PostCreationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={(newPost) => setPosts((prev) => [newPost, ...prev])}
+        />
+      )}
+    </>
   );
 }

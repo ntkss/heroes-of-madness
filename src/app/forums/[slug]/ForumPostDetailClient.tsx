@@ -452,8 +452,9 @@ export default function ForumPostDetailClient({ params }: PageProps) {
   const activeVote = user ? post.userVotes?.[user.uid] || null : null;
 
   return (
-    <CRTOverlay>
-      <div className={styles.container}>
+    <>
+      <CRTOverlay>
+        <div className={styles.container}>
         {/* Back Link */}
         <Link
           href="/forums"
@@ -689,190 +690,192 @@ export default function ForumPostDetailClient({ params }: PageProps) {
           </div>
         </div>
 
-        {/* EDIT POST MODAL */}
-        {isEditModalOpen && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.modalContent}>
-              <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>EDIT THREAD</h2>
-                <button
-                  onClick={() => {
-                    playBeep(150, 0.1, "sine");
-                    setIsEditModalOpen(false);
-                  }}
-                  className={styles.closeBtn}
-                >
-                  ✕ CLOSE
-                </button>
+        </div>
+      </CRTOverlay>
+
+      {/* EDIT POST MODAL */}
+      {isEditModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>EDIT THREAD</h2>
+              <button
+                onClick={() => {
+                  playBeep(150, 0.1, "sine");
+                  setIsEditModalOpen(false);
+                }}
+                className={styles.closeBtn}
+              >
+                ✕ CLOSE
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleUpdatePostSubmit}
+              className={styles.formBody}
+            >
+              {/* Title */}
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>TOPIC TITLE (REQ)</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Topic title..."
+                  className={styles.inputField}
+                  maxLength={80}
+                  disabled={editSubmitting}
+                />
               </div>
 
-              <form
-                onSubmit={handleUpdatePostSubmit}
-                className={styles.formBody}
-              >
-                {/* Title */}
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>TOPIC TITLE (REQ)</label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="Topic title..."
-                    className={styles.inputField}
-                    maxLength={80}
-                    disabled={editSubmitting}
-                  />
-                </div>
-
-                {/* Description Body */}
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>DESCRIPTION TEXT (REQ)</label>
-                  <textarea
-                    ref={editDescTextareaRef}
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Write details... Support inline mentions of fighters and matches!"
-                    className={styles.textareaField}
-                    disabled={editSubmitting}
-                  />
-                </div>
-
-                {/* Mention Autocomplete selector helpers */}
-                <div className={styles.mentionsHelper}>
-                  <div className={styles.mentionsHeader}>
-                    ⚡ INSERT MENTION DEPENDENCY:
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {/* Players */}
-                    <div className="flex gap-1.5">
-                      <select
-                        value={editMentionPlayerId}
-                        onChange={(e) => setEditMentionPlayerId(e.target.value)}
-                        className="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 flex-grow font-tech outline-none"
-                        disabled={editSubmitting}
-                      >
-                        <option value="">-- CHOOSE PLAYER --</option>
-                        {players.map((p) => (
-                          <option key={p.id} value={p.name}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (editMentionPlayerId) {
-                            insertEditMentionAtCursor(
-                              `@player:${editMentionPlayerId}`,
-                            );
-                            playBeep(700, 0.05, "sine");
-                          }
-                        }}
-                        className="bg-sky-950 border border-sky-700 text-sky-400 px-2 text-xs font-pixel"
-                        disabled={!editMentionPlayerId || editSubmitting}
-                      >
-                        ADD
-                      </button>
-                    </div>
-
-                    {/* Matches */}
-                    <div className="flex gap-1.5">
-                      <select
-                        value={editMentionMatchId}
-                        onChange={(e) => setEditMentionMatchId(e.target.value)}
-                        className="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 flex-grow font-tech outline-none"
-                        disabled={editSubmitting}
-                      >
-                        <option value="">-- CHOOSE MATCH --</option>
-                        {recentMatches.map((m) => {
-                          const date = new Date(
-                            m.createdAt,
-                          ).toLocaleDateString();
-                          return (
-                            <option key={m.id} value={m.id}>
-                              Match: {m.teamA[0]} vs {m.teamB[0]} ({date})
-                            </option>
-                          );
-                        })}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (editMentionMatchId) {
-                            insertEditMentionAtCursor(
-                              `@match:${editMentionMatchId}`,
-                            );
-                            playBeep(700, 0.05, "sine");
-                          }
-                        }}
-                        className="bg-rose-950 border border-rose-700 text-rose-400 px-2 text-xs font-pixel"
-                        disabled={!editMentionMatchId || editSubmitting}
-                      >
-                        ADD
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Optional image edit */}
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>
-                    ATTACH SCREENSHOT / PREVIEW PHOTO
-                  </label>
-                  <div className={styles.imageUploadContainer}>
-                    {editImagePreview ? (
-                      <>
-                        <div className={styles.uploadPreview}>
-                          <img src={editImagePreview} alt="Edit Preview" />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleClearEditImage}
-                          className={styles.removeImageBtn}
-                          disabled={editSubmitting}
-                        >
-                          REMOVE PHOTO
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className={styles.uploadPreview}>
-                          <span className={styles.uploadPlaceholder}>🖼️</span>
-                        </div>
-                        <label className={styles.uploadBtn}>
-                          UPLOAD IMAGE
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleEditImageUploadChange}
-                            disabled={editSubmitting}
-                          />
-                        </label>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Errors */}
-                {editError && (
-                  <div className={styles.errorBox}>⚠️ {editError}</div>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
+              {/* Description Body */}
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>DESCRIPTION TEXT (REQ)</label>
+                <textarea
+                  ref={editDescTextareaRef}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Write details... Support inline mentions of fighters and matches!"
+                  className={styles.textareaField}
                   disabled={editSubmitting}
-                  className={styles.submitBtn}
-                >
-                  {editSubmitting
-                    ? "UPDATING SYSTEM THREAD..."
-                    : "💾 SAVE CHANGES"}
-                </button>
-              </form>
-            </div>
+                />
+              </div>
+
+              {/* Mention Autocomplete selector helpers */}
+              <div className={styles.mentionsHelper}>
+                <div className={styles.mentionsHeader}>
+                  ⚡ INSERT MENTION DEPENDENCY:
+                </div>
+                <div className="flex flex-col gap-3">
+                  {/* Players */}
+                  <div className="flex gap-1.5">
+                    <select
+                      value={editMentionPlayerId}
+                      onChange={(e) => setEditMentionPlayerId(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 flex-grow font-tech outline-none"
+                      disabled={editSubmitting}
+                    >
+                      <option value="">-- CHOOSE PLAYER --</option>
+                      {players.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editMentionPlayerId) {
+                          insertEditMentionAtCursor(
+                            `@player:${editMentionPlayerId}`,
+                          );
+                          playBeep(700, 0.05, "sine");
+                        }
+                      }}
+                      className="bg-sky-950 border border-sky-700 text-sky-400 px-2 text-xs font-pixel"
+                      disabled={!editMentionPlayerId || editSubmitting}
+                    >
+                      ADD
+                    </button>
+                  </div>
+
+                  {/* Matches */}
+                  <div className="flex gap-1.5">
+                    <select
+                      value={editMentionMatchId}
+                      onChange={(e) => setEditMentionMatchId(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 flex-grow font-tech outline-none"
+                      disabled={editSubmitting}
+                    >
+                      <option value="">-- CHOOSE MATCH --</option>
+                      {recentMatches.map((m) => {
+                        const date = new Date(
+                          m.createdAt,
+                        ).toLocaleDateString();
+                        return (
+                          <option key={m.id} value={m.id}>
+                            Match: {m.teamA[0]} vs {m.teamB[0]} ({date})
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editMentionMatchId) {
+                          insertEditMentionAtCursor(
+                            `@match:${editMentionMatchId}`,
+                          );
+                          playBeep(700, 0.05, "sine");
+                        }
+                      }}
+                      className="bg-rose-950 border border-rose-700 text-rose-400 px-2 text-xs font-pixel"
+                      disabled={!editMentionMatchId || editSubmitting}
+                    >
+                      ADD
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Optional image edit */}
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  ATTACH SCREENSHOT / PREVIEW PHOTO
+                </label>
+                <div className={styles.imageUploadContainer}>
+                  {editImagePreview ? (
+                    <>
+                      <div className={styles.uploadPreview}>
+                        <img src={editImagePreview} alt="Edit Preview" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleClearEditImage}
+                        className={styles.removeImageBtn}
+                        disabled={editSubmitting}
+                      >
+                        REMOVE PHOTO
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.uploadPreview}>
+                        <span className={styles.uploadPlaceholder}>🖼️</span>
+                      </div>
+                      <label className={styles.uploadBtn}>
+                        UPLOAD IMAGE
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleEditImageUploadChange}
+                          disabled={editSubmitting}
+                        />
+                      </label>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Errors */}
+              {editError && (
+                <div className={styles.errorBox}>⚠️ {editError}</div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={editSubmitting}
+                className={styles.submitBtn}
+              >
+                {editSubmitting
+                  ? "UPDATING SYSTEM THREAD..."
+                  : "💾 SAVE CHANGES"}
+              </button>
+            </form>
           </div>
-        )}
-      </div>
-    </CRTOverlay>
+        </div>
+      )}
+    </>
   );
 }

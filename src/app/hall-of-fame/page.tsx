@@ -39,12 +39,11 @@ export default function HallOfFamePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [archiveSeasons, playerList, seasonCfg] =
-          await Promise.all([
-            fetchSeasons(),
-            fetchPlayers(),
-            fetchSeasonConfig(),
-          ]);
+        const [archiveSeasons, playerList, seasonCfg] = await Promise.all([
+          fetchSeasons(),
+          fetchPlayers(),
+          fetchSeasonConfig(),
+        ]);
 
         setSeasons(archiveSeasons);
         setPlayers(playerList);

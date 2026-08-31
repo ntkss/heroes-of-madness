@@ -995,23 +995,21 @@ export async function endCurrentSeason(): Promise<boolean> {
       });
 
     // Form Podium (Top 3)
-    const podium: SeasonPlayerStat[] = qualifiedPlayers
-      .slice(0, 3)
-      .map((p) => {
-        const wins = Math.round((p.winrate / 100) * p.total_match_played);
-        const losses = Math.max(0, p.total_match_played - wins);
-        return {
-          id: p.id,
-          name: p.name,
-          alias: p.alias,
-          avatar: p.avatar,
-          winrate: p.winrate,
-          total_match_played: p.total_match_played,
-          current_rank: p.current_rank,
-          wins,
-          losses,
-        };
-      });
+    const podium: SeasonPlayerStat[] = qualifiedPlayers.slice(0, 3).map((p) => {
+      const wins = Math.round((p.winrate / 100) * p.total_match_played);
+      const losses = Math.max(0, p.total_match_played - wins);
+      return {
+        id: p.id,
+        name: p.name,
+        alias: p.alias,
+        avatar: p.avatar,
+        winrate: p.winrate,
+        total_match_played: p.total_match_played,
+        current_rank: p.current_rank,
+        wins,
+        losses,
+      };
+    });
 
     // Find Last Place (Worst performer with at least 1 match played)
     const activePlayers = players.filter((p) => p.total_match_played > 0);

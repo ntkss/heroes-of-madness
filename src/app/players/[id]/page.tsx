@@ -261,8 +261,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
       const champ = s.podium[0];
       if (!champ) return false;
       return (
-        champ.id.toLowerCase() === pId ||
-        champ.name.toLowerCase() === pName
+        champ.id.toLowerCase() === pId || champ.name.toLowerCase() === pName
       );
     });
   }, [seasons, player]);

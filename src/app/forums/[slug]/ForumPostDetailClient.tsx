@@ -455,241 +455,245 @@ export default function ForumPostDetailClient({ params }: PageProps) {
     <>
       <CRTOverlay>
         <div className={styles.container}>
-        {/* Back Link */}
-        <Link
-          href="/forums"
-          className={styles.backLink}
-          onClick={() => playBeep(200, 0.1, "sine")}
-        >
-          ◀ FORUMS
-        </Link>
+          {/* Back Link */}
+          <Link
+            href="/forums"
+            className={styles.backLink}
+            onClick={() => playBeep(200, 0.1, "sine")}
+          >
+            ◀ FORUMS
+          </Link>
 
-        {/* Content Layout */}
-        <div className={styles.detailGrid}>
-          {/* Main Column */}
-          <div>
-            <article className={styles.detailCard}>
-              {/* Type Category Badge */}
-              <span
-                className={`${styles.badgeType} ${post.type === "news" ? styles.badgeTypeNews : ""}`}
-              >
-                {post.type}
-              </span>
-
-              {/* Title */}
-              <h1
-                className={`${styles.detailTitle} ${post.type === "news" ? "text-neon-red glow-red" : "text-white"}`}
-              >
-                {post.title}
-              </h1>
-
-              {/* Meta row */}
-              <div className={styles.detailMeta}>
-                <div className={styles.postAuthor}>
-                  <img
-                    src={post.authorAvatar}
-                    className={styles.authorAvatar}
-                    alt="author avatar"
-                  />
-                  <span className="text-slate-200 font-semibold">
-                    {post.authorName}
-                  </span>
-                </div>
-                <span>•</span>
-                <span>{new Date(post.createdAt).toLocaleString()}</span>
-                <span>•</span>
-                <span>👀 {post.views || 0} VIEWS</span>
-                <span>•</span>
-                <button
-                  onClick={handleShare}
-                  className="text-neon-blue hover:text-white transition-colors cursor-pointer text-xs font-pixel"
+          {/* Content Layout */}
+          <div className={styles.detailGrid}>
+            {/* Main Column */}
+            <div>
+              <article className={styles.detailCard}>
+                {/* Type Category Badge */}
+                <span
+                  className={`${styles.badgeType} ${post.type === "news" ? styles.badgeTypeNews : ""}`}
                 >
-                  {shareText}
-                </button>
-                {user && post.authorId === user.uid && (
-                  <>
-                    <span>•</span>
-                    <button
-                      onClick={handleOpenEdit}
-                      className="text-[#ffd200] hover:text-white transition-colors cursor-pointer text-xs font-pixel"
-                    >
-                      ✏️ EDIT THREAD
-                    </button>
-                  </>
-                )}
-              </div>
+                  {post.type}
+                </span>
 
-              {/* Post Image */}
-              {post.imageUrl && (
-                <img
-                  src={post.imageUrl}
-                  className={`${styles.postMainImage} ${post.type === "news" ? styles.postMainImageNews : ""}`}
-                  alt="post attach"
-                />
-              )}
+                {/* Title */}
+                <h1
+                  className={`${styles.detailTitle} ${post.type === "news" ? "text-neon-red glow-red" : "text-white"}`}
+                >
+                  {post.title}
+                </h1>
 
-              {/* Description Body with Mentions Parser */}
-              <div className={styles.description}>
-                {parseMentions(post.description)}
-              </div>
-
-              {/* Ratings and Reactions */}
-              <div className={styles.feedbackBlock}>
-                <div className={styles.feedbackActions}>
-                  <button
-                    onClick={() => handleVote("likes")}
-                    className={`${styles.feedbackBtn} ${
-                      activeVote === "likes" ? styles.feedbackBtnLikeActive : ""
-                    }`}
-                  >
-                    👍 LIKES ({post.likes || 0})
-                  </button>
-                  <button
-                    onClick={() => handleVote("dislikes")}
-                    className={`${styles.feedbackBtn} ${
-                      activeVote === "dislikes"
-                        ? styles.feedbackBtnDislikeActive
-                        : ""
-                    }`}
-                  >
-                    👎 DISLIKES ({post.dislikes || 0})
-                  </button>
-                </div>
-                <div className="text-[11px] text-slate-600 font-mono">
-                  POST REF: #{post.id.substring(0, 8)}
-                </div>
-              </div>
-            </article>
-
-            {/* Comments Thread Section */}
-            <div className={styles.commentsContainer}>
-              <h3 className={styles.commentsHeading}>
-                COMMENT LOGS ({comments.length})
-              </h3>
-
-              <div className={styles.commentsList}>
-                {comments.length === 0 ? (
-                  <div className={styles.noComments}>
-                    NO SIGNALS RECORDED ON THIS THREAD. BE THE FIRST TO RESPOND.
+                {/* Meta row */}
+                <div className={styles.detailMeta}>
+                  <div className={styles.postAuthor}>
+                    <img
+                      src={post.authorAvatar}
+                      className={styles.authorAvatar}
+                      alt="author avatar"
+                    />
+                    <span className="text-slate-200 font-semibold">
+                      {post.authorName}
+                    </span>
                   </div>
-                ) : (
-                  comments.map((comment) => {
-                    const isAuthor = user && comment.userId === user.uid;
-                    const canDelete = isAuthor || isAdmin;
+                  <span>•</span>
+                  <span>{new Date(post.createdAt).toLocaleString()}</span>
+                  <span>•</span>
+                  <span>👀 {post.views || 0} VIEWS</span>
+                  <span>•</span>
+                  <button
+                    onClick={handleShare}
+                    className="text-neon-blue hover:text-white transition-colors cursor-pointer text-xs font-pixel"
+                  >
+                    {shareText}
+                  </button>
+                  {user && post.authorId === user.uid && (
+                    <>
+                      <span>•</span>
+                      <button
+                        onClick={handleOpenEdit}
+                        className="text-[#ffd200] hover:text-white transition-colors cursor-pointer text-xs font-pixel"
+                      >
+                        ✏️ EDIT THREAD
+                      </button>
+                    </>
+                  )}
+                </div>
 
-                    return (
-                      <div key={comment.id} className={styles.commentCard}>
-                        <div className={styles.commentHeader}>
-                          <div className={styles.commentAuthor}>
-                            <img
-                              src={comment.authorAvatar}
-                              className={styles.authorAvatar}
-                              alt="author avatar"
-                            />
-                            <span>{comment.authorName}</span>
+                {/* Post Image */}
+                {post.imageUrl && (
+                  <img
+                    src={post.imageUrl}
+                    className={`${styles.postMainImage} ${post.type === "news" ? styles.postMainImageNews : ""}`}
+                    alt="post attach"
+                  />
+                )}
+
+                {/* Description Body with Mentions Parser */}
+                <div className={styles.description}>
+                  {parseMentions(post.description)}
+                </div>
+
+                {/* Ratings and Reactions */}
+                <div className={styles.feedbackBlock}>
+                  <div className={styles.feedbackActions}>
+                    <button
+                      onClick={() => handleVote("likes")}
+                      className={`${styles.feedbackBtn} ${
+                        activeVote === "likes"
+                          ? styles.feedbackBtnLikeActive
+                          : ""
+                      }`}
+                    >
+                      👍 LIKES ({post.likes || 0})
+                    </button>
+                    <button
+                      onClick={() => handleVote("dislikes")}
+                      className={`${styles.feedbackBtn} ${
+                        activeVote === "dislikes"
+                          ? styles.feedbackBtnDislikeActive
+                          : ""
+                      }`}
+                    >
+                      👎 DISLIKES ({post.dislikes || 0})
+                    </button>
+                  </div>
+                  <div className="text-[11px] text-slate-600 font-mono">
+                    POST REF: #{post.id.substring(0, 8)}
+                  </div>
+                </div>
+              </article>
+
+              {/* Comments Thread Section */}
+              <div className={styles.commentsContainer}>
+                <h3 className={styles.commentsHeading}>
+                  COMMENT LOGS ({comments.length})
+                </h3>
+
+                <div className={styles.commentsList}>
+                  {comments.length === 0 ? (
+                    <div className={styles.noComments}>
+                      NO SIGNALS RECORDED ON THIS THREAD. BE THE FIRST TO
+                      RESPOND.
+                    </div>
+                  ) : (
+                    comments.map((comment) => {
+                      const isAuthor = user && comment.userId === user.uid;
+                      const canDelete = isAuthor || isAdmin;
+
+                      return (
+                        <div key={comment.id} className={styles.commentCard}>
+                          <div className={styles.commentHeader}>
+                            <div className={styles.commentAuthor}>
+                              <img
+                                src={comment.authorAvatar}
+                                className={styles.authorAvatar}
+                                alt="author avatar"
+                              />
+                              <span>{comment.authorName}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className={styles.commentDate}>
+                                {new Date(comment.createdAt).toLocaleString()}
+                              </span>
+                              {canDelete && (
+                                <button
+                                  onClick={() =>
+                                    handleDeleteComment(comment.id)
+                                  }
+                                  className={styles.deleteCommentBtn}
+                                >
+                                  ⚡ DELETE
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center">
-                            <span className={styles.commentDate}>
-                              {new Date(comment.createdAt).toLocaleString()}
-                            </span>
-                            {canDelete && (
-                              <button
-                                onClick={() => handleDeleteComment(comment.id)}
-                                className={styles.deleteCommentBtn}
-                              >
-                                ⚡ DELETE
-                              </button>
-                            )}
-                          </div>
+                          <p className={styles.commentText}>{comment.text}</p>
                         </div>
-                        <p className={styles.commentText}>{comment.text}</p>
-                      </div>
-                    );
-                  })
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Add Comment Form */}
+                {user ? (
+                  <form
+                    onSubmit={handleCreateComment}
+                    className={styles.commentForm}
+                  >
+                    <textarea
+                      value={newCommentText}
+                      onChange={(e) => setNewCommentText(e.target.value)}
+                      placeholder="Contribute to debate... (max 500 chars)"
+                      className={styles.commentTextarea}
+                      maxLength={500}
+                      disabled={commentSubmitting}
+                      required
+                    />
+                    {commentError && (
+                      <div className={styles.errorBox}>⚠️ {commentError}</div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={commentSubmitting || !newCommentText.trim()}
+                      className={styles.submitBtn}
+                    >
+                      {commentSubmitting
+                        ? "TRANSMITTING COMMENT..."
+                        : "💬 INJECT COMMENT"}
+                    </button>
+                  </form>
+                ) : (
+                  <div className={styles.loginPrompt}>
+                    <p>
+                      YOU MUST LOGIN TO WRITE RESPONSES ON THIS CABINET BOARD.
+                    </p>
+                    <button
+                      onClick={() => {
+                        playCoin();
+                        login();
+                      }}
+                      className={styles.loginPromptBtn}
+                    >
+                      🔐 LOGIN GOOGLE
+                    </button>
+                  </div>
                 )}
               </div>
+            </div>
 
-              {/* Add Comment Form */}
-              {user ? (
-                <form
-                  onSubmit={handleCreateComment}
-                  className={styles.commentForm}
-                >
-                  <textarea
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="Contribute to debate... (max 500 chars)"
-                    className={styles.commentTextarea}
-                    maxLength={500}
-                    disabled={commentSubmitting}
-                    required
-                  />
-                  {commentError && (
-                    <div className={styles.errorBox}>⚠️ {commentError}</div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={commentSubmitting || !newCommentText.trim()}
-                    className={styles.submitBtn}
-                  >
-                    {commentSubmitting
-                      ? "TRANSMITTING COMMENT..."
-                      : "💬 INJECT COMMENT"}
-                  </button>
-                </form>
-              ) : (
-                <div className={styles.loginPrompt}>
-                  <p>
-                    YOU MUST LOGIN TO WRITE RESPONSES ON THIS CABINET BOARD.
+            {/* Sidebar recommendations widget */}
+            <div>
+              <div className={styles.sidebarCard}>
+                <h3 className={styles.widgetTitle}>OTHER POSTS</h3>
+                {postsList.length === 0 ? (
+                  <p className="text-xs text-slate-500 font-pixel text-center">
+                    NO OTHERS FOUND
                   </p>
-                  <button
-                    onClick={() => {
-                      playCoin();
-                      login();
-                    }}
-                    className={styles.loginPromptBtn}
-                  >
-                    🔐 LOGIN GOOGLE
-                  </button>
-                </div>
-              )}
+                ) : (
+                  <div className={styles.listRow}>
+                    {postsList.map((p) => (
+                      <Link
+                        key={p.id}
+                        href={`/forums/${p.slug}`}
+                        className={styles.listItem}
+                        onClick={() => playBeep(300, 0.1, "sine")}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-xs truncate max-w-[240px] hover:text-neon-blue">
+                            {p.title}
+                          </span>
+                          <span className={styles.listItemMeta}>
+                            {p.type === "news" ? "📢 News" : "💬 Forum"} • 👀{" "}
+                            {p.views || 0}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Sidebar recommendations widget */}
-          <div>
-            <div className={styles.sidebarCard}>
-              <h3 className={styles.widgetTitle}>OTHER POSTS</h3>
-              {postsList.length === 0 ? (
-                <p className="text-xs text-slate-500 font-pixel text-center">
-                  NO OTHERS FOUND
-                </p>
-              ) : (
-                <div className={styles.listRow}>
-                  {postsList.map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/forums/${p.slug}`}
-                      className={styles.listItem}
-                      onClick={() => playBeep(300, 0.1, "sine")}
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-xs truncate max-w-[240px] hover:text-neon-blue">
-                          {p.title}
-                        </span>
-                        <span className={styles.listItemMeta}>
-                          {p.type === "news" ? "📢 News" : "💬 Forum"} • 👀{" "}
-                          {p.views || 0}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         </div>
       </CRTOverlay>
 
@@ -710,10 +714,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
               </button>
             </div>
 
-            <form
-              onSubmit={handleUpdatePostSubmit}
-              className={styles.formBody}
-            >
+            <form onSubmit={handleUpdatePostSubmit} className={styles.formBody}>
               {/* Title */}
               <div className={styles.inputGroup}>
                 <label className={styles.label}>TOPIC TITLE (REQ)</label>
@@ -789,9 +790,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                     >
                       <option value="">-- CHOOSE MATCH --</option>
                       {recentMatches.map((m) => {
-                        const date = new Date(
-                          m.createdAt,
-                        ).toLocaleDateString();
+                        const date = new Date(m.createdAt).toLocaleDateString();
                         return (
                           <option key={m.id} value={m.id}>
                             Match: {m.teamA[0]} vs {m.teamB[0]} ({date})

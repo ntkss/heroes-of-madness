@@ -660,6 +660,18 @@ export default function Home() {
                 </button>
               )}
 
+              {/* Hall of Fame Link */}
+              <Link
+                href="/hall-of-fame"
+                onClick={() => {
+                  playBeep(300, 0.15, "sawtooth");
+                }}
+                className="flex items-center gap-1.5 border-2 border-amber-500 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide shrink-0"
+                title="Browse Hall of Fame Champions"
+              >
+                👑 HALL OF FAME
+              </Link>
+
               {/* Seasons History Dashboard Link */}
               <Link
                 href="/seasons"

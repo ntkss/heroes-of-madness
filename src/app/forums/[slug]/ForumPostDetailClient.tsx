@@ -22,6 +22,7 @@ import {
   DbPlayer,
   Match,
   uploadBase64Image,
+  extractYouTubeId,
 } from "@/utils/firebase";
 import { parseMentions } from "@/utils/mentions";
 import { playBeep, playCoin } from "@/utils/audio";
@@ -101,6 +102,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
   const [editDescription, setEditDescription] = useState("");
   const [editImageBase64, setEditImageBase64] = useState("");
   const [editImagePreview, setEditImagePreview] = useState("");
+  const [editYoutubeUrl, setEditYoutubeUrl] = useState("");
   const [players, setPlayers] = useState<DbPlayer[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [editMentionPlayerId, setEditMentionPlayerId] = useState("");
@@ -118,6 +120,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
     setEditDescription(post.description);
     setEditImageBase64(post.imageUrl || "");
     setEditImagePreview(post.imageUrl || "");
+    setEditYoutubeUrl(post.youtubeUrl || "");
     setEditError("");
 
     playBeep(440, 0.15, "triangle");
@@ -198,6 +201,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
         title: titleTrimmed,
         description: descTrimmed,
         imageUrl: imageUrlToSave,
+        youtubeUrl: editYoutubeUrl.trim() || undefined,
         tags: finalTags,
         mentionedPlayers,
         mentionedMatches,
@@ -209,6 +213,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
           title: titleTrimmed,
           description: descTrimmed,
           imageUrl: imageUrlToSave,
+          youtubeUrl: editYoutubeUrl.trim() || undefined,
           tags: finalTags,
           mentionedPlayers,
           mentionedMatches,
@@ -527,6 +532,25 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                     alt="post attach"
                   />
                 )}
+
+                {/* YouTube Video Player Embed */}
+                {(() => {
+                  const youtubeId =
+                    extractYouTubeId(post.youtubeUrl) ||
+                    extractYouTubeId(post.description);
+                  if (!youtubeId) return null;
+                  return (
+                    <div className="w-full aspect-video my-4 border-2 border-amber-500/70 bg-slate-950 overflow-hidden shadow-[0_0_25px_rgba(245,158,11,0.3)] relative">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${youtubeId}`}
+                        title="YouTube Video Player"
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Description Body with Mentions Parser */}
                 <div className={styles.description}>
@@ -854,6 +878,21 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                     </>
                   )}
                 </div>
+              </div>
+
+              {/* YouTube Video Link */}
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  YOUTUBE VIDEO LINK (OPTIONAL)
+                </label>
+                <input
+                  type="text"
+                  value={editYoutubeUrl}
+                  onChange={(e) => setEditYoutubeUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                  className={styles.inputField}
+                  disabled={editSubmitting}
+                />
               </div>
 
               {/* Errors */}

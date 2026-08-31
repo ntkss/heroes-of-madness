@@ -5,7 +5,13 @@ import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import DebugBar from "@/components/DebugBar";
 import styles from "./styles.module.css";
-import { fetchPlayers, fetchAllMatches, DbPlayer } from "@/utils/firebase";
+import {
+  fetchPlayers,
+  fetchAllMatches,
+  fetchSeasons,
+  DbPlayer,
+  Season,
+} from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 
 interface PageProps {
@@ -17,6 +23,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const playerId = resolvedParams.id;
 
   const [player, setPlayer] = useState<DbPlayer | null>(null);
+  const [seasons, setSeasons] = useState<Season[]>([]);
   const [overallStats, setOverallStats] = useState({
     matches: 0,
     wins: 0,
@@ -46,10 +53,13 @@ export default function PlayerProfilePage({ params }: PageProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [players, matches] = await Promise.all([
+        const [players, matches, archiveSeasons] = await Promise.all([
           fetchPlayers(),
           fetchAllMatches(),
+          fetchSeasons(),
         ]);
+
+        setSeasons(archiveSeasons);
 
         const key = playerId.toLowerCase();
         let foundPlayer = players.find(
@@ -241,6 +251,23 @@ export default function PlayerProfilePage({ params }: PageProps) {
     });
   };
 
+  const wonSeasons = React.useMemo(() => {
+    if (!player) return [];
+    const pId = player.id.toLowerCase();
+    const pName = player.name.toLowerCase();
+
+    return seasons.filter((s) => {
+      if (!s.podium || s.podium.length === 0) return false;
+      const champ = s.podium[0];
+      if (!champ) return false;
+      return (
+        champ.id.toLowerCase() === pId || champ.name.toLowerCase() === pName
+      );
+    });
+  }, [seasons, player]);
+
+  const isChampion = wonSeasons.length > 0;
+
   if (loading) {
     return (
       <CRTOverlay>
@@ -262,35 +289,112 @@ export default function PlayerProfilePage({ params }: PageProps) {
     <CRTOverlay>
       <div className={styles.container}>
         {/* Header */}
-        <header className={styles.header}>
-          <div className={styles.headerBorderLine} />
+        <header
+          className={`${styles.header} ${
+            isChampion
+              ? "border-b-4 border-amber-500 shadow-[0_4px_25px_rgba(255,210,0,0.35)]"
+              : ""
+          }`}
+        >
+          <div
+            className={`${styles.headerBorderLine} ${
+              isChampion
+                ? "bg-gradient-to-r from-amber-500 via-neon-yellow to-amber-500"
+                : ""
+            }`}
+          />
           <div className={styles.headerTitleContainer}>
-            <h1 className={styles.headerTitle}>HEROES OF MADNESS</h1>
-            <p className={styles.headerSubtitle}>
-              🎮 FIGHTER INFORMATION DOSSIER
+            <h1
+              className={`${styles.headerTitle} ${
+                isChampion
+                  ? "bg-gradient-to-r from-amber-300 via-neon-yellow to-amber-500"
+                  : ""
+              }`}
+            >
+              HEROES OF MADNESS
+            </h1>
+            <p
+              className={`${styles.headerSubtitle} ${
+                isChampion
+                  ? "text-amber-400 [text-shadow:0_0_8px_rgba(255,210,0,0.8)]"
+                  : ""
+              }`}
+            >
+              {isChampion
+                ? "👑 HALL OF FAME CHAMPION DOSSIER"
+                : "🎮 FIGHTER INFORMATION DOSSIER"}
             </p>
           </div>
-          <Link
-            href="/"
-            onClick={() => playBeep(250, 0.1, "sawtooth")}
-            className={styles.backBtn}
-          >
-            ✕ BACK TO ARENA
-          </Link>
+
+          <div className="flex items-center gap-3">
+            {isChampion && (
+              <Link
+                href="/hall-of-fame"
+                onClick={() => playBeep(300, 0.15, "sawtooth")}
+                className="border-2 border-amber-500 bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-black px-3 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 uppercase tracking-wide select-none shadow-[0_0_12px_rgba(255,210,0,0.5)]"
+              >
+                🏆 HALL OF FAME ▶
+              </Link>
+            )}
+
+            <Link
+              href="/"
+              onClick={() => playBeep(250, 0.1, "sawtooth")}
+              className={styles.backBtn}
+            >
+              ✕ BACK TO ARENA
+            </Link>
+          </div>
         </header>
 
         <main className={styles.main}>
           {player && (
             <div className={styles.grid}>
               {/* Profile Card */}
-              <div className={styles.profileCard}>
+              <div
+                className={`${styles.profileCard} ${
+                  isChampion
+                    ? "border-4 border-amber-500/90 shadow-[0_0_30px_rgba(255,210,0,0.3)] bg-gradient-to-b from-[#18150a] via-[#101016] to-[#0a0a0f]"
+                    : ""
+                }`}
+              >
                 <div className={`${styles.rivet} ${styles.rivetTopLeft}`} />
                 <div className={`${styles.rivet} ${styles.rivetTopRight}`} />
                 <div className={`${styles.rivet} ${styles.rivetBottomLeft}`} />
                 <div className={`${styles.rivet} ${styles.rivetBottomRight}`} />
 
+                {/* Champion Gold Banner */}
+                {isChampion && (
+                  <div className="mb-2 bg-gradient-to-r from-amber-500/20 via-neon-yellow/30 to-amber-500/20 border-2 border-amber-400 p-3 text-center relative overflow-hidden shadow-[0_0_20px_rgba(255,210,0,0.5)] animate-pulse">
+                    <div className="flex items-center justify-center gap-2 text-neon-yellow font-pixel text-xs font-bold tracking-widest uppercase [text-shadow:0_0_12px_rgba(255,210,0,0.9)]">
+                      <span>👑</span>
+                      <span>
+                        {wonSeasons.length > 1
+                          ? `${wonSeasons.length}x SEASON CHAMPION`
+                          : `SEASON ${wonSeasons[0].id} CHAMPION`}
+                      </span>
+                      <span>👑</span>
+                    </div>
+                    <div className="text-[9px] font-mono text-amber-200 mt-1 uppercase tracking-wider">
+                      HALL OF FAME INDUCTEE •{" "}
+                      {wonSeasons.map((s) => s.name || `S${s.id}`).join(", ")}
+                    </div>
+                  </div>
+                )}
+
                 <div className={styles.profileHeader}>
-                  <div className={styles.avatarWrapper}>
+                  <div
+                    className={`${styles.avatarWrapper} ${
+                      isChampion
+                        ? "border-4 border-amber-400 shadow-[0_0_25px_rgba(255,210,0,0.7)]"
+                        : ""
+                    }`}
+                  >
+                    {isChampion && (
+                      <div className="absolute -top-4 -left-3 text-3xl animate-bounce z-20 drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
+                        👑
+                      </div>
+                    )}
                     <img
                       src={
                         player.avatar ||
@@ -302,12 +406,26 @@ export default function PlayerProfilePage({ params }: PageProps) {
                   </div>
                   <div className={styles.profileText}>
                     <h2
-                      className={`${styles.playerName} ${/[\u0E00-\u0E7F]/.test(player.name) ? styles.thaiFont : styles.englishFont}`}
+                      className={`${styles.playerName} ${
+                        /[\u0E00-\u0E7F]/.test(player.name)
+                          ? styles.thaiFont
+                          : styles.englishFont
+                      } ${
+                        isChampion
+                          ? "text-neon-yellow [text-shadow:0_0_15px_rgba(255,210,0,0.8)]"
+                          : ""
+                      }`}
                     >
                       {player.name}
                     </h2>
                     <p className={styles.playerAlias}>{player.alias}</p>
-                    <p className={styles.playerRank}>
+                    <p
+                      className={`${styles.playerRank} ${
+                        isChampion
+                          ? "text-amber-400 font-pixel font-bold [text-shadow:0_0_8px_rgba(255,210,0,0.6)]"
+                          : ""
+                      }`}
+                    >
                       {player.current_rank.toUpperCase()}
                     </p>
                   </div>

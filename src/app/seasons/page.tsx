@@ -284,13 +284,8 @@ export default function SeasonsPage() {
                               : "UNRANKED";
 
                             return (
-                              <tr
-                                key={stat.id}
-                                className={styles.tableBodyRow}
-                              >
-                                <td className={styles.rankCell}>
-                                  {rankLabel}
-                                </td>
+                              <tr key={stat.id} className={styles.tableBodyRow}>
+                                <td className={styles.rankCell}>{rankLabel}</td>
                                 <td className={styles.fighterCell}>
                                   <div className={styles.miniAvatarWrapper}>
                                     <Image

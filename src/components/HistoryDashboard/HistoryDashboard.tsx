@@ -557,7 +557,13 @@ export default function HistoryDashboard({
       }
       return a.name.localeCompare(b.name);
     });
-  }, [matches, availablePlayers, statsSubTab, rankConfig.minMatches]);
+  }, [
+    matches,
+    availablePlayers,
+    statsSubTab,
+    rankConfig.minMatches,
+    activeSeasonId,
+  ]);
 
   // Dynamically compute podium positions for the winrates tab based on statsSubTab selection
   const podiumData = React.useMemo(() => {

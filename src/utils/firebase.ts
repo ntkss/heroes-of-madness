@@ -2132,6 +2132,7 @@ export interface ForumPost {
   title: string;
   description: string;
   imageUrl?: string;
+  youtubeUrl?: string;
   type: "news" | "forum";
   authorId: string;
   authorName: string;
@@ -2146,6 +2147,14 @@ export interface ForumPost {
   };
   mentionedPlayers?: string[];
   mentionedMatches?: string[];
+}
+
+export function extractYouTubeId(urlStr?: string): string | null {
+  if (!urlStr) return null;
+  const regExp =
+    /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = urlStr.match(regExp);
+  return match && match[1].length === 11 ? match[1] : null;
 }
 
 export interface ForumComment {

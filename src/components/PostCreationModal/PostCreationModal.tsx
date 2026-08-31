@@ -81,6 +81,7 @@ export default function PostCreationModal({
   const [postType, setPostType] = useState<"news" | "forum">("forum");
   const [postImageBase64, setPostImageBase64] = useState("");
   const [postImagePreview, setPostImagePreview] = useState("");
+  const [postYoutubeUrl, setPostYoutubeUrl] = useState("");
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -221,6 +222,7 @@ export default function PostCreationModal({
         description: descTrimmed,
         type: postType,
         imageUrl: uploadedUrl,
+        youtubeUrl: postYoutubeUrl.trim() || undefined,
         tags: automaticTags,
         mentionedPlayers,
         mentionedMatches,
@@ -416,6 +418,21 @@ export default function PostCreationModal({
                 </>
               )}
             </div>
+          </div>
+
+          {/* YouTube Video URL */}
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>
+              YOUTUBE VIDEO LINK (OPTIONAL)
+            </label>
+            <input
+              type="text"
+              value={postYoutubeUrl}
+              onChange={(e) => setPostYoutubeUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+              className={styles.inputField}
+              disabled={formSubmitting}
+            />
           </div>
 
           {/* Error field */}

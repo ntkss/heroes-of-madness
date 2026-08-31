@@ -27,9 +27,26 @@ const pattaya = Pattaya({
 });
 
 export const metadata: Metadata = {
-  title: "HEROES OF MADNESS - MLBB Random Team Arena",
+  title: {
+    default: "HEROES OF MADNESS - MLBB Random Team Arena",
+    template: "%s | HEROES OF MADNESS",
+  },
   description:
-    "Street Fighter styled Random Team Generator for Mobile Legends: Bang Bang, featuring dynamic synthesizers, slot rolling, and database history.",
+    "Arcade-styled MLBB Random Team Generator, Season Standings, Player Dossiers, Hall of Fame, and Community Forums.",
+  keywords: [
+    "MLBB",
+    "Mobile Legends",
+    "Random Team Generator",
+    "Heroes of Madness",
+    "Hall of Fame",
+    "Esports",
+  ],
+  openGraph: {
+    title: "HEROES OF MADNESS - MLBB Random Team Arena",
+    description:
+      "Arcade-styled MLBB Random Team Generator, Season Standings, Player Dossiers, Hall of Fame, and Community Forums.",
+    type: "website",
+  },
 };
 
 import { AuthProvider } from "@/utils/AuthContext";

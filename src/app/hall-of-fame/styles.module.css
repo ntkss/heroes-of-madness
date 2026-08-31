@@ -1,0 +1,89 @@
+@reference "../globals.css";
+
+.container {
+  @apply max-w-6xl mx-auto w-full p-4 md:p-8 flex flex-col gap-6;
+}
+
+.backLink {
+  @apply inline-flex items-center gap-1.5 text-xs font-pixel text-slate-400 hover:text-neon-yellow transition-colors cursor-pointer select-none border border-slate-800 bg-slate-900/60 px-3 py-1.5 self-start;
+}
+
+.header {
+  @apply border-b-4 border-amber-500/80 bg-slate-950/90 p-6 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden shadow-[0_0_30px_rgba(245,158,11,0.2)];
+}
+
+.headerGlowLine {
+  @apply absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-amber-500 via-neon-yellow to-amber-500;
+}
+
+.title {
+  @apply text-3xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-neon-yellow to-amber-500 uppercase flex items-center gap-3 drop-shadow-[0_2px_10px_rgba(255,210,0,0.5)];
+}
+
+.subtitle {
+  @apply text-[10px] font-pixel text-amber-400 tracking-widest mt-1 uppercase [text-shadow:0_0_10px_rgba(255,210,0,0.6)];
+}
+
+.yearSection {
+  @apply flex flex-col gap-4 border border-amber-500/30 bg-slate-950/60 p-6 relative shadow-[0_0_20px_rgba(0,0,0,0.5)];
+}
+
+.yearHeader {
+  @apply flex items-center justify-between border-b border-amber-500/30 pb-3;
+}
+
+.yearTitle {
+  @apply text-xl font-pixel text-[#ffd200] flex items-center gap-2 tracking-wider [text-shadow:0_0_10px_rgba(255,210,0,0.6)];
+}
+
+.cardsTrack {
+  @apply flex flex-row overflow-x-auto gap-6 py-6 scrollbar-none items-center;
+}
+
+.fameCard {
+  @apply relative w-64 h-96 md:w-72 md:h-[420px] border-4 border-amber-500/80 bg-slate-950 overflow-hidden flex flex-col justify-between transition-all duration-300 hover:border-neon-yellow hover:scale-105 hover:shadow-[0_0_35px_rgba(255,210,0,0.6)] shrink-0 select-none cursor-pointer rounded-none;
+}
+
+.cardAvatarImage {
+  @apply absolute inset-0 w-full h-full object-cover transition-transform duration-500;
+}
+
+.fameCard:hover .cardAvatarImage {
+  @apply scale-110;
+}
+
+.overlayGradient {
+  @apply absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10 flex flex-col justify-between p-4 pointer-events-none;
+}
+
+.fameCardHeader {
+  @apply w-full flex items-center justify-between text-[9px] font-pixel z-20;
+}
+
+.yearBadge {
+  @apply bg-black/80 border border-amber-500/70 text-amber-300 px-2.5 py-1 uppercase tracking-wider backdrop-blur-sm shadow-md;
+}
+
+.seasonBadge {
+  @apply bg-neon-yellow text-black font-extrabold px-2.5 py-1 uppercase tracking-wider shadow-[0_0_12px_rgba(255,210,0,0.8)] border border-white;
+}
+
+.crownBadge {
+  @apply absolute top-3 left-1/2 -translate-x-1/2 z-30 text-3xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)] animate-bounce;
+}
+
+.cardFooter {
+  @apply z-20 flex flex-col items-center text-center mt-auto pt-16 pb-2;
+}
+
+.playerName {
+  @apply text-2xl md:text-3xl font-black text-neon-yellow tracking-tight uppercase text-center drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] transition-colors leading-none mb-2 font-pixel [text-shadow:0_0_12px_rgba(255,210,0,0.8)];
+}
+
+.fameCard:hover .playerName {
+  @apply text-white;
+}
+
+.championTitle {
+  @apply text-[9px] font-pixel text-amber-300 tracking-widest uppercase text-center [text-shadow:0_0_8px_rgba(255,210,0,0.8)] bg-black/80 px-2.5 py-1 border border-amber-500/50 backdrop-blur-sm;
+}

@@ -11,6 +11,20 @@ interface PodiumStandingsProps {
   lastPlace: SeasonPlayerStat | null;
 }
 
+const getWins = (stat: SeasonPlayerStat) => {
+  if (stat.wins !== undefined) return stat.wins;
+  if (stat.total_match_played && stat.winrate !== undefined) {
+    return Math.round((stat.winrate / 100) * stat.total_match_played);
+  }
+  return 0;
+};
+
+const getLosses = (stat: SeasonPlayerStat) => {
+  if (stat.losses !== undefined) return stat.losses;
+  const wins = getWins(stat);
+  return Math.max(0, (stat.total_match_played || 0) - wins);
+};
+
 export default function PodiumStandings({
   firstPlace,
   secondPlace,
@@ -42,7 +56,7 @@ export default function PodiumStandings({
               {secondPlace.name}
             </Link>
             <span className={styles.podiumSub}>
-              {secondPlace.wins}W - {secondPlace.losses}L
+              {getWins(secondPlace)}W - {getLosses(secondPlace)}L
             </span>
             <span className={styles.podiumSub}>
               {secondPlace.winrate}% WR ({secondPlace.total_match_played}M)
@@ -96,7 +110,7 @@ export default function PodiumStandings({
               {firstPlace.name}
             </Link>
             <span className={styles.championSub}>
-              {firstPlace.wins}W - {firstPlace.losses}L
+              {getWins(firstPlace)}W - {getLosses(firstPlace)}L
             </span>
             <span className={styles.championSub}>
               {firstPlace.winrate}% WR ({firstPlace.total_match_played}M)
@@ -132,7 +146,7 @@ export default function PodiumStandings({
               {thirdPlace.name}
             </Link>
             <span className={styles.podiumSub}>
-              {thirdPlace.wins}W - {thirdPlace.losses}L
+              {getWins(thirdPlace)}W - {getLosses(thirdPlace)}L
             </span>
             <span className={styles.podiumSub}>
               {thirdPlace.winrate}% WR ({thirdPlace.total_match_played}M)
@@ -175,7 +189,7 @@ export default function PodiumStandings({
               {lastPlace.name}
             </Link>
             <span className={styles.spoonSub}>
-              {lastPlace.wins}W - {lastPlace.losses}L
+              {getWins(lastPlace)}W - {getLosses(lastPlace)}L
             </span>
             <span className={styles.spoonSub}>
               {lastPlace.winrate}% WR ({lastPlace.total_match_played}M)

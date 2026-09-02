@@ -49,6 +49,7 @@ interface TeamRowProps {
   isFavored: boolean;
   laneStats: PlayerOverallStats[];
   showShine: boolean;
+  playerChampionMap: Record<string, number[]>;
 }
 
 function TeamRow({
@@ -66,6 +67,7 @@ function TeamRow({
   isFavored,
   laneStats,
   showShine,
+  playerChampionMap,
 }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
@@ -90,6 +92,23 @@ function TeamRow({
     if (player.current_rank === "Epic") return "low";
 
     return "normal";
+  };
+
+  const getPlayerChampionSeasons = (nameOrId: string, player?: DbPlayer) => {
+    const key = nameOrId.toLowerCase();
+    const seasonsFromKey = playerChampionMap[key] || [];
+    const seasonsFromId = player
+      ? playerChampionMap[player.id.toLowerCase()] || []
+      : [];
+    const seasonsFromName = player
+      ? playerChampionMap[player.name.toLowerCase()] || []
+      : [];
+
+    const combined = Array.from(
+      new Set([...seasonsFromKey, ...seasonsFromId, ...seasonsFromName]),
+    ).sort((a, b) => a - b);
+
+    return combined;
   };
 
   return (
@@ -175,6 +194,7 @@ function TeamRow({
           {finalNames.map((name, idx) => {
             const player = getPlayer(name);
             const rankClass = getPlayerRankClass(player);
+            const champSeasons = getPlayerChampionSeasons(name, player);
             return (
               <PlayerCard
                 key={idx}
@@ -190,6 +210,7 @@ function TeamRow({
                 currentRank={player?.current_rank}
                 rankClass={rankClass}
                 laneWinRate={laneStats?.[idx]?.laneWinRate}
+                championSeasons={champSeasons}
               />
             );
           })}
@@ -228,91 +249,46 @@ export default function VersesArena({
     Array(10).fill(true),
   );
 
-  // Compute dynamic champions for all available seasons (supporting Season 1, Season 2, Season 3, Season 4, etc.)
-  const seasonChampionsList = useMemo(() => {
-    const champions: {
-      seasonId: number;
-      seasonLabel: string;
-      championName: string;
-      championAvatar: string;
-      rank: string;
-      winrate: string;
-    }[] = [];
+  // Compute map of player -> list of season IDs won (e.g. { "nutty": [1], "bas": [2] })
+  const playerChampionMap = useMemo(() => {
+    const map: Record<string, number[]> = {};
 
-    // Process real archived seasons from database if available
     if (seasons && seasons.length > 0) {
-      const sorted = [...seasons].sort((a, b) => a.id - b.id);
-      sorted.forEach((season) => {
+      seasons.forEach((season) => {
         let champStat = season.podium?.[0];
         if (!champStat && season.fighterStats?.length) {
-          const sortedStats = [...season.fighterStats].sort(
+          const sorted = [...season.fighterStats].sort(
             (a, b) => (b.winrate || 0) - (a.winrate || 0),
           );
-          champStat = sortedStats[0];
+          champStat = sorted[0];
         }
-
         if (champStat && champStat.name) {
-          const dbPlayer = squad.find(
-            (p) =>
-              p.name.toLowerCase() === champStat.name.toLowerCase() ||
-              p.id.toLowerCase() === champStat.id?.toLowerCase(),
-          );
-          champions.push({
-            seasonId: season.id,
-            seasonLabel: season.name || `Season ${season.id} Champion`,
-            championName: champStat.name,
-            championAvatar:
-              dbPlayer?.avatar ||
-              dbPlayer?.imageURL ||
-              `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(
-                champStat.name,
-              )}&backgroundColor=161622`,
-            rank:
-              champStat.current_rank ||
-              dbPlayer?.current_rank ||
-              "MYTHIC CHAMPION",
-            winrate: champStat.winrate
-              ? `${champStat.winrate}% WIN RATE`
-              : "HALL OF FAME WINNER",
-          });
+          const nameKey = champStat.name.toLowerCase();
+          if (!map[nameKey]) map[nameKey] = [];
+          if (!map[nameKey].includes(season.id)) map[nameKey].push(season.id);
+
+          if (champStat.id) {
+            const idKey = champStat.id.toLowerCase();
+            if (!map[idKey]) map[idKey] = [];
+            if (!map[idKey].includes(season.id)) map[idKey].push(season.id);
+          }
         }
       });
     }
 
-    // If real archived seasons are found in DB, return them!
-    if (champions.length > 0) {
-      return champions;
+    // Fallback mock champion seasons mapping if DB has no archived seasons yet
+    // Expanded for easy localhost visual testing of champion shimmer effects
+    if (Object.keys(map).length === 0) {
+      map["nutty"] = [1, 3]; // Multi-season champion (2x) — prismatic glow
+      map["bas"] = [2];
+      map["jajou"] = [3];
+      map["jimmy"] = [1];
+      map["moonshadow"] = [2];
+      map["beer"] = [1];
     }
 
-    // Fallback structured mock data for when DB has no archived seasons yet
-    // Structured to support Season 1, Season 2, Season 3, etc. seamlessly
-    const mockDefaults = [
-      { seasonId: 1, defaultName: "Nutty", winrate: "78.5% WIN RATE" },
-      { seasonId: 2, defaultName: "Bas", winrate: "81.2% WIN RATE" },
-      { seasonId: 3, defaultName: "Jajou", winrate: "76.4% WIN RATE" },
-    ];
-
-    return mockDefaults.map((mock) => {
-      const dbPlayer = squad.find(
-        (p) =>
-          p.name.toLowerCase() === mock.defaultName.toLowerCase() ||
-          p.id.toLowerCase() === mock.defaultName.toLowerCase(),
-      );
-      return {
-        seasonId: mock.seasonId,
-        seasonLabel: `Season ${mock.seasonId} Champion`,
-        championName: dbPlayer ? dbPlayer.name : mock.defaultName,
-        championAvatar:
-          dbPlayer?.avatar ||
-          dbPlayer?.imageURL ||
-          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(
-            mock.defaultName,
-          )}&backgroundColor=161622`,
-        rank: dbPlayer?.current_rank || "MYTHIC GLORY",
-        winrate: mock.winrate,
-      };
-    });
-  }, [seasons, squad]);
+    return map;
+  }, [seasons]);
 
   // Loading percentage state (climbing from 5% to 100%)
   const [percentages, setPercentages] = useState<number[]>(Array(10).fill(100));
@@ -557,6 +533,7 @@ export default function VersesArena({
         isFavored={winRateSummary.favoredTeam === "teamA"}
         laneStats={winRateSummary.teamALaneStats}
         showShine={showShine}
+        playerChampionMap={playerChampionMap}
       />
 
       {/* VS Banner & Win Rate Prediction Section */}
@@ -629,79 +606,6 @@ export default function VersesArena({
             />
           </div>
         </div>
-
-        {/* Season Champion Visual Cards (Appears dynamically for all available seasons when random team result is displayed) */}
-        {!isGenerating &&
-          (teamA.length > 0 || teamB.length > 0) &&
-          seasonChampionsList.length > 0 && (
-            <div className={styles.seasonChampionsContainer}>
-              <div className={styles.seasonChampionsHeader}>
-                <span className={styles.seasonChampionsTitle}>
-                  👑 REIGNING SEASON CHAMPIONS
-                </span>
-              </div>
-              <div className={styles.seasonChampionsGrid}>
-                {seasonChampionsList.map((champ) => {
-                  const themeIndex = (champ.seasonId - 1) % 4;
-                  const frameClass =
-                    themeIndex === 0
-                      ? styles.championFrameS1
-                      : themeIndex === 1
-                        ? styles.championFrameS2
-                        : themeIndex === 2
-                          ? styles.championFrameS3
-                          : styles.championFrameS4;
-
-                  const badgeClass =
-                    themeIndex === 0
-                      ? styles.championBadgeS1
-                      : themeIndex === 1
-                        ? styles.championBadgeS2
-                        : themeIndex === 2
-                          ? styles.championBadgeS3
-                          : styles.championBadgeS4;
-
-                  const avatarWrapperClass =
-                    themeIndex === 0
-                      ? styles.championAvatarWrapperS1
-                      : themeIndex === 1
-                        ? styles.championAvatarWrapperS2
-                        : themeIndex === 2
-                          ? styles.championAvatarWrapperS3
-                          : styles.championAvatarWrapperS4;
-
-                  return (
-                    <div key={champ.seasonId} className={frameClass}>
-                      <div className={badgeClass}>
-                        {champ.seasonLabel.toUpperCase()}
-                      </div>
-                      <div className={styles.championCardBody}>
-                        <div className={avatarWrapperClass}>
-                          <img
-                            src={champ.championAvatar}
-                            alt={champ.championName}
-                            className={styles.championAvatarImg}
-                          />
-                          <span className={styles.championCrownIcon}>👑</span>
-                        </div>
-                        <div className={styles.championDetails}>
-                          <span className={styles.championName}>
-                            {champ.championName}
-                          </span>
-                          <span className={styles.championRank}>
-                            {champ.rank}
-                          </span>
-                          <span className={styles.championWinrate}>
-                            {champ.winrate}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
       </div>
 
       {/* Team B (Bottom Row) */}
@@ -720,6 +624,7 @@ export default function VersesArena({
         isFavored={winRateSummary.favoredTeam === "teamB"}
         laneStats={winRateSummary.teamBLaneStats}
         showShine={showShine}
+        playerChampionMap={playerChampionMap}
       />
 
       {/* Loading screen tips at the bottom */}

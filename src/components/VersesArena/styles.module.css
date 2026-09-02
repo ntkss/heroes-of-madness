@@ -1,7 +1,7 @@
 @reference "../../app/globals.css";
 
 .arenaBackground {
-  @apply flex flex-col justify-center gap-3 p-3 md:p-4 w-full relative overflow-hidden rounded-md transition-all duration-300 min-h-[380px];
+  @apply flex flex-col justify-center gap-2.5 p-2.5 md:p-3 w-full relative overflow-hidden rounded-md transition-all duration-300 min-h-[360px];
   background: linear-gradient(180deg, #0f172a 0%, #090d16 50%, #030712 100%);
   background-image: radial-gradient(
     circle at 50% 50%,
@@ -15,7 +15,7 @@
     height: 100%;
     min-height: auto;
     max-height: none;
-    @apply gap-4 p-6 justify-around;
+    @apply gap-3 p-4 justify-around;
   }
 }
 
@@ -32,7 +32,7 @@
 }
 
 .vsContainer {
-  @apply flex flex-col items-center justify-center my-1 select-none relative z-10 w-full shrink-0;
+  @apply flex flex-col items-center justify-center my-0.5 select-none relative z-10 w-full shrink-0;
 }
 
 .vsWrapper {
@@ -78,11 +78,11 @@
 }
 
 .teamRowHeaderBlue {
-  @apply lg:pl-[8%];
+  @apply lg:pl-[6%];
 }
 
 .teamRowHeaderRed {
-  @apply lg:pr-[8%];
+  @apply lg:pr-[6%];
 }
 
 .teamLabel {
@@ -122,11 +122,11 @@
 }
 
 .cardsRowBlue {
-  @apply justify-center lg:justify-start lg:pl-[8%];
+  @apply justify-center lg:justify-start lg:pl-[6%];
 }
 
 .cardsRowRed {
-  @apply justify-center lg:justify-end lg:pr-[8%];
+  @apply justify-center lg:justify-end lg:pr-[6%];
 }
 
 .favoredBadge {

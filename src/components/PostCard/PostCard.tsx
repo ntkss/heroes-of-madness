@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ForumPost } from "@/utils/firebase";
+import { ForumPost, extractYouTubeId } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
@@ -9,6 +9,10 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const hasVideo = Boolean(
+    extractYouTubeId(post.youtubeUrl) || extractYouTubeId(post.description),
+  );
+
   return (
     <Link
       href={`/forums/${post.slug}`}
@@ -39,6 +43,12 @@ export default function PostCard({ post }: PostCardProps) {
           >
             {post.type}
           </span>
+
+          {hasVideo && (
+            <span className="bg-red-900/80 border border-red-500 text-white font-pixel text-[9px] px-1.5 py-0.5 uppercase tracking-wider">
+              🎥 VIDEO
+            </span>
+          )}
 
           <div className={styles.postAuthor}>
             <img

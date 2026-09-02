@@ -342,3 +342,139 @@
 .shiningNumberRed {
   animation: shineGlowRed 3.5s infinite ease-in-out;
 }
+
+/* Season Champions Visual Cards */
+.seasonChampionsContainer {
+  @apply flex flex-col items-center gap-1.5 my-2 w-full max-w-4xl mx-auto z-10 shrink-0 select-none;
+}
+
+.seasonChampionsHeader {
+  @apply flex items-center justify-center gap-2;
+}
+
+.seasonChampionsTitle {
+  @apply font-pixel text-[8px] sm:text-[9.5px] text-amber-400 uppercase tracking-widest;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.seasonChampionsGrid {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5 w-full px-2 justify-center;
+}
+
+.championFrameS1 {
+  @apply flex flex-col gap-1 p-2 sm:p-2.5 bg-slate-950/90 border-2 border-amber-500/60 rounded-sm relative transition-all duration-300;
+  box-shadow:
+    0 0 12px rgba(245, 158, 11, 0.25),
+    inset 0 0 15px rgba(245, 158, 11, 0.05);
+}
+
+.championFrameS1:hover {
+  @apply border-amber-400;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+}
+
+.championFrameS2 {
+  @apply flex flex-col gap-1 p-2 sm:p-2.5 bg-slate-950/90 border-2 border-cyan-400/60 rounded-sm relative transition-all duration-300;
+  box-shadow:
+    0 0 12px rgba(6, 182, 212, 0.25),
+    inset 0 0 15px rgba(6, 182, 212, 0.05);
+}
+
+.championFrameS2:hover {
+  @apply border-cyan-300;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.45);
+}
+
+.championFrameS3 {
+  @apply flex flex-col gap-1 p-2 sm:p-2.5 bg-slate-950/90 border-2 border-purple-500/60 rounded-sm relative transition-all duration-300;
+  box-shadow:
+    0 0 12px rgba(168, 85, 247, 0.25),
+    inset 0 0 15px rgba(168, 85, 247, 0.05);
+}
+
+.championFrameS3:hover {
+  @apply border-purple-400;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.45);
+}
+
+.championFrameS4 {
+  @apply flex flex-col gap-1 p-2 sm:p-2.5 bg-slate-950/90 border-2 border-emerald-500/60 rounded-sm relative transition-all duration-300;
+  box-shadow:
+    0 0 12px rgba(16, 185, 129, 0.25),
+    inset 0 0 15px rgba(16, 185, 129, 0.05);
+}
+
+.championFrameS4:hover {
+  @apply border-emerald-400;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
+}
+
+.championBadgeS1 {
+  @apply font-pixel text-[7px] sm:text-[8px] font-bold text-amber-400 uppercase tracking-wider bg-amber-950/70 border border-amber-500/40 px-2 py-0.5 rounded-xs text-center self-start;
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.championBadgeS2 {
+  @apply font-pixel text-[7px] sm:text-[8px] font-bold text-cyan-300 uppercase tracking-wider bg-cyan-950/70 border border-cyan-400/40 px-2 py-0.5 rounded-xs text-center self-start;
+  text-shadow: 0 0 6px rgba(6, 182, 212, 0.6);
+}
+
+.championBadgeS3 {
+  @apply font-pixel text-[7px] sm:text-[8px] font-bold text-purple-300 uppercase tracking-wider bg-purple-950/70 border border-purple-400/40 px-2 py-0.5 rounded-xs text-center self-start;
+  text-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+}
+
+.championBadgeS4 {
+  @apply font-pixel text-[7px] sm:text-[8px] font-bold text-emerald-300 uppercase tracking-wider bg-emerald-950/70 border border-emerald-400/40 px-2 py-0.5 rounded-xs text-center self-start;
+  text-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.championCardBody {
+  @apply flex items-center gap-2.5 sm:gap-3 mt-0.5;
+}
+
+.championAvatarWrapperS1 {
+  @apply relative w-11 h-11 sm:w-12 sm:h-12 shrink-0 border-2 border-amber-400/80 rounded-sm overflow-hidden bg-slate-900;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.championAvatarWrapperS2 {
+  @apply relative w-11 h-11 sm:w-12 sm:h-12 shrink-0 border-2 border-cyan-400/80 rounded-sm overflow-hidden bg-slate-900;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+}
+
+.championAvatarWrapperS3 {
+  @apply relative w-11 h-11 sm:w-12 sm:h-12 shrink-0 border-2 border-purple-400/80 rounded-sm overflow-hidden bg-slate-900;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+.championAvatarWrapperS4 {
+  @apply relative w-11 h-11 sm:w-12 sm:h-12 shrink-0 border-2 border-emerald-400/80 rounded-sm overflow-hidden bg-slate-900;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.championAvatarImg {
+  @apply w-full h-full object-cover;
+}
+
+.championCrownIcon {
+  @apply absolute -top-1 -right-1 text-[10px] leading-none select-none;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+}
+
+.championDetails {
+  @apply flex flex-col justify-center min-w-0 flex-1 leading-tight;
+}
+
+.championName {
+  @apply font-pixel text-[10px] sm:text-xs text-white uppercase tracking-wider truncate font-bold;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.championRank {
+  @apply font-mono text-[8px] sm:text-[9px] text-slate-300 uppercase tracking-tight truncate mt-0.5;
+}
+
+.championWinrate {
+  @apply font-pixel text-[7px] sm:text-[8px] text-amber-400 uppercase tracking-widest mt-0.5;
+}

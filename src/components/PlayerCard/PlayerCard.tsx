@@ -59,6 +59,7 @@ export interface PlayerCardProps {
   currentRank?: string;
   rankClass?: "high" | "normal" | "low" | null;
   laneWinRate?: number;
+  championSeasons?: number[];
 }
 
 export default function PlayerCard({
@@ -74,9 +75,27 @@ export default function PlayerCard({
   currentRank,
   rankClass,
   laneWinRate,
+  championSeasons,
 }: PlayerCardProps) {
   const isBlue = team === "A";
   const rolling = !locked;
+
+  const isChampion =
+    locked &&
+    name !== "???" &&
+    name !== "DRAFTING" &&
+    championSeasons &&
+    championSeasons.length > 0;
+
+  const isMultiChampion = Boolean(
+    isChampion && championSeasons && championSeasons.length >= 2,
+  );
+
+  const championBorderClass = isMultiChampion
+    ? styles.cardChampionMultiple
+    : isChampion
+      ? styles.cardChampionSingle
+      : "";
 
   // Use fallback Dicebear pixel-art avatar if no imageURL is provided to prevent ugly empty avatars
   const avatarSeed = name.toLowerCase();
@@ -111,7 +130,7 @@ export default function PlayerCard({
         : styles.cardRedBorder
   } ${rolling ? "" : styles.cardNormalState} ${
     isLoser ? styles.cardLoser : styles.cardWinner
-  }`;
+  } ${championBorderClass}`;
 
   return (
     <div
@@ -124,41 +143,75 @@ export default function PlayerCard({
       {/* Glow highlight on drafting slot */}
       {rolling && <div className={styles.draftGlow} />}
 
-      {/* Unskewed Content Wrapper */}
-      <div className={styles.contentWrapper}>
-        {/* Rank Banner (Top Center) */}
-        {locked && name !== "???" && name !== "DRAFTING" && (
-          <RankBadge rank={finalRank} rankClass={rankClass || null} />
+      {/* Background Portrait Image Frame Container (Skewed with card, clipped) */}
+      <div className={styles.portraitContainer}>
+        {/* Shimmer Effect on Champion Portrait */}
+        {isChampion && (
+          <div
+            className={
+              isMultiChampion
+                ? styles.multiChampionShimmerOverlay
+                : styles.championShimmerOverlay
+            }
+          />
         )}
 
-        {/* Background Portrait Image */}
-        <div className={styles.portraitContainer}>
-          {locked && name !== "???" && name !== "DRAFTING" && finalImageURL ? (
+        {locked && name !== "???" && name !== "DRAFTING" && finalImageURL ? (
+          <div className={styles.portraitWrapper}>
             <Image
               src={finalImageURL}
               alt={name}
               fill
-              className={`object-cover object-center opacity-85 ${styles.animateFadeIn}`}
+              className={`object-cover object-top opacity-90 ${styles.animateFadeIn}`}
               unoptimized
               crossOrigin="anonymous"
             />
-          ) : !locked ? (
-            <div className={styles.draftSlot}>
-              <span className={styles.draftQuestion}>?</span>
-            </div>
-          ) : (
-            <div className={styles.vacantSlot}>
-              <span className={styles.vacantText}>DRAFT</span>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : !locked ? (
+          <div className={styles.draftSlot}>
+            <span className={styles.draftQuestion}>?</span>
+          </div>
+        ) : (
+          <div className={styles.vacantSlot}>
+            <span className={styles.vacantText}>DRAFT</span>
+          </div>
+        )}
+      </div>
 
-        {/* Ambient Dark Gradient Bottom Overlay to make text legible */}
-        <div
-          className={`${styles.ambientOverlay} ${
-            isBlue ? styles.overlayBlue : styles.overlayRed
-          }`}
-        />
+      {/* Ambient Dark Gradient Bottom Overlay to make text legible */}
+      <div
+        className={`${styles.ambientOverlay} ${
+          isBlue ? styles.overlayBlue : styles.overlayRed
+        }`}
+      />
+
+      {/* Unskewed Content Wrapper */}
+      <div className={styles.contentWrapper}>
+        {/* Champion Crown Badge (Top Right) */}
+        {isChampion && championSeasons && (
+          <div
+            className={`${styles.championBadgeBanner} ${
+              isMultiChampion
+                ? styles.championBadgeMultiple
+                : styles.championBadgeSingle
+            }`}
+            title={`Champion of Season ${championSeasons.join(", ")}`}
+          >
+            <span className="text-[8px] sm:text-[9px]">👑</span>
+            <span>
+              {isMultiChampion
+                ? `${championSeasons.length}x CHAMP`
+                : `S${championSeasons[0]} CHAMP`}
+            </span>
+          </div>
+        )}
+
+        {/* Rank Banner (Top Left) */}
+        {locked && name !== "???" && name !== "DRAFTING" && (
+          <div className={isChampion ? "mt-4.5" : ""}>
+            <RankBadge rank={finalRank} rankClass={rankClass || null} />
+          </div>
+        )}
 
         {/* Winner Badge Banner */}
         {isWinner && (

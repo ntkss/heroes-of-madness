@@ -2280,12 +2280,13 @@ export async function fetchPosts(
       const list: ForumPost[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        const post = {
+        const post: ForumPost = {
           id: docSnap.id,
           slug: data.slug || "",
           title: data.title || "",
           description: data.description || "",
           imageUrl: data.imageUrl,
+          youtubeUrl: data.youtubeUrl,
           type: data.type || "forum",
           authorId: data.authorId || "",
           authorName: data.authorName || "",
@@ -2350,6 +2351,7 @@ export async function fetchPostBySlug(slug: string): Promise<ForumPost | null> {
           title: data.title || "",
           description: data.description || "",
           imageUrl: data.imageUrl,
+          youtubeUrl: data.youtubeUrl,
           type: data.type || "forum",
           authorId: data.authorId || "",
           authorName: data.authorName || "",
@@ -2410,6 +2412,7 @@ export async function savePost(
     mentionedPlayers: postData.mentionedPlayers || [],
     mentionedMatches: postData.mentionedMatches || [],
     ...(postData.imageUrl ? { imageUrl: postData.imageUrl } : {}),
+    ...(postData.youtubeUrl ? { youtubeUrl: postData.youtubeUrl } : {}),
     id: "", // Will be updated with docRef.id if Firestore succeeds
   };
 
@@ -2800,6 +2803,11 @@ export async function updatePost(
       if ("imageUrl" in updatedFields && !updatedFields.imageUrl) {
         const { deleteField } = await import("firebase/firestore");
         cleanFields.imageUrl = deleteField();
+      }
+
+      if ("youtubeUrl" in updatedFields && !updatedFields.youtubeUrl) {
+        const { deleteField } = await import("firebase/firestore");
+        cleanFields.youtubeUrl = deleteField();
       }
 
       await updateDoc(docRef, cleanFields);

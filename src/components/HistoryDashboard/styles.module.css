@@ -468,3 +468,35 @@
 .commentSubmitBtn {
   @apply font-pixel text-[8.5px] border border-neon-blue bg-neon-blue/10 hover:bg-neon-blue hover:text-black px-3.5 py-2.5 cursor-pointer transition-all duration-150 uppercase shrink-0 rounded-none font-bold;
 }
+
+/* Deletion Confirmation Alert Styles */
+.deleteConfirmOverlay {
+  @apply bg-black/90 border-2 border-neon-red/50 p-4 mb-5 flex flex-col gap-3 rounded-sm shadow-[0_0_25px_rgba(255,42,95,0.3)];
+}
+
+.deleteConfirmBox {
+  @apply flex flex-col gap-2;
+}
+
+.deleteTitle {
+  @apply font-pixel text-[10px] sm:text-[11px] text-neon-red uppercase tracking-widest border-b border-slate-800 pb-1.5 mb-1;
+  text-shadow:
+    0 0 8px var(--color-neon-red),
+    0 0 15px rgba(255, 42, 95, 0.4);
+}
+
+.deleteMsg {
+  @apply font-tech text-xs sm:text-sm text-slate-300 uppercase leading-relaxed;
+}
+
+.deleteActions {
+  @apply flex gap-3 self-end mt-2;
+}
+
+.confirmDeleteBtn {
+  @apply font-pixel text-[9px] text-white bg-neon-red border-2 border-white px-4 py-2 hover:bg-white hover:text-black transition-colors cursor-pointer uppercase font-bold disabled:opacity-50;
+}
+
+.cancelDeleteBtn {
+  @apply font-pixel text-[9px] text-slate-300 bg-slate-900 border border-slate-700 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer uppercase disabled:opacity-50;
+}

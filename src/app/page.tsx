@@ -10,6 +10,7 @@ import DebugBar from "@/components/DebugBar";
 import {
   Match,
   DbPlayer,
+  Season,
   fetchMatches,
   saveMatch,
   updateMatchWinner,
@@ -24,6 +25,7 @@ import {
   DEFAULT_RANK_CONFIG,
   fetchSeasonConfig,
   fetchLineConfig,
+  fetchSeasons,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { FILL_POOL_NAMES } from "@/constants/players";
@@ -60,6 +62,7 @@ export default function Home() {
   const [availablePlayers, setAvailablePlayers] = useState<DbPlayer[]>([]);
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
   const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
+  const [seasons, setSeasons] = useState<Season[]>([]);
 
   const arenaRef = useRef<HTMLDivElement>(null);
   const showArena = teamA.length > 0 || isGenerating;
@@ -78,16 +81,19 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [logs, players, config, seasonCfg] = await Promise.all([
-        fetchMatches(),
-        fetchPlayers(),
-        fetchRankConfig(),
-        fetchSeasonConfig(),
-      ]);
+      const [logs, players, config, seasonCfg, archiveSeasons] =
+        await Promise.all([
+          fetchMatches(),
+          fetchPlayers(),
+          fetchRankConfig(),
+          fetchSeasonConfig(),
+          fetchSeasons(),
+        ]);
       setMatches(logs);
       setAvailablePlayers(players);
       setRankConfig(config);
       setActiveSeasonId(seasonCfg.activeSeasonId);
+      setSeasons(archiveSeasons);
     };
     loadData();
   }, []);
@@ -535,6 +541,10 @@ export default function Home() {
     ]);
     setMatches(updatedLogs);
     setAvailablePlayers(updatedPlayers);
+    setToast({
+      message: "MATCH LOG PERMANENTLY DELETED!",
+      type: "success",
+    });
   };
 
   const handleDeleteAllMatches = async () => {
@@ -812,6 +822,7 @@ export default function Home() {
                   squad={availablePlayers}
                   rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
                   matches={matches}
+                  seasons={seasons}
                 />
               </div>
             </section>

@@ -281,12 +281,12 @@ function MatchCardComponent({
             <button
               onClick={() => handleDelete(match.id)}
               className={styles.deleteBtn}
-              title="Purge record"
+              title="Delete match log record"
             >
               <svg className={styles.deleteIcon} viewBox="0 0 24 24">
                 <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9m2 2h2v1h-2V5m-3 3h2v10H8V8m4 0h2v10h-2V8m4 0h2v10h-2V8z" />
               </svg>
-              PURGE
+              DELETE LOG
             </button>
           )}
         </div>
@@ -314,6 +314,11 @@ export default function HistoryDashboard({
   const [editingMatchId, setEditingMatchId] = React.useState<string | null>(
     null,
   );
+  const [deletingMatchId, setDeletingMatchId] = React.useState<string | null>(
+    null,
+  );
+  const [isDeletingMatch, setIsDeletingMatch] = React.useState(false);
+
   const getPlayerKey = React.useCallback(
     (nameOrId: string) => {
       const found = availablePlayers.find(
@@ -348,8 +353,22 @@ export default function HistoryDashboard({
   };
 
   const handleDelete = (id: string) => {
-    playBeep(150, 0.15, "sawtooth");
-    onDeleteMatch(id);
+    playBeep(200, 0.1, "sawtooth");
+    setDeletingMatchId(id);
+  };
+
+  const handleConfirmDeleteLog = async () => {
+    if (!deletingMatchId) return;
+    setIsDeletingMatch(true);
+    try {
+      playBeep(120, 0.35, "sawtooth", 0.15);
+      await onDeleteMatch(deletingMatchId);
+      setDeletingMatchId(null);
+    } catch (e) {
+      console.error("Delete match log failed:", e);
+    } finally {
+      setIsDeletingMatch(false);
+    }
   };
 
   const handleWinnerChange = (id: string, winner: "teamA" | "teamB") => {
@@ -744,6 +763,39 @@ export default function HistoryDashboard({
           🏆 FIGHTER WINRATES
         </button>
       </div>
+
+      {/* Delete Log Confirmation Alert Overlay */}
+      {deletingMatchId && (
+        <div className={styles.deleteConfirmOverlay}>
+          <div className={styles.deleteConfirmBox}>
+            <span className={styles.deleteTitle}>
+              ⚠️ CONFIRMATION: DELETE LOG?
+            </span>
+            <p className={styles.deleteMsg}>
+              ARE YOU SURE YOU WANT TO DELETE THIS MATCH LOG? THIS LOG WILL BE
+              PERMANENTLY DELETED FROM THE SYSTEM DATABASE AND CANNOT BE UNDONE.
+            </p>
+            <div className={styles.deleteActions}>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteLog}
+                className={styles.confirmDeleteBtn}
+                disabled={isDeletingMatch}
+              >
+                {isDeletingMatch ? "DELETING..." : "CONFIRM"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeletingMatchId(null)}
+                className={styles.cancelDeleteBtn}
+                disabled={isDeletingMatch}
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab Contents: MATCH HISTORY */}
       {activeTab === "history" &&

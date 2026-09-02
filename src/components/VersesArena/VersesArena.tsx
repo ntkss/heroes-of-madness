@@ -14,7 +14,7 @@ import {
   playBeep,
 } from "@/utils/audio";
 import { SQUAD_NAMES } from "@/constants/players";
-import { DbPlayer, RankConfig, Match } from "@/utils/firebase";
+import { DbPlayer, RankConfig, Match, Season } from "@/utils/firebase";
 import { calculateTeamWinRates, PlayerOverallStats } from "@/utils/winrate";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
@@ -30,6 +30,7 @@ interface VersesArenaProps {
   squad: DbPlayer[];
   rankConfig: RankConfig;
   matches?: Match[];
+  seasons?: Season[];
 }
 
 // ─── Team Row ──────────────────────────────────────────────────────────────────
@@ -219,12 +220,99 @@ export default function VersesArena({
   squad,
   rankConfig,
   matches,
+  seasons,
 }: VersesArenaProps) {
   const [dispA, setDispA] = useState<string[]>(Array(5).fill("???"));
   const [dispB, setDispB] = useState<string[]>(Array(5).fill("???"));
   const [lockedSlots, setLockedSlots] = useState<boolean[]>(
     Array(10).fill(true),
   );
+
+  // Compute dynamic champions for all available seasons (supporting Season 1, Season 2, Season 3, Season 4, etc.)
+  const seasonChampionsList = useMemo(() => {
+    const champions: {
+      seasonId: number;
+      seasonLabel: string;
+      championName: string;
+      championAvatar: string;
+      rank: string;
+      winrate: string;
+    }[] = [];
+
+    // Process real archived seasons from database if available
+    if (seasons && seasons.length > 0) {
+      const sorted = [...seasons].sort((a, b) => a.id - b.id);
+      sorted.forEach((season) => {
+        let champStat = season.podium?.[0];
+        if (!champStat && season.fighterStats?.length) {
+          const sortedStats = [...season.fighterStats].sort(
+            (a, b) => (b.winrate || 0) - (a.winrate || 0),
+          );
+          champStat = sortedStats[0];
+        }
+
+        if (champStat && champStat.name) {
+          const dbPlayer = squad.find(
+            (p) =>
+              p.name.toLowerCase() === champStat.name.toLowerCase() ||
+              p.id.toLowerCase() === champStat.id?.toLowerCase(),
+          );
+          champions.push({
+            seasonId: season.id,
+            seasonLabel: season.name || `Season ${season.id} Champion`,
+            championName: champStat.name,
+            championAvatar:
+              dbPlayer?.avatar ||
+              dbPlayer?.imageURL ||
+              `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(
+                champStat.name,
+              )}&backgroundColor=161622`,
+            rank:
+              champStat.current_rank ||
+              dbPlayer?.current_rank ||
+              "MYTHIC CHAMPION",
+            winrate: champStat.winrate
+              ? `${champStat.winrate}% WIN RATE`
+              : "HALL OF FAME WINNER",
+          });
+        }
+      });
+    }
+
+    // If real archived seasons are found in DB, return them!
+    if (champions.length > 0) {
+      return champions;
+    }
+
+    // Fallback structured mock data for when DB has no archived seasons yet
+    // Structured to support Season 1, Season 2, Season 3, etc. seamlessly
+    const mockDefaults = [
+      { seasonId: 1, defaultName: "Nutty", winrate: "78.5% WIN RATE" },
+      { seasonId: 2, defaultName: "Bas", winrate: "81.2% WIN RATE" },
+      { seasonId: 3, defaultName: "Jajou", winrate: "76.4% WIN RATE" },
+    ];
+
+    return mockDefaults.map((mock) => {
+      const dbPlayer = squad.find(
+        (p) =>
+          p.name.toLowerCase() === mock.defaultName.toLowerCase() ||
+          p.id.toLowerCase() === mock.defaultName.toLowerCase(),
+      );
+      return {
+        seasonId: mock.seasonId,
+        seasonLabel: `Season ${mock.seasonId} Champion`,
+        championName: dbPlayer ? dbPlayer.name : mock.defaultName,
+        championAvatar:
+          dbPlayer?.avatar ||
+          dbPlayer?.imageURL ||
+          `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(
+            mock.defaultName,
+          )}&backgroundColor=161622`,
+        rank: dbPlayer?.current_rank || "MYTHIC GLORY",
+        winrate: mock.winrate,
+      };
+    });
+  }, [seasons, squad]);
 
   // Loading percentage state (climbing from 5% to 100%)
   const [percentages, setPercentages] = useState<number[]>(Array(10).fill(100));
@@ -541,6 +629,79 @@ export default function VersesArena({
             />
           </div>
         </div>
+
+        {/* Season Champion Visual Cards (Appears dynamically for all available seasons when random team result is displayed) */}
+        {!isGenerating &&
+          (teamA.length > 0 || teamB.length > 0) &&
+          seasonChampionsList.length > 0 && (
+            <div className={styles.seasonChampionsContainer}>
+              <div className={styles.seasonChampionsHeader}>
+                <span className={styles.seasonChampionsTitle}>
+                  👑 REIGNING SEASON CHAMPIONS
+                </span>
+              </div>
+              <div className={styles.seasonChampionsGrid}>
+                {seasonChampionsList.map((champ) => {
+                  const themeIndex = (champ.seasonId - 1) % 4;
+                  const frameClass =
+                    themeIndex === 0
+                      ? styles.championFrameS1
+                      : themeIndex === 1
+                        ? styles.championFrameS2
+                        : themeIndex === 2
+                          ? styles.championFrameS3
+                          : styles.championFrameS4;
+
+                  const badgeClass =
+                    themeIndex === 0
+                      ? styles.championBadgeS1
+                      : themeIndex === 1
+                        ? styles.championBadgeS2
+                        : themeIndex === 2
+                          ? styles.championBadgeS3
+                          : styles.championBadgeS4;
+
+                  const avatarWrapperClass =
+                    themeIndex === 0
+                      ? styles.championAvatarWrapperS1
+                      : themeIndex === 1
+                        ? styles.championAvatarWrapperS2
+                        : themeIndex === 2
+                          ? styles.championAvatarWrapperS3
+                          : styles.championAvatarWrapperS4;
+
+                  return (
+                    <div key={champ.seasonId} className={frameClass}>
+                      <div className={badgeClass}>
+                        {champ.seasonLabel.toUpperCase()}
+                      </div>
+                      <div className={styles.championCardBody}>
+                        <div className={avatarWrapperClass}>
+                          <img
+                            src={champ.championAvatar}
+                            alt={champ.championName}
+                            className={styles.championAvatarImg}
+                          />
+                          <span className={styles.championCrownIcon}>👑</span>
+                        </div>
+                        <div className={styles.championDetails}>
+                          <span className={styles.championName}>
+                            {champ.championName}
+                          </span>
+                          <span className={styles.championRank}>
+                            {champ.rank}
+                          </span>
+                          <span className={styles.championWinrate}>
+                            {champ.winrate}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
       </div>
 
       {/* Team B (Bottom Row) */}

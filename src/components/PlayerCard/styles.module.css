@@ -65,7 +65,7 @@
 }
 
 .contentWrapper {
-  @apply w-full h-full transform skew-x-[9deg] relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none;
+  @apply w-full h-full transform relative flex flex-col justify-between p-0.5 sm:p-1 z-10 select-none;
 }
 
 .portraitContainer {

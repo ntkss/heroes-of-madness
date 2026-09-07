@@ -9,6 +9,7 @@ import {
   fetchPlayers,
   fetchAllMatches,
   fetchSeasons,
+  fetchSeasonConfig,
   DbPlayer,
   Season,
 } from "@/utils/firebase";
@@ -24,6 +25,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
 
   const [player, setPlayer] = useState<DbPlayer | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [overallStats, setOverallStats] = useState({
     matches: 0,
     wins: 0,
@@ -42,6 +45,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
     Array<{
       id: string;
       date: number;
+      seasonId: number;
       team: string;
       lane: string;
       outcome: "WIN" | "LOSS" | "PENDING";
@@ -53,13 +57,19 @@ export default function PlayerProfilePage({ params }: PageProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [players, matches, archiveSeasons] = await Promise.all([
-          fetchPlayers(),
-          fetchAllMatches(),
-          fetchSeasons(),
-        ]);
+        const [players, matches, archiveSeasons, seasonCfg] = await Promise.all(
+          [
+            fetchPlayers(),
+            fetchAllMatches(),
+            fetchSeasons(),
+            fetchSeasonConfig(),
+          ],
+        );
 
         setSeasons(archiveSeasons);
+        if (seasonCfg?.activeSeasonId) {
+          setActiveSeasonId(seasonCfg.activeSeasonId);
+        }
 
         const key = playerId.toLowerCase();
         let foundPlayer = players.find(
@@ -101,6 +111,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
         const history: Array<{
           id: string;
           date: number;
+          seasonId: number;
           team: string;
           lane: string;
           outcome: "WIN" | "LOSS" | "PENDING";
@@ -191,6 +202,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
           history.push({
             id: match.id,
             date: match.createdAt,
+            seasonId: match.seasonId !== undefined ? Number(match.seasonId) : 1,
             team,
             lane,
             outcome,
@@ -267,6 +279,42 @@ export default function PlayerProfilePage({ params }: PageProps) {
   }, [seasons, player]);
 
   const isChampion = wonSeasons.length > 0;
+
+  // Determine effective season ID (defaults to activeSeasonId or 1 if selectedSeasonId is null)
+  const effectiveSeasonId =
+    selectedSeasonId !== null ? selectedSeasonId : activeSeasonId;
+
+  // Derive available season options dynamically from activeSeasonId, seasons archive, and matchHistory
+  const seasonOptions = React.useMemo(() => {
+    const seasonIdsSet = new Set<number>();
+    const activeId = activeSeasonId || 1;
+    seasonIdsSet.add(activeId);
+
+    if (seasons && seasons.length > 0) {
+      seasons.forEach((s) => seasonIdsSet.add(s.id));
+    }
+
+    matchHistory.forEach((m) => {
+      seasonIdsSet.add(m.seasonId || 1);
+    });
+
+    const sortedIds = Array.from(seasonIdsSet).sort((a, b) => b - a);
+
+    return sortedIds.map((id) => {
+      const isCurrent = id === activeId;
+      const archiveSeason = seasons?.find((s) => s.id === id);
+      const baseName = archiveSeason?.name
+        ? archiveSeason.name.toUpperCase()
+        : `SEASON ${id}`;
+      const label = isCurrent ? `${baseName} (CURRENT)` : baseName;
+      return { id, label };
+    });
+  }, [activeSeasonId, seasons, matchHistory]);
+
+  // Filter battle logs of selected season
+  const seasonMatchHistory = React.useMemo(() => {
+    return matchHistory.filter((m) => m.seasonId === effectiveSeasonId);
+  }, [matchHistory, effectiveSeasonId]);
 
   if (loading) {
     return (
@@ -595,11 +643,45 @@ export default function PlayerProfilePage({ params }: PageProps) {
                 <div className={`${styles.rivet} ${styles.rivetBottomLeft}`} />
                 <div className={`${styles.rivet} ${styles.rivetBottomRight}`} />
 
-                <h3 className={styles.cardTitle}>HISTORICAL BATTLE LOGS</h3>
+                <div className={styles.historyHeader}>
+                  <h3 className={styles.historyTitle}>
+                    HISTORICAL BATTLE LOGS
+                  </h3>
+                  <span className={styles.recordsCount}>
+                    LOGS: {seasonMatchHistory.length}
+                  </span>
+                </div>
 
-                {matchHistory.length === 0 ? (
+                {/* Season dropdown / filter */}
+                <div className={styles.seasonFilterCard}>
+                  <div className={styles.seasonFilterControls}>
+                    <span className={styles.seasonFilterLabel}>
+                      FILTER SEASON:
+                    </span>
+                    <select
+                      value={effectiveSeasonId}
+                      onChange={(e) => {
+                        playBeep(330, 0.1, "sine");
+                        setSelectedSeasonId(Number(e.target.value));
+                      }}
+                      className={styles.seasonSelectBox}
+                    >
+                      {seasonOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <span className={styles.seasonMatchCountText}>
+                    SHOWING {seasonMatchHistory.length} BATTLE
+                    {seasonMatchHistory.length === 1 ? "" : "S"}
+                  </span>
+                </div>
+
+                {seasonMatchHistory.length === 0 ? (
                   <div className={styles.emptyHistory}>
-                    NO COMBAT RECORDS FOUND
+                    NO COMBAT RECORDS FOUND FOR SEASON {effectiveSeasonId}
                   </div>
                 ) : (
                   <div className={styles.tableContainer}>
@@ -614,8 +696,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {matchHistory.map((m, idx) => (
-                          <tr key={idx} className={styles.tableBodyRow}>
+                        {seasonMatchHistory.map((m, idx) => (
+                          <tr key={m.id || idx} className={styles.tableBodyRow}>
                             <td className={styles.dateCell}>
                               {formatDate(m.date)}
                             </td>

@@ -286,6 +286,43 @@
   box-shadow: 0 0 4px rgba(255, 210, 0, 0.4);
 }
 
+.historyHeader {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-slate-800 pb-3 mb-2 gap-2;
+}
+
+.historyTitle {
+  @apply text-xs font-bold tracking-widest text-neon-yellow uppercase font-pixel;
+  text-shadow: 0 0 6px rgba(255, 210, 0, 0.3);
+}
+
+.recordsCount {
+  @apply font-pixel text-[10px] text-[#a0a0c0];
+}
+
+/* Season Filter Card Styles */
+.seasonFilterCard {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-black/50 border-2 border-slate-800 p-3 mb-3 transition-all;
+}
+
+.seasonFilterControls {
+  @apply flex items-center gap-3 w-full sm:w-auto;
+}
+
+.seasonFilterLabel {
+  @apply font-pixel text-[9px] text-neon-yellow tracking-widest uppercase shrink-0;
+  text-shadow:
+    0 0 6px var(--color-neon-yellow),
+    0 0 12px rgba(255, 210, 0, 0.3);
+}
+
+.seasonSelectBox {
+  @apply bg-slate-950 border-2 border-slate-700 hover:border-neon-yellow text-white font-pixel text-[9px] px-3 py-1.5 focus:outline-none focus:border-neon-yellow transition-all uppercase cursor-pointer min-w-[180px] rounded-none;
+}
+
+.seasonMatchCountText {
+  @apply font-pixel text-[8.5px] text-slate-400 uppercase tracking-wider self-end sm:self-center;
+}
+
 /* Complete Match History */
 .emptyHistory {
   @apply font-pixel text-[9px] text-slate-600 uppercase text-center py-8 border-2 border-dashed border-slate-800 bg-black/20;

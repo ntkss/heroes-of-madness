@@ -8,6 +8,7 @@ import {
   DbPlayer,
   RankConfig,
   SeasonPlayerStat,
+  Season,
   getWeightedWinrate,
   togglePlayerFeedback,
   PlayerFeedback,
@@ -26,6 +27,7 @@ interface HistoryDashboardProps {
   rankConfig: RankConfig;
   isAdmin?: boolean;
   activeSeasonId?: number;
+  seasons?: Season[];
 }
 
 interface MatchCardProps {
@@ -304,7 +306,11 @@ export default function HistoryDashboard({
   rankConfig,
   isAdmin = false,
   activeSeasonId,
+  seasons = [],
 }: HistoryDashboardProps) {
+  const [selectedSeasonId, setSelectedSeasonId] = React.useState<number | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
     "history",
   );
@@ -318,6 +324,50 @@ export default function HistoryDashboard({
     null,
   );
   const [isDeletingMatch, setIsDeletingMatch] = React.useState(false);
+
+  // Determine effective season ID (defaults to activeSeasonId or 1 if selectedSeasonId is null)
+  const effectiveSeasonId =
+    selectedSeasonId !== null
+      ? selectedSeasonId
+      : activeSeasonId !== undefined
+        ? activeSeasonId
+        : 1;
+
+  // Derive available season options dynamically from activeSeasonId, seasons archive, and matches
+  const seasonOptions = React.useMemo(() => {
+    const seasonIdsSet = new Set<number>();
+    const activeId = activeSeasonId !== undefined ? activeSeasonId : 1;
+    seasonIdsSet.add(activeId);
+
+    if (seasons && seasons.length > 0) {
+      seasons.forEach((s) => seasonIdsSet.add(s.id));
+    }
+
+    matches.forEach((m) => {
+      const sId = m.seasonId !== undefined ? Number(m.seasonId) : 1;
+      seasonIdsSet.add(sId);
+    });
+
+    const sortedIds = Array.from(seasonIdsSet).sort((a, b) => b - a);
+
+    return sortedIds.map((id) => {
+      const isCurrent = id === activeId;
+      const archiveSeason = seasons?.find((s) => s.id === id);
+      const baseName = archiveSeason?.name
+        ? archiveSeason.name.toUpperCase()
+        : `SEASON ${id}`;
+      const label = isCurrent ? `${baseName} (CURRENT)` : baseName;
+      return { id, label };
+    });
+  }, [activeSeasonId, seasons, matches]);
+
+  // Filter matches of selected season
+  const seasonMatches = React.useMemo(() => {
+    return matches.filter((m) => {
+      const mSeasonId = m.seasonId !== undefined ? Number(m.seasonId) : 1;
+      return mSeasonId === effectiveSeasonId;
+    });
+  }, [matches, effectiveSeasonId]);
 
   const getPlayerKey = React.useCallback(
     (nameOrId: string) => {
@@ -721,8 +771,10 @@ export default function HistoryDashboard({
       <div className={styles.header}>
         <h2 className={styles.title}>ARENA LOGBOOK</h2>
         <div className={styles.headerControls}>
-          <span className={styles.recordsCount}>RECORDS: {matches.length}</span>
-          {matches.length > 0 && activeTab === "history" && isAdmin && (
+          <span className={styles.recordsCount}>
+            RECORDS: {seasonMatches.length}
+          </span>
+          {seasonMatches.length > 0 && activeTab === "history" && isAdmin && (
             <button
               onClick={handlePurgeAllClick}
               className={styles.purgeAllBtn}
@@ -798,33 +850,61 @@ export default function HistoryDashboard({
       )}
 
       {/* Tab Contents: MATCH HISTORY */}
-      {activeTab === "history" &&
-        (matches.length === 0 ? (
-          <div className={styles.emptyStateContainer}>
-            <span className={styles.emptyStateTitle}>NO RECORDS FOUND</span>
-            <span className={styles.emptyStateSubtitle}>
-              ARENA VACANT. START DRAFT TO INITIALIZE LOGS.
+      {activeTab === "history" && (
+        <div className="flex flex-col gap-3">
+          {/* Season Selector Card */}
+          <div className={styles.seasonFilterCard}>
+            <div className={styles.seasonFilterControls}>
+              <span className={styles.seasonFilterLabel}>FILTER SEASON:</span>
+              <select
+                value={effectiveSeasonId}
+                onChange={(e) => {
+                  playBeep(330, 0.1, "sine");
+                  setSelectedSeasonId(Number(e.target.value));
+                }}
+                className={styles.seasonSelectBox}
+              >
+                {seasonOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <span className={styles.seasonMatchCountText}>
+              SHOWING {seasonMatches.length} MATCH
+              {seasonMatches.length === 1 ? "" : "ES"}
             </span>
           </div>
-        ) : (
-          <div className={styles.historyList}>
-            {matches.map((match) => (
-              <MatchCardComponent
-                key={match.id}
-                match={match}
-                availablePlayers={availablePlayers}
-                isAdmin={isAdmin}
-                getPlayerDisplayName={getPlayerDisplayName}
-                getPlayerKey={getPlayerKey}
-                formatDate={formatDate}
-                editingMatchId={editingMatchId}
-                setEditingMatchId={setEditingMatchId}
-                handleWinnerChange={handleWinnerChange}
-                handleDelete={handleDelete}
-              />
-            ))}
-          </div>
-        ))}
+
+          {seasonMatches.length === 0 ? (
+            <div className={styles.emptyStateContainer}>
+              <span className={styles.emptyStateTitle}>NO RECORDS FOUND</span>
+              <span className={styles.emptyStateSubtitle}>
+                NO MATCH LOGS RECORDED FOR SEASON {effectiveSeasonId}.
+              </span>
+            </div>
+          ) : (
+            <div className={styles.historyList}>
+              {seasonMatches.map((match) => (
+                <MatchCardComponent
+                  key={match.id}
+                  match={match}
+                  availablePlayers={availablePlayers}
+                  isAdmin={isAdmin}
+                  getPlayerDisplayName={getPlayerDisplayName}
+                  getPlayerKey={getPlayerKey}
+                  formatDate={formatDate}
+                  editingMatchId={editingMatchId}
+                  setEditingMatchId={setEditingMatchId}
+                  handleWinnerChange={handleWinnerChange}
+                  handleDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tab Contents: FIGHTER WINRATES */}
       {activeTab === "stats" && (

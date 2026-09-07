@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { isFirebaseConfigured } from "@/utils/firebase";
+import { isFirebaseConfigured, seedMockSeasons } from "@/utils/firebase";
 import pkg from "../../../package.json";
 import styles from "./styles.module.css";
 
@@ -92,6 +92,17 @@ export default function DebugBar() {
       clearTimeout(initTimer);
     };
   }, []);
+
+  const handleSeedMockData = async () => {
+    if (
+      confirm(
+        "🌱 SEED MULTI-SEASON DEMO DATA?\nThis will populate mock Season 1, Season 2, and active Season 3 matches for multi-season testing.",
+      )
+    ) {
+      await seedMockSeasons();
+      window.location.reload();
+    }
+  };
 
   const handleClearHistory = () => {
     if (
@@ -225,6 +236,9 @@ export default function DebugBar() {
 
           {/* Dev Utils Actions */}
           <div className={styles.actionsContainer}>
+            <button onClick={handleSeedMockData} className={styles.seedBtn}>
+              🌱 SEED MULTI-SEASON DEMO DATA
+            </button>
             <button onClick={handleClearHistory} className={styles.purgeBtn}>
               PURGE LOCAL RECORDS
             </button>

@@ -65,6 +65,30 @@
     0 0 20px rgba(0, 210, 255, 0.4);
 }
 
+/* Season Filter Card Styles */
+.seasonFilterCard {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-black/50 border-2 border-slate-800 p-3 mb-4 transition-all;
+}
+
+.seasonFilterControls {
+  @apply flex items-center gap-3 w-full sm:w-auto;
+}
+
+.seasonFilterLabel {
+  @apply font-pixel text-[9px] text-neon-yellow tracking-widest uppercase shrink-0;
+  text-shadow:
+    0 0 6px var(--color-neon-yellow),
+    0 0 12px rgba(255, 210, 0, 0.3);
+}
+
+.seasonSelectBox {
+  @apply bg-slate-950 border-2 border-slate-700 hover:border-neon-yellow text-white font-pixel text-[9px] px-3 py-1.5 focus:outline-none focus:border-neon-yellow transition-all uppercase cursor-pointer min-w-[180px] rounded-none;
+}
+
+.seasonMatchCountText {
+  @apply font-pixel text-[8.5px] text-slate-400 uppercase tracking-wider self-end sm:self-center;
+}
+
 .emptyStateContainer {
   @apply flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 bg-black/40;
 }

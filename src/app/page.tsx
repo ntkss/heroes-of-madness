@@ -11,7 +11,7 @@ import {
   Match,
   DbPlayer,
   Season,
-  fetchMatches,
+  fetchAllMatches,
   saveMatch,
   updateMatchWinner,
   deleteMatch,
@@ -83,7 +83,7 @@ export default function Home() {
     const loadData = async () => {
       const [logs, players, config, seasonCfg, archiveSeasons] =
         await Promise.all([
-          fetchMatches(),
+          fetchAllMatches(),
           fetchPlayers(),
           fetchRankConfig(),
           fetchSeasonConfig(),
@@ -493,7 +493,7 @@ export default function Home() {
         });
         setActiveMatchId(saved.id);
 
-        const updatedLogs = await fetchMatches();
+        const updatedLogs = await fetchAllMatches();
         setMatches(updatedLogs);
 
         // Send text notification immediately
@@ -525,7 +525,7 @@ export default function Home() {
     await triggerLineResultNotification(matchId, winner);
 
     const [updatedLogs, updatedPlayers] = await Promise.all([
-      fetchMatches(),
+      fetchAllMatches(),
       fetchPlayers(),
     ]);
     setMatches(updatedLogs);
@@ -536,7 +536,7 @@ export default function Home() {
     await deleteMatch(matchId);
 
     const [updatedLogs, updatedPlayers] = await Promise.all([
-      fetchMatches(),
+      fetchAllMatches(),
       fetchPlayers(),
     ]);
     setMatches(updatedLogs);
@@ -551,7 +551,7 @@ export default function Home() {
     await deleteAllMatches();
 
     const [updatedLogs, updatedPlayers] = await Promise.all([
-      fetchMatches(),
+      fetchAllMatches(),
       fetchPlayers(),
     ]);
     setMatches(updatedLogs);
@@ -838,6 +838,7 @@ export default function Home() {
                 rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
                 isAdmin={isAdmin}
                 activeSeasonId={activeSeasonId}
+                seasons={seasons}
               />
             </section>
           </main>

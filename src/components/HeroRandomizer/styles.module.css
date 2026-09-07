@@ -1,0 +1,297 @@
+@reference "../../app/globals.css";
+
+.container {
+  @apply flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-5 shadow-2xl relative overflow-hidden transition-all duration-300 w-full;
+}
+
+.rivet {
+  @apply absolute w-2.5 h-2.5 rounded-full bg-slate-600 border border-black shadow-inner opacity-70;
+}
+
+.rivetTopLeft {
+  @apply top-2 left-2;
+}
+
+.rivetTopRight {
+  @apply top-2 right-2;
+}
+
+.rivetBottomLeft {
+  @apply bottom-2 left-2;
+}
+
+.rivetBottomRight {
+  @apply bottom-2 right-2;
+}
+
+.header {
+  @apply flex flex-wrap items-center justify-between border-b-4 border-slate-700 pb-3 mb-5 gap-3 select-none;
+}
+
+.title {
+  @apply text-sm font-bold tracking-widest text-neon-yellow uppercase font-pixel;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.4);
+}
+
+.gameTabs {
+  @apply flex items-center gap-2;
+}
+
+.tabBtn {
+  @apply font-pixel text-[10px] px-3 py-1.5 border-2 transition-all uppercase cursor-pointer select-none tracking-wider;
+}
+
+.tabBtnActiveROV {
+  @apply bg-neon-red/20 border-neon-red text-neon-red;
+  text-shadow: 0 0 8px rgba(255, 42, 95, 0.6);
+  box-shadow: 0 0 12px rgba(255, 42, 95, 0.35);
+}
+
+.tabBtnInactiveROV {
+  @apply bg-slate-900/60 border-slate-700 text-slate-400 hover:border-neon-red hover:text-neon-red;
+}
+
+.tabBtnActiveMLBB {
+  @apply bg-neon-blue/20 border-neon-blue text-neon-blue;
+  text-shadow: 0 0 8px rgba(0, 210, 255, 0.6);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+}
+
+.tabBtnInactiveMLBB {
+  @apply bg-slate-900/60 border-slate-700 text-slate-400 hover:border-neon-blue hover:text-neon-blue;
+}
+
+.mainLayout {
+  @apply flex flex-col lg:flex-row gap-5 mb-5;
+}
+
+/* Left side: Results Display Screen */
+.displayScreen {
+  @apply flex-1 flex flex-col bg-slate-950/80 border-2 border-slate-800 p-5 relative overflow-hidden;
+  background-image:
+    linear-gradient(rgba(0, 210, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.screenScanline {
+  @apply absolute inset-0 pointer-events-none opacity-20;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.6),
+    rgba(0, 0, 0, 0.6) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+.screenHeader {
+  @apply flex items-center justify-between pb-3 border-b border-slate-800 text-[9px] font-pixel text-slate-400 select-none uppercase tracking-widest z-10;
+}
+
+.statusIndicator {
+  @apply flex items-center gap-2;
+}
+
+.statusDot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.statusDotIdle {
+  @apply bg-emerald-500 animate-pulse;
+}
+
+.statusDotRolling {
+  @apply bg-neon-yellow animate-ping;
+}
+
+/* Result Card Container */
+.resultContainer {
+  @apply flex flex-col items-center justify-center py-6 px-4 my-auto gap-4 z-10 select-none;
+}
+
+.resultBadgeGroup {
+  @apply flex flex-wrap items-center justify-center gap-3 w-full;
+}
+
+.gameBadge {
+  @apply font-pixel text-[11px] px-3.5 py-1 uppercase font-bold border-2 tracking-widest;
+}
+
+.gameBadgeROV {
+  @apply border-neon-red bg-neon-red/15 text-neon-red;
+  text-shadow: 0 0 8px rgba(255, 42, 95, 0.5);
+  box-shadow: 0 0 15px rgba(255, 42, 95, 0.25);
+}
+
+.gameBadgeMLBB {
+  @apply border-neon-blue bg-neon-blue/15 text-neon-blue;
+  text-shadow: 0 0 8px rgba(0, 210, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 210, 255, 0.25);
+}
+
+.laneBadge {
+  @apply font-pixel text-[11px] px-3.5 py-1 uppercase font-bold border-2 tracking-widest flex items-center gap-1.5;
+}
+
+.laneBadgeSupport,
+.laneBadgeTankSupport {
+  @apply border-emerald-400 bg-emerald-950/40 text-emerald-300;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+}
+
+.laneBadgeTop,
+.laneBadgeFighter {
+  @apply border-amber-400 bg-amber-950/40 text-amber-300;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.laneBadgeJungle,
+.laneBadgeAssassin {
+  @apply border-rose-500 bg-rose-950/40 text-rose-400;
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+}
+
+.laneBadgeMid,
+.laneBadgeMage {
+  @apply border-purple-400 bg-purple-950/40 text-purple-300;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
+}
+
+.laneBadgeAdc,
+.laneBadgeMarksman {
+  @apply border-sky-400 bg-sky-950/40 text-sky-300;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+
+/* Hero Box */
+.heroShowcase {
+  @apply flex flex-col items-center justify-center p-6 border-4 border-slate-700 bg-slate-900/90 w-full max-w-md transition-all duration-200 relative;
+}
+
+.heroShowcaseLockin {
+  @apply border-neon-yellow scale-105;
+  box-shadow:
+    0 0 20px rgba(255, 210, 0, 0.4),
+    inset 0 0 15px rgba(255, 210, 0, 0.2);
+}
+
+.heroShowcaseLabel {
+  @apply font-pixel text-[8px] tracking-[0.25em] text-slate-400 uppercase mb-2 select-none;
+}
+
+.heroName {
+  @apply font-action text-5xl md:text-6xl uppercase tracking-wider font-black text-white transition-all text-center leading-tight;
+  letter-spacing: 0.05em;
+}
+
+.heroNameGlowing {
+  @apply text-neon-yellow;
+  text-shadow:
+    0 0 15px var(--color-neon-yellow),
+    0 0 30px rgba(255, 210, 0, 0.6);
+}
+
+.heroNameRolling {
+  @apply text-slate-300 filter blur-[0.5px];
+}
+
+/* Right side: Controls & Directory */
+.controlsCol {
+  @apply w-full lg:w-80 flex flex-col gap-4;
+}
+
+.rollBtn {
+  @apply font-pixel text-xs py-3.5 w-full select-none uppercase font-bold tracking-wider transition-all border-4;
+}
+
+.rollBtnRolling {
+  @apply bg-slate-800 text-neon-yellow border-neon-yellow/70 cursor-wait shadow-none animate-pulse;
+}
+
+.rollBtnReady {
+  @apply text-black bg-neon-yellow border-white cursor-pointer transform -translate-y-0.5;
+  box-shadow:
+    0 0 0 4px #121214,
+    0 5px 0 #121214,
+    0 6px 15px rgba(255, 210, 0, 0.35);
+}
+
+.rollBtnReady:hover {
+  @apply bg-white;
+  box-shadow:
+    0 0 0 4px #121214,
+    0 5px 0 #121214,
+    0 6px 18px rgba(255, 255, 255, 0.45);
+}
+
+.rollBtnReady:active {
+  transform: translateY(0);
+  box-shadow:
+    0 0 0 4px #121214,
+    0 0 0 #121214;
+}
+
+.laneFilterBox {
+  @apply bg-slate-900/80 border-2 border-slate-700/80 p-3 flex flex-col gap-2;
+}
+
+.boxTitle {
+  @apply font-pixel text-[8.5px] uppercase tracking-wider text-slate-400 select-none flex items-center justify-between;
+}
+
+.laneButtons {
+  @apply grid grid-cols-1 gap-1.5;
+}
+
+.laneSelectBtn {
+  @apply font-pixel text-[8px] px-2.5 py-1.5 border transition-all text-left uppercase flex items-center justify-between cursor-pointer;
+}
+
+.laneSelectBtnActive {
+  @apply bg-slate-800 border-neon-yellow text-neon-yellow;
+}
+
+.laneSelectBtnInactive {
+  @apply bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200;
+}
+
+/* History Box */
+.historyBox {
+  @apply bg-slate-900/80 border-2 border-slate-700/80 p-3 flex flex-col gap-2 max-h-48 overflow-y-auto;
+}
+
+.historyItem {
+  @apply flex items-center justify-between text-[8.5px] font-pixel p-1.5 bg-slate-950/60 border border-slate-800/80;
+}
+
+/* Pool Browser Accordion */
+.poolDrawer {
+  @apply border-t-2 border-slate-800 pt-3 mt-1 flex flex-col gap-3;
+}
+
+.poolToggleBtn {
+  @apply font-pixel text-[8.5px] text-slate-400 hover:text-neon-blue tracking-wider uppercase cursor-pointer flex items-center gap-1 transition-colors select-none;
+}
+
+.poolGrid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-2;
+}
+
+.lanePoolCol {
+  @apply bg-slate-950/70 border border-slate-800 p-2.5 flex flex-col gap-2;
+}
+
+.lanePoolTitle {
+  @apply font-pixel text-[8px] uppercase tracking-wider pb-1 border-b border-slate-800 font-bold;
+}
+
+.heroTagList {
+  @apply flex flex-wrap gap-1 max-h-44 overflow-y-auto pr-1;
+}
+
+.heroTag {
+  @apply text-[9px] font-mono px-1.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-600 select-none;
+}

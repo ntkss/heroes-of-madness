@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import DebugBar from "@/components/DebugBar";
@@ -11,9 +11,12 @@ import {
   fetchSeasons,
   fetchSeasonConfig,
   DbPlayer,
+  Match,
+  MatchMode,
   Season,
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
+import { normalizeLane } from "@/constants/heroes";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,31 +30,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
-  const [overallStats, setOverallStats] = useState({
-    matches: 0,
-    wins: 0,
-    losses: 0,
-    winRate: 0,
-    likes: 0,
-    dislikes: 0,
-  });
-  const [laneStats, setLaneStats] = useState<
-    Record<
-      string,
-      { matches: number; wins: number; losses: number; winRate: number }
-    >
-  >({});
-  const [matchHistory, setMatchHistory] = useState<
-    Array<{
-      id: string;
-      date: number;
-      seasonId: number;
-      team: string;
-      lane: string;
-      outcome: "WIN" | "LOSS" | "PENDING";
-      feedback: { likes: number; dislikes: number };
-    }>
-  >([]);
+  const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [selectedMode, setSelectedMode] = useState<MatchMode>("TEAM_LANE");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -92,156 +72,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
         }
         setPlayer(foundPlayer);
 
-        // Calculate statistics
-        let totalMatches = 0;
-        let totalWins = 0;
-        let totalLosses = 0;
-        let totalLikes = 0;
-        let totalDislikes = 0;
-
-        const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
-        const laneCounters: Record<
-          string,
-          { matches: number; wins: number; losses: number }
-        > = {};
-        defaultLanes.forEach((l) => {
-          laneCounters[l] = { matches: 0, wins: 0, losses: 0 };
-        });
-
-        const history: Array<{
-          id: string;
-          date: number;
-          seasonId: number;
-          team: string;
-          lane: string;
-          outcome: "WIN" | "LOSS" | "PENDING";
-          feedback: { likes: number; dislikes: number };
-        }> = [];
-
-        matches.forEach((match) => {
-          const isTeamA = match.teamA.some(
-            (p) =>
-              p.toLowerCase() === foundPlayer!.id.toLowerCase() ||
-              p.toLowerCase() === foundPlayer!.name.toLowerCase(),
-          );
-          const isTeamB = match.teamB.some(
-            (p) =>
-              p.toLowerCase() === foundPlayer!.id.toLowerCase() ||
-              p.toLowerCase() === foundPlayer!.name.toLowerCase(),
-          );
-
-          if (!isTeamA && !isTeamB) return;
-
-          const team = isTeamA ? "Blue Team" : "Red Team";
-
-          // Determine lane played
-          let lane = "";
-          let playerIdx = -1;
-          if (isTeamA) {
-            playerIdx = match.teamA.findIndex(
-              (p) =>
-                p.toLowerCase() === foundPlayer!.id.toLowerCase() ||
-                p.toLowerCase() === foundPlayer!.name.toLowerCase(),
-            );
-            lane =
-              match.teamALanes?.[playerIdx] ||
-              defaultLanes[playerIdx] ||
-              "Unknown";
-          } else {
-            playerIdx = match.teamB.findIndex(
-              (p) =>
-                p.toLowerCase() === foundPlayer!.id.toLowerCase() ||
-                p.toLowerCase() === foundPlayer!.name.toLowerCase(),
-            );
-            lane =
-              match.teamBLanes?.[playerIdx] ||
-              defaultLanes[playerIdx] ||
-              "Unknown";
-          }
-
-          // Determine feedback
-          const playerKeyInMatch = isTeamA
-            ? match.teamA[playerIdx]
-            : match.teamB[playerIdx];
-          const feedback = match.feedback?.[playerKeyInMatch.toLowerCase()] || {
-            likes: 0,
-            dislikes: 0,
-          };
-          totalLikes += feedback.likes || 0;
-          totalDislikes += feedback.dislikes || 0;
-
-          // Determine outcome
-          let outcome: "WIN" | "LOSS" | "PENDING" = "PENDING";
-          if (match.winner) {
-            if (
-              (match.winner === "teamA" && isTeamA) ||
-              (match.winner === "teamB" && isTeamB)
-            ) {
-              outcome = "WIN";
-              totalWins++;
-              if (laneCounters[lane]) {
-                laneCounters[lane].wins++;
-                laneCounters[lane].matches++;
-              }
-            } else {
-              outcome = "LOSS";
-              totalLosses++;
-              if (laneCounters[lane]) {
-                laneCounters[lane].losses++;
-                laneCounters[lane].matches++;
-              }
-            }
-            totalMatches++;
-          } else {
-            // Pending match - still count lane usage but not win/loss outcomes
-            if (laneCounters[lane]) {
-              laneCounters[lane].matches++;
-            }
-          }
-
-          history.push({
-            id: match.id,
-            date: match.createdAt,
-            seasonId: match.seasonId !== undefined ? Number(match.seasonId) : 1,
-            team,
-            lane,
-            outcome,
-            feedback,
-          });
-        });
-
-        // Set overall stats
-        setOverallStats({
-          matches: totalMatches,
-          wins: totalWins,
-          losses: totalLosses,
-          winRate:
-            totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0,
-          likes: totalLikes,
-          dislikes: totalDislikes,
-        });
-
-        // Calculate lane win rates
-        const resolvedLaneStats: Record<
-          string,
-          { matches: number; wins: number; losses: number; winRate: number }
-        > = {};
-        defaultLanes.forEach((l) => {
-          const stats = laneCounters[l];
-          resolvedLaneStats[l] = {
-            matches: stats.matches,
-            wins: stats.wins,
-            losses: stats.losses,
-            winRate:
-              stats.matches > 0
-                ? Math.round((stats.wins / stats.matches) * 100)
-                : 0,
-          };
-        });
-        setLaneStats(resolvedLaneStats);
-
-        // Set match history sorted descending by date
-        setMatchHistory(history.sort((a, b) => b.date - a.date));
+        setAllMatches(matches);
       } catch (err) {
         console.error("Failed to load player profile:", err);
       } finally {
@@ -251,6 +82,193 @@ export default function PlayerProfilePage({ params }: PageProps) {
 
     loadData();
   }, [playerId]);
+
+  // Dynamically compute statistics strictly isolated for the selected mode
+  const { overallStats, laneStats, matchHistory } = useMemo(() => {
+    if (!player || allMatches.length === 0) {
+      return {
+        overallStats: {
+          matches: 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0,
+          likes: 0,
+          dislikes: 0,
+        },
+        laneStats: {} as Record<
+          string,
+          { matches: number; wins: number; losses: number; winRate: number }
+        >,
+        matchHistory: [] as Array<{
+          id: string;
+          date: number;
+          seasonId: number;
+          team: string;
+          lane: string;
+          hero?: string;
+          outcome: "WIN" | "LOSS" | "PENDING";
+          feedback: { likes: number; dislikes: number };
+        }>,
+      };
+    }
+
+    const modeMatches = allMatches.filter(
+      (m) => (m.mode || "TEAM_LANE") === selectedMode,
+    );
+
+    let totalMatches = 0;
+    let totalWins = 0;
+    let totalLosses = 0;
+    let totalLikes = 0;
+    let totalDislikes = 0;
+
+    const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
+    const laneCounters: Record<
+      string,
+      { matches: number; wins: number; losses: number }
+    > = {};
+    defaultLanes.forEach((l) => {
+      laneCounters[l] = { matches: 0, wins: 0, losses: 0 };
+    });
+
+    const history: Array<{
+      id: string;
+      date: number;
+      seasonId: number;
+      team: string;
+      lane: string;
+      hero?: string;
+      outcome: "WIN" | "LOSS" | "PENDING";
+      feedback: { likes: number; dislikes: number };
+    }> = [];
+
+    modeMatches.forEach((match) => {
+      const isTeamA = match.teamA.some(
+        (p) =>
+          p.toLowerCase() === player.id.toLowerCase() ||
+          p.toLowerCase() === player.name.toLowerCase(),
+      );
+      const isTeamB = match.teamB.some(
+        (p) =>
+          p.toLowerCase() === player.id.toLowerCase() ||
+          p.toLowerCase() === player.name.toLowerCase(),
+      );
+
+      if (!isTeamA && !isTeamB) return;
+
+      const team = isTeamA ? "Blue Team" : "Red Team";
+
+      let lane = "";
+      let hero: string | undefined;
+      let playerIdx = -1;
+      if (isTeamA) {
+        playerIdx = match.teamA.findIndex(
+          (p) =>
+            p.toLowerCase() === player.id.toLowerCase() ||
+            p.toLowerCase() === player.name.toLowerCase(),
+        );
+        const rawLane =
+          match.teamALanes?.[playerIdx] || defaultLanes[playerIdx] || "Unknown";
+        lane = normalizeLane(rawLane);
+        hero = match.teamAHeroes?.[playerIdx];
+      } else {
+        playerIdx = match.teamB.findIndex(
+          (p) =>
+            p.toLowerCase() === player.id.toLowerCase() ||
+            p.toLowerCase() === player.name.toLowerCase(),
+        );
+        const rawLane =
+          match.teamBLanes?.[playerIdx] || defaultLanes[playerIdx] || "Unknown";
+        lane = normalizeLane(rawLane);
+        hero = match.teamBHeroes?.[playerIdx];
+      }
+
+      // Determine feedback
+      const playerKeyInMatch = isTeamA
+        ? match.teamA[playerIdx]
+        : match.teamB[playerIdx];
+      const feedback = match.feedback?.[playerKeyInMatch.toLowerCase()] || {
+        likes: 0,
+        dislikes: 0,
+      };
+      totalLikes += feedback.likes || 0;
+      totalDislikes += feedback.dislikes || 0;
+
+      // Determine outcome
+      let outcome: "WIN" | "LOSS" | "PENDING" = "PENDING";
+      if (match.winner) {
+        if (
+          (match.winner === "teamA" && isTeamA) ||
+          (match.winner === "teamB" && isTeamB)
+        ) {
+          outcome = "WIN";
+          totalWins++;
+          if (laneCounters[lane]) {
+            laneCounters[lane].wins++;
+            laneCounters[lane].matches++;
+          }
+        } else {
+          outcome = "LOSS";
+          totalLosses++;
+          if (laneCounters[lane]) {
+            laneCounters[lane].losses++;
+            laneCounters[lane].matches++;
+          }
+        }
+        totalMatches++;
+      } else {
+        if (laneCounters[lane]) {
+          laneCounters[lane].matches++;
+        }
+      }
+
+      history.push({
+        id: match.id,
+        date: match.createdAt,
+        seasonId: match.seasonId !== undefined ? Number(match.seasonId) : 1,
+        team,
+        lane,
+        hero,
+        outcome,
+        feedback,
+      });
+    });
+
+    // Compute overall stats for this mode
+    const computedOverall = {
+      matches: totalMatches,
+      wins: totalWins,
+      losses: totalLosses,
+      winRate:
+        totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0,
+      likes: totalLikes,
+      dislikes: totalDislikes,
+    };
+
+    // Calculate lane win rates for this mode
+    const resolvedLaneStats: Record<
+      string,
+      { matches: number; wins: number; losses: number; winRate: number }
+    > = {};
+    defaultLanes.forEach((l) => {
+      const stats = laneCounters[l];
+      resolvedLaneStats[l] = {
+        matches: stats.matches,
+        wins: stats.wins,
+        losses: stats.losses,
+        winRate:
+          stats.matches > 0
+            ? Math.round((stats.wins / stats.matches) * 100)
+            : 0,
+      };
+    });
+
+    return {
+      overallStats: computedOverall,
+      laneStats: resolvedLaneStats,
+      matchHistory: history.sort((a, b) => b.date - a.date),
+    };
+  }, [allMatches, player, selectedMode]);
 
   const formatDate = (timestamp: number) => {
     const d = new Date(timestamp);
@@ -652,7 +670,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
                   </span>
                 </div>
 
-                {/* Season dropdown / filter */}
+                {/* Season & Mode dropdowns / filters */}
                 <div className={styles.seasonFilterCard}>
                   <div className={styles.seasonFilterControls}>
                     <span className={styles.seasonFilterLabel}>
@@ -671,6 +689,21 @@ export default function PlayerProfilePage({ params }: PageProps) {
                           {opt.label}
                         </option>
                       ))}
+                    </select>
+                  </div>
+                  <div className={styles.seasonFilterControls}>
+                    <span className={styles.seasonFilterLabel}>MODE:</span>
+                    <select
+                      value={selectedMode}
+                      onChange={(e) => {
+                        playBeep(330, 0.1, "sine");
+                        setSelectedMode(e.target.value as MatchMode);
+                      }}
+                      className={styles.seasonSelectBox}
+                    >
+                      <option value="TEAM_LANE">⚔️ RANDOM TEAM</option>
+                      <option value="HERO_ROV">🔥 RANDOM HERO – ROV</option>
+                      <option value="HERO_MLBB">⚡ RANDOM HERO – MLBB</option>
                     </select>
                   </div>
                   <span className={styles.seasonMatchCountText}>
@@ -714,6 +747,11 @@ export default function PlayerProfilePage({ params }: PageProps) {
                             </td>
                             <td className={styles.laneCell}>
                               {m.lane.toUpperCase()}
+                              {m.hero && (
+                                <span className="ml-1.5 text-emerald-400 font-bold">
+                                  • {m.hero}
+                                </span>
+                              )}
                             </td>
                             <td className={styles.feedbackCell}>
                               <span className={styles.likeText}>

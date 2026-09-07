@@ -524,3 +524,25 @@
 .cancelDeleteBtn {
   @apply font-pixel text-[9px] text-slate-300 bg-slate-900 border border-slate-700 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer uppercase disabled:opacity-50;
 }
+
+/* Mode Badge */
+.modeBadge {
+  @apply font-pixel text-[7px] px-2 py-0.5 border uppercase tracking-wider leading-none select-none whitespace-nowrap;
+}
+
+.modeBadgeTeamLane {
+  @apply text-neon-yellow bg-neon-yellow/10 border-neon-yellow/30;
+}
+
+.modeBadgeHeroRov {
+  @apply text-neon-red bg-neon-red/10 border-neon-red/30;
+}
+
+.modeBadgeHeroMlbb {
+  @apply text-neon-blue bg-neon-blue/10 border-neon-blue/30;
+}
+
+/* Hero Badge in Roster */
+.playerHeroBadge {
+  @apply text-[8px] text-emerald-400 font-pixel uppercase tracking-wide mt-0.5;
+}

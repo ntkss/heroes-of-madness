@@ -332,3 +332,20 @@
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
   text-shadow: 0 0 8px rgba(255, 215, 0, 0.9);
 }
+
+/* ─── Hero Randomization Display Badge ────────────────────────────── */
+.heroBadgeBox {
+  @apply flex items-center justify-center gap-1 mt-1 px-1.5 py-0.5 bg-slate-950/90 border border-neon-yellow/70 rounded select-none;
+  box-shadow:
+    0 0 6px rgba(255, 210, 0, 0.3),
+    inset 0 0 4px rgba(255, 210, 0, 0.15);
+}
+
+.heroBadgeLabel {
+  @apply font-pixel text-[5px] sm:text-[6.5px] md:text-[7.5px] text-neon-yellow uppercase tracking-wider leading-none font-bold;
+}
+
+.heroBadgeName {
+  @apply font-pixel text-[6px] sm:text-[8px] md:text-[9.5px] text-white uppercase tracking-wider leading-none font-bold truncate max-w-[85px] sm:max-w-[115px];
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}

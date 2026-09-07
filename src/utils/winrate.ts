@@ -1,4 +1,4 @@
-import { DbPlayer, Match } from "@/utils/firebase";
+import { DbPlayer, Match, MatchMode } from "@/utils/firebase";
 
 export interface PlayerOverallStats {
   winRate: number;
@@ -30,20 +30,32 @@ export interface TeamWinRateSummary {
 }
 
 const DEFAULT_LANES = ["Top", "Jungle", "Mid", "ADC", "Support"];
-const ROLE_NAMES = ["EXP", "JUNGLE", "MID", "GOLD", "ROAMING"];
+const ROLE_NAMES = ["Top", "Jungle", "Mid", "ADC", "Support"];
 
 /**
- * Normalizes lane names across different conventions (e.g. "EXP" / "Top", "GOLD" / "ADC", "ROAMING" / "Support")
+ * Normalizes lane names across different conventions (e.g. "EXP" / "Top" / "Fighter", "GOLD" / "ADC" / "Marksman", "ROAMING" / "Support" / "Tank / Support")
  */
 export function normalizeLaneName(lane: string): string {
   if (!lane) return "";
   const l = lane.trim().toLowerCase();
-  if (l === "top" || l === "exp" || l === "top lane") return "EXP";
-  if (l === "jungle" || l === "jug" || l === "jungler") return "JUNGLE";
-  if (l === "mid" || l === "mid lane") return "MID";
-  if (l === "adc" || l === "gold" || l === "gold lane") return "GOLD";
-  if (l === "support" || l === "roam" || l === "roaming" || l === "sup")
-    return "ROAMING";
+  if (l === "top" || l === "exp" || l === "top lane" || l === "fighter")
+    return "TOP";
+  if (l === "jungle" || l === "jug" || l === "jungler" || l === "assassin")
+    return "JUNGLE";
+  if (l === "mid" || l === "mid lane" || l === "mage") return "MID";
+  if (l === "adc" || l === "gold" || l === "gold lane" || l === "marksman")
+    return "ADC";
+  if (
+    l === "support" ||
+    l === "roam" ||
+    l === "roaming" ||
+    l === "sup" ||
+    l === "tank / support" ||
+    l === "tank/support" ||
+    l === "tank" ||
+    l === "sp"
+  )
+    return "SUPPORT";
   return lane.toUpperCase();
 }
 
@@ -96,15 +108,19 @@ export function getPlayerLaneWinRate(
   laneIndex: number,
   matches: Match[],
   squad: DbPlayer[],
+  mode?: MatchMode,
 ): PlayerLaneStats {
+  const targetMatches = mode
+    ? matches.filter((m) => (m.mode || "TEAM_LANE") === mode)
+    : matches;
   const laneName = ROLE_NAMES[laneIndex] || DEFAULT_LANES[laneIndex] || "LANE";
   const targetNormalizedLane = normalizeLaneName(laneName);
 
   let laneMatches = 0;
   let laneWins = 0;
 
-  if (matches && matches.length > 0) {
-    matches.forEach((m) => {
+  if (targetMatches && targetMatches.length > 0) {
+    targetMatches.forEach((m) => {
       // Only count finished matches
       if (!m.winner || (m.winner !== "teamA" && m.winner !== "teamB")) return;
 
@@ -159,21 +175,22 @@ export function getPlayerLaneWinRate(
     };
   }
 
-  // Fallback: If 0 matches played in assigned lane, use player's overall win rate
-  const foundPlayer = squad.find(
-    (p) =>
-      p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
-      p.name.toLowerCase() === playerIdOrName.toLowerCase(),
-  );
-
-  let fallbackWr = 50; // Neutral default for bot/new player
-  if (foundPlayer) {
-    if (
-      foundPlayer.winrate !== undefined &&
-      foundPlayer.winrate !== null &&
-      foundPlayer.total_match_played > 0
-    ) {
-      fallbackWr = Math.round(foundPlayer.winrate);
+  // Fallback: If 0 matches played in assigned lane, use neutral 50% for mode-isolated stats or player's overall win rate if no mode
+  let fallbackWr = 50; // Neutral default for mode isolation or new player
+  if (!mode) {
+    const foundPlayer = squad.find(
+      (p) =>
+        p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
+        p.name.toLowerCase() === playerIdOrName.toLowerCase(),
+    );
+    if (foundPlayer) {
+      if (
+        foundPlayer.winrate !== undefined &&
+        foundPlayer.winrate !== null &&
+        foundPlayer.total_match_played > 0
+      ) {
+        fallbackWr = Math.round(foundPlayer.winrate);
+      }
     }
   }
 
@@ -194,20 +211,25 @@ export function getPlayerOverallWinRate(
   matches: Match[],
   squad: DbPlayer[],
   laneIndex: number,
+  mode?: MatchMode,
 ): PlayerOverallStats {
+  const targetMatches = mode
+    ? matches.filter((m) => (m.mode || "TEAM_LANE") === mode)
+    : matches;
   const laneName = ROLE_NAMES[laneIndex] || DEFAULT_LANES[laneIndex] || "LANE";
   const laneStats = getPlayerLaneWinRate(
     playerIdOrName,
     laneIndex,
-    matches,
+    targetMatches,
     squad,
+    mode,
   );
 
   let totalMatches = 0;
   let totalWins = 0;
 
-  if (matches && matches.length > 0) {
-    matches.forEach((m) => {
+  if (targetMatches && targetMatches.length > 0) {
+    targetMatches.forEach((m) => {
       // Only count finished matches
       if (!m.winner || (m.winner !== "teamA" && m.winner !== "teamB")) return;
 
@@ -253,21 +275,22 @@ export function getPlayerOverallWinRate(
     };
   }
 
-  // Fallback: Use player's overall win rate from squad (database stats)
-  const foundPlayer = squad.find(
-    (p) =>
-      p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
-      p.name.toLowerCase() === playerIdOrName.toLowerCase(),
-  );
-
-  let fallbackWr = 50; // Neutral default for bot/new player
-  if (foundPlayer) {
-    if (
-      foundPlayer.winrate !== undefined &&
-      foundPlayer.winrate !== null &&
-      foundPlayer.total_match_played > 0
-    ) {
-      fallbackWr = Math.round(foundPlayer.winrate);
+  // Fallback: If 0 matches played in this mode, use neutral 50% for mode isolation
+  let fallbackWr = 50;
+  if (!mode) {
+    const foundPlayer = squad.find(
+      (p) =>
+        p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
+        p.name.toLowerCase() === playerIdOrName.toLowerCase(),
+    );
+    if (foundPlayer) {
+      if (
+        foundPlayer.winrate !== undefined &&
+        foundPlayer.winrate !== null &&
+        foundPlayer.total_match_played > 0
+      ) {
+        fallbackWr = Math.round(foundPlayer.winrate);
+      }
     }
   }
 
@@ -291,20 +314,28 @@ export function calculateTeamWinRates(
   teamB: string[],
   matches: Match[],
   squad: DbPlayer[],
+  mode?: MatchMode,
 ): TeamWinRateSummary {
+  const targetMatches = mode
+    ? matches.filter((m) => (m.mode || "TEAM_LANE") === mode)
+    : matches;
   const teamALaneStats: PlayerOverallStats[] = [];
   const teamBLaneStats: PlayerOverallStats[] = [];
 
   // Team A
   for (let i = 0; i < 5; i++) {
     const player = teamA[i] || "";
-    teamALaneStats.push(getPlayerOverallWinRate(player, matches, squad, i));
+    teamALaneStats.push(
+      getPlayerOverallWinRate(player, targetMatches, squad, i, mode),
+    );
   }
 
   // Team B
   for (let i = 0; i < 5; i++) {
     const player = teamB[i] || "";
-    teamBLaneStats.push(getPlayerOverallWinRate(player, matches, squad, i));
+    teamBLaneStats.push(
+      getPlayerOverallWinRate(player, targetMatches, squad, i, mode),
+    );
   }
 
   // Calculate average overall win rates for Team A and Team B

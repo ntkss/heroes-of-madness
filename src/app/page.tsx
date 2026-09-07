@@ -6,9 +6,12 @@ import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
+import HeroRandomizer from "@/components/HeroRandomizer";
 import DebugBar from "@/components/DebugBar";
+import { GameType, HeroLane, HERO_POOLS } from "@/constants/heroes";
 import {
   Match,
+  MatchMode,
   DbPlayer,
   Season,
   fetchAllMatches,
@@ -49,6 +52,13 @@ export default function Home() {
     null,
   );
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<
+    "TEAM_LANE" | "HERO_ROV" | "HERO_MLBB"
+  >("TEAM_LANE");
+  const [teamAHeroes, setTeamAHeroes] = useState<string[]>([]);
+  const [teamBHeroes, setTeamBHeroes] = useState<string[]>([]);
+  const [teamALanes, setTeamALanes] = useState<string[]>([]);
+  const [teamBLanes, setTeamBLanes] = useState<string[]>([]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
@@ -266,7 +276,7 @@ export default function Home() {
         return idOrName; // Bot or fallback
       };
 
-      const roles = ["Top Lane", "Jungle", "Mid Lane", "ADC", "Support"];
+      const roles = ["Top", "Jungle", "Mid", "ADC", "Support"];
       const formatTeam = (team: string[]) => {
         return team
           .map((player, idx) => {
@@ -480,6 +490,70 @@ export default function Home() {
     setTeamA(finalTeamA);
     setTeamB(finalTeamB);
 
+    if (activeMode === "HERO_ROV" || activeMode === "HERO_MLBB") {
+      const currentGame: GameType = activeMode === "HERO_ROV" ? "ROV" : "MLBB";
+      const baseLanes: HeroLane[] = ["Top", "Jungle", "Mid", "ADC", "Support"];
+
+      // Shuffle the 5 lanes for Team A and Team B
+      const lanesA = [...baseLanes].sort(() => Math.random() - 0.5);
+      const lanesB = [...baseLanes].sort(() => Math.random() - 0.5);
+
+      const pickHeroForLane = (
+        lane: HeroLane,
+        usedHeroes: Set<string>,
+      ): string => {
+        const pool = HERO_POOLS[currentGame][lane];
+        const available = pool.filter((h) => !usedHeroes.has(h));
+        const list = available.length > 0 ? available : pool;
+        const chosen = list[Math.floor(Math.random() * list.length)];
+        usedHeroes.add(chosen);
+        return chosen;
+      };
+
+      const usedA = new Set<string>();
+      const heroesA = lanesA.map((l) => pickHeroForLane(l, usedA));
+
+      const usedB = new Set<string>();
+      const heroesB = lanesB.map((l) => pickHeroForLane(l, usedB));
+
+      setTeamALanes(lanesA);
+      setTeamBLanes(lanesB);
+      setTeamAHeroes(heroesA);
+      setTeamBHeroes(heroesB);
+
+      setTimeout(async () => {
+        try {
+          const saved = await saveMatch({
+            teamA: finalTeamA,
+            teamB: finalTeamB,
+            teamALanes: lanesA,
+            teamBLanes: lanesB,
+            teamAHeroes: heroesA,
+            teamBHeroes: heroesB,
+            winner: null,
+            createdAt: Date.now(),
+            seasonId: activeSeasonId,
+            mode: activeMode === "HERO_ROV" ? "HERO_ROV" : "HERO_MLBB",
+          });
+          setActiveMatchId(saved.id);
+
+          const updatedLogs = await fetchAllMatches();
+          setMatches(updatedLogs);
+        } catch (error) {
+          console.error("Failed to log hero draft match:", error);
+        } finally {
+          setIsGenerating(false);
+        }
+      }, 2400);
+      return;
+    }
+
+    // Normal mode: reset heroes, use default lanes
+    setTeamAHeroes([]);
+    setTeamBHeroes([]);
+    setTeamALanes(["Top", "Jungle", "Mid", "ADC", "Support"]);
+    setTeamBLanes(["Top", "Jungle", "Mid", "ADC", "Support"]);
+
     setTimeout(async () => {
       try {
         const saved = await saveMatch({
@@ -490,6 +564,7 @@ export default function Home() {
           winner: null,
           createdAt: Date.now(),
           seasonId: activeSeasonId,
+          mode: "TEAM_LANE",
         });
         setActiveMatchId(saved.id);
 
@@ -547,8 +622,8 @@ export default function Home() {
     });
   };
 
-  const handleDeleteAllMatches = async () => {
-    await deleteAllMatches();
+  const handleDeleteAllMatches = async (mode?: MatchMode) => {
+    await deleteAllMatches(mode);
 
     const [updatedLogs, updatedPlayers] = await Promise.all([
       fetchAllMatches(),
@@ -588,7 +663,7 @@ export default function Home() {
                 HEROES OF MADNESS
               </h1>
               <p className="text-[10px] font-pixel text-neon-yellow tracking-widest mt-1.5 uppercase glow-yellow">
-                MLBB RANDOM TEAM GENERATOR • ACTIVE SEASON {activeSeasonId}
+                TEAM & HERO RANDOMIZATION ARENA • ACTIVE SEASON {activeSeasonId}
               </p>
             </div>
 
@@ -746,7 +821,73 @@ export default function Home() {
 
           {/* Dashboard Main Area */}
           <main className="mx-auto w-full p-4 md:p-6 flex-grow flex flex-col gap-4 lg:gap-6 items-center">
-            {/* Top Section: PlayerInput (Centered, Max 800px) */}
+            {/* Retro Arcade Mode Selector Navigation Menu */}
+            <section className="container">
+              <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950/90 border-2 border-slate-700/80 p-3 px-4 shadow-xl select-none">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-pixel text-[11px] text-neon-yellow glow-yellow">
+                    🕹️ SELECT MODE:
+                  </span>
+                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase hidden md:inline">
+                    {activeMode === "TEAM_LANE" && "Team + Lane Match Draft"}
+                    {activeMode === "HERO_ROV" && "Hero Randomizer – ROV"}
+                    {activeMode === "HERO_MLBB" && "Hero Randomizer – MLBB"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Mode 1: Random Team + Lane (Existing Mode) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(440, 0.08, "triangle");
+                      setActiveMode("TEAM_LANE");
+                    }}
+                    className={`font-pixel text-[9px] px-3.5 py-2 border-2 transition-all uppercase cursor-pointer select-none tracking-wider ${
+                      activeMode === "TEAM_LANE"
+                        ? "border-neon-yellow bg-neon-yellow/20 text-neon-yellow glow-yellow shadow-[0_0_12px_rgba(255,210,0,0.3)]"
+                        : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-500 hover:text-white"
+                    }`}
+                  >
+                    ⚔️ RANDOM TEAM + LANE
+                  </button>
+
+                  {/* Mode 2: Random Hero + Lane - ROV */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(440, 0.08, "triangle");
+                      setActiveMode("HERO_ROV");
+                    }}
+                    className={`font-pixel text-[9px] px-3.5 py-2 border-2 transition-all uppercase cursor-pointer select-none tracking-wider ${
+                      activeMode === "HERO_ROV"
+                        ? "border-neon-red bg-neon-red/20 text-neon-red glow-red shadow-[0_0_12px_rgba(255,42,95,0.3)]"
+                        : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-neon-red hover:text-neon-red"
+                    }`}
+                  >
+                    🔥 RANDOM HERO + LANE – ROV
+                  </button>
+
+                  {/* Mode 3: Random Hero + Lane - MLBB */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(440, 0.08, "triangle");
+                      setActiveMode("HERO_MLBB");
+                    }}
+                    className={`font-pixel text-[9px] px-3.5 py-2 border-2 transition-all uppercase cursor-pointer select-none tracking-wider ${
+                      activeMode === "HERO_MLBB"
+                        ? "border-neon-blue bg-neon-blue/20 text-neon-blue glow-blue shadow-[0_0_12px_rgba(0,210,255,0.3)]"
+                        : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-neon-blue hover:text-neon-blue"
+                    }`}
+                  >
+                    ⚡ RANDOM HERO + LANE – MLBB
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Top Section: PlayerInput (Select Player option in all modes) */}
             <section className="container">
               <PlayerInput
                 names={names}
@@ -758,6 +899,27 @@ export default function Home() {
                 onDeletePlayer={handleDeletePlayer}
                 onUpdatePlayer={handleUpdatePlayer}
                 isAdmin={isAdmin}
+                title={
+                  activeMode === "HERO_ROV"
+                    ? "SELECT PLAYERS – RANDOM HERO + LANE (ROV)"
+                    : activeMode === "HERO_MLBB"
+                      ? "SELECT PLAYERS – RANDOM HERO + LANE (MLBB)"
+                      : "SELECT FIGHTERS"
+                }
+                subtitle={
+                  activeMode === "HERO_ROV"
+                    ? "CHOOSE PLAYERS FOR ROV RANDOM HERO + LANE. SYSTEM WILL RANDOMLY ASSIGN A LANE AND AN APPROPRIATE ROV HERO TO EACH PLAYER."
+                    : activeMode === "HERO_MLBB"
+                      ? "CHOOSE PLAYERS FOR MLBB RANDOM HERO + LANE. SYSTEM WILL RANDOMLY ASSIGN A LANE AND AN APPROPRIATE MLBB HERO TO EACH PLAYER."
+                      : "SELECT 10 PLAYERS FROM THE DATABASE BELOW. USE QUICK FILL TO LET RANDOM BOTS FILL THE VOID."
+                }
+                generateButtonText={
+                  activeMode === "HERO_ROV"
+                    ? "RANDOMIZE ROV HEROES & LANES"
+                    : activeMode === "HERO_MLBB"
+                      ? "RANDOMIZE MLBB HEROES & LANES"
+                      : "FIGHT! RANDOMIZE"
+                }
               />
             </section>
 
@@ -780,7 +942,11 @@ export default function Home() {
                     <span className="font-pixel text-[9px] text-[#a0a0c0] uppercase tracking-widest ml-2">
                       {isGenerating
                         ? "DRAFT GENERATOR ACTIVE"
-                        : "VERSUS ARENA STANDARD"}
+                        : activeMode === "HERO_ROV"
+                          ? "🔥 ROV RANDOM HERO + LANE ARENA"
+                          : activeMode === "HERO_MLBB"
+                            ? "⚡ MLBB RANDOM HERO + LANE ARENA"
+                            : "VERSUS ARENA STANDARD"}
                     </span>
                   </div>
 
@@ -816,6 +982,10 @@ export default function Home() {
                 <VersesArena
                   teamA={teamA}
                   teamB={teamB}
+                  teamALanes={teamALanes}
+                  teamBLanes={teamBLanes}
+                  teamAHeroes={teamAHeroes}
+                  teamBHeroes={teamBHeroes}
                   winner={activeWinner}
                   isGenerating={isGenerating}
                   triggerScreenShake={triggerScreenShake}
@@ -823,11 +993,25 @@ export default function Home() {
                   rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
                   matches={matches}
                   seasons={seasons}
+                  mode={activeMode}
                 />
               </div>
             </section>
 
-            {/* Bottom Section: History logs Dashboard */}
+            {/* Quick Hero Roller & Directory (Available when in Hero modes) */}
+            {(activeMode === "HERO_ROV" || activeMode === "HERO_MLBB") && (
+              <section className="container mt-2">
+                <HeroRandomizer
+                  game={activeMode === "HERO_ROV" ? "ROV" : "MLBB"}
+                  triggerScreenShake={triggerScreenShake}
+                  onSelectGame={(g) =>
+                    setActiveMode(g === "ROV" ? "HERO_ROV" : "HERO_MLBB")
+                  }
+                />
+              </section>
+            )}
+
+            {/* Bottom Section: History logs Dashboard (All modes) */}
             <section className="w-full max-w-5xl flex flex-col">
               <HistoryDashboard
                 matches={matches}
@@ -839,6 +1023,8 @@ export default function Home() {
                 isAdmin={isAdmin}
                 activeSeasonId={activeSeasonId}
                 seasons={seasons}
+                activeMode={activeMode}
+                onModeChange={setActiveMode}
               />
             </section>
           </main>

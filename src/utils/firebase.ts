@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { SQUAD } from "@/constants/players";
+import { normalizeLane } from "@/constants/heroes";
 import {
   getFirestore,
   collection,
@@ -43,6 +44,8 @@ export interface PlayerFeedback {
   };
 }
 
+export type MatchMode = "TEAM_LANE" | "HERO_ROV" | "HERO_MLBB";
+
 export interface Match {
   id: string;
   createdAt: number;
@@ -50,8 +53,11 @@ export interface Match {
   teamB: string[];
   teamALanes?: string[];
   teamBLanes?: string[];
+  teamAHeroes?: string[];
+  teamBHeroes?: string[];
   winner: "teamA" | "teamB" | null;
   seasonId?: number;
+  mode?: MatchMode;
   feedback?: {
     [playerKey: string]: PlayerFeedback;
   };
@@ -222,8 +228,12 @@ export async function fetchMatches(): Promise<Match[]> {
           createdAt: data.createdAt || Date.now(),
           teamA: data.teamA || [],
           teamB: data.teamB || [],
-          teamALanes: data.teamALanes,
-          teamBLanes: data.teamBLanes,
+          teamALanes: data.teamALanes
+            ? data.teamALanes.map(normalizeLane)
+            : undefined,
+          teamBLanes: data.teamBLanes
+            ? data.teamBLanes.map(normalizeLane)
+            : undefined,
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           feedback: data.feedback || {},
@@ -264,8 +274,12 @@ export async function fetchMatchById(matchId: string): Promise<Match | null> {
           createdAt: data.createdAt || Date.now(),
           teamA: data.teamA || [],
           teamB: data.teamB || [],
-          teamALanes: data.teamALanes,
-          teamBLanes: data.teamBLanes,
+          teamALanes: data.teamALanes
+            ? data.teamALanes.map(normalizeLane)
+            : undefined,
+          teamBLanes: data.teamBLanes
+            ? data.teamBLanes.map(normalizeLane)
+            : undefined,
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           feedback: data.feedback || {},
@@ -300,6 +314,14 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       : `local_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`,
   };
 
+  // Normalize lanes to standardized names (Top, Jungle, Mid, ADC, Support)
+  if (newMatch.teamALanes !== undefined) {
+    newMatch.teamALanes = newMatch.teamALanes.map(normalizeLane);
+  }
+  if (newMatch.teamBLanes !== undefined) {
+    newMatch.teamBLanes = newMatch.teamBLanes.map(normalizeLane);
+  }
+
   if (db) {
     try {
       const matchesCol = collection(db, "matches");
@@ -312,11 +334,20 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       if (newMatch.seasonId !== undefined) {
         firestoreData.seasonId = newMatch.seasonId;
       }
+      if (newMatch.mode !== undefined) {
+        firestoreData.mode = newMatch.mode;
+      }
       if (newMatch.teamALanes !== undefined) {
         firestoreData.teamALanes = newMatch.teamALanes;
       }
       if (newMatch.teamBLanes !== undefined) {
         firestoreData.teamBLanes = newMatch.teamBLanes;
+      }
+      if (newMatch.teamAHeroes !== undefined) {
+        firestoreData.teamAHeroes = newMatch.teamAHeroes;
+      }
+      if (newMatch.teamBHeroes !== undefined) {
+        firestoreData.teamBHeroes = newMatch.teamBHeroes;
       }
       if (newMatch.feedback !== undefined) {
         firestoreData.feedback = newMatch.feedback;
@@ -417,8 +448,8 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
   return success;
 }
 
-// Delete all matches from history
-export async function deleteAllMatches(): Promise<boolean> {
+// Delete matches from history (optionally scoped to a specific mode)
+export async function deleteAllMatches(mode?: MatchMode): Promise<boolean> {
   let success = false;
   if (db) {
     try {
@@ -426,13 +457,17 @@ export async function deleteAllMatches(): Promise<boolean> {
       const querySnapshot = await getDocs(matchesCol);
       const deletePromises: Promise<void>[] = [];
       querySnapshot.forEach((docSnap) => {
-        deletePromises.push(deleteDoc(doc(db!, "matches", docSnap.id)));
+        const data = docSnap.data();
+        const mMode = data.mode || "TEAM_LANE";
+        if (!mode || mMode === mode) {
+          deletePromises.push(deleteDoc(doc(db!, "matches", docSnap.id)));
+        }
       });
       await Promise.all(deletePromises);
       success = true;
     } catch (e) {
       console.error(
-        "Error deleting all matches from Firestore, falling back to LocalStorage:",
+        "Error deleting matches from Firestore, falling back to LocalStorage:",
         e,
       );
     }
@@ -440,7 +475,20 @@ export async function deleteAllMatches(): Promise<boolean> {
 
   // LocalStorage Fallback
   if (typeof window !== "undefined") {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      try {
+        const list = JSON.parse(stored) as Match[];
+        const remaining = mode
+          ? list.filter((m) => (m.mode || "TEAM_LANE") !== mode)
+          : [];
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(remaining));
+      } catch {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+      }
+    } else {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    }
     success = true;
   }
 
@@ -448,6 +496,12 @@ export async function deleteAllMatches(): Promise<boolean> {
     await recalculateRanks();
   }
   return success;
+}
+
+// Fetch matches filtered strictly by mode
+export async function fetchMatchesByMode(mode: MatchMode): Promise<Match[]> {
+  const all = await fetchAllMatches();
+  return all.filter((m) => (m.mode || "TEAM_LANE") === mode);
 }
 
 const LOCAL_PLAYERS_KEY = "mlbb_generator_players";
@@ -864,10 +918,17 @@ export async function fetchAllMatches(): Promise<Match[]> {
           createdAt: data.createdAt || Date.now(),
           teamA: data.teamA || [],
           teamB: data.teamB || [],
-          teamALanes: data.teamALanes,
-          teamBLanes: data.teamBLanes,
+          teamALanes: data.teamALanes
+            ? data.teamALanes.map(normalizeLane)
+            : undefined,
+          teamBLanes: data.teamBLanes
+            ? data.teamBLanes.map(normalizeLane)
+            : undefined,
+          teamAHeroes: data.teamAHeroes,
+          teamBHeroes: data.teamBHeroes,
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
+          mode: data.mode || "TEAM_LANE",
           feedback: data.feedback || {},
         });
       });
@@ -883,7 +944,14 @@ export async function fetchAllMatches(): Promise<Match[]> {
   if (!stored) return [];
   try {
     const list = JSON.parse(stored) as Match[];
-    return list.sort((a, b) => b.createdAt - a.createdAt);
+    return list
+      .map((m) => ({
+        ...m,
+        mode: m.mode || "TEAM_LANE",
+        teamALanes: m.teamALanes ? m.teamALanes.map(normalizeLane) : undefined,
+        teamBLanes: m.teamBLanes ? m.teamBLanes.map(normalizeLane) : undefined,
+      }))
+      .sort((a, b) => b.createdAt - a.createdAt);
   } catch {
     return [];
   }

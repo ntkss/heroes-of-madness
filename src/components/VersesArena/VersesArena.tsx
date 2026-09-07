@@ -14,16 +14,26 @@ import {
   playBeep,
 } from "@/utils/audio";
 import { SQUAD_NAMES } from "@/constants/players";
-import { DbPlayer, RankConfig, Match, Season } from "@/utils/firebase";
+import {
+  DbPlayer,
+  RankConfig,
+  Match,
+  MatchMode,
+  Season,
+} from "@/utils/firebase";
 import { calculateTeamWinRates, PlayerOverallStats } from "@/utils/winrate";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
-const ROLES = ["EXP", "JUNGLE", "MID", "GOLD", "ROAMING"];
+const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"];
 
 interface VersesArenaProps {
   teamA: string[];
   teamB: string[];
+  teamALanes?: string[];
+  teamBLanes?: string[];
+  teamAHeroes?: string[];
+  teamBHeroes?: string[];
   winner: "teamA" | "teamB" | null;
   isGenerating: boolean;
   triggerScreenShake: () => void;
@@ -31,6 +41,7 @@ interface VersesArenaProps {
   rankConfig: RankConfig;
   matches?: Match[];
   seasons?: Season[];
+  mode?: MatchMode;
 }
 
 // ─── Team Row ──────────────────────────────────────────────────────────────────
@@ -39,6 +50,8 @@ interface TeamRowProps {
   side: "A" | "B";
   finalNames: string[];
   displayNames: string[];
+  lanes?: string[];
+  heroes?: string[];
   locked: boolean[];
   lockedOffset: number;
   winner: "teamA" | "teamB" | null;
@@ -57,6 +70,8 @@ function TeamRow({
   side,
   finalNames,
   displayNames,
+  lanes,
+  heroes,
   locked,
   lockedOffset,
   winner,
@@ -200,7 +215,8 @@ function TeamRow({
                 key={idx}
                 name={name}
                 displayName={player ? player.name : displayNames[idx]}
-                role={ROLES[idx]}
+                role={lanes?.[idx] || ROLES[idx]}
+                hero={heroes?.[idx]}
                 locked={locked[idx + lockedOffset]}
                 team={side}
                 imageURL={player?.imageURL}
@@ -235,6 +251,10 @@ const TIPS = [
 export default function VersesArena({
   teamA,
   teamB,
+  teamALanes,
+  teamBLanes,
+  teamAHeroes,
+  teamBHeroes,
   winner,
   isGenerating,
   triggerScreenShake,
@@ -242,6 +262,7 @@ export default function VersesArena({
   rankConfig,
   matches,
   seasons,
+  mode,
 }: VersesArenaProps) {
   const [dispA, setDispA] = useState<string[]>(Array(5).fill("???"));
   const [dispB, setDispB] = useState<string[]>(Array(5).fill("???"));
@@ -327,8 +348,8 @@ export default function VersesArena({
         favoredTeam: "tie" as const,
       };
     }
-    return calculateTeamWinRates(teamA, teamB, matches || [], squad);
-  }, [teamA, teamB, matches, squad]);
+    return calculateTeamWinRates(teamA, teamB, matches || [], squad, mode);
+  }, [teamA, teamB, matches, squad, mode]);
 
   // Synchronize or reset animation win rates
   useEffect(() => {
@@ -523,6 +544,8 @@ export default function VersesArena({
         side="A"
         finalNames={teamA.length >= 5 ? teamA : Array(5).fill("DRAFTING")}
         displayNames={dispA}
+        lanes={teamALanes}
+        heroes={teamAHeroes}
         locked={lockedSlots}
         lockedOffset={0}
         winner={winner}
@@ -614,6 +637,8 @@ export default function VersesArena({
         side="B"
         finalNames={teamB.length >= 5 ? teamB : Array(5).fill("DRAFTING")}
         displayNames={dispB}
+        lanes={teamBLanes}
+        heroes={teamBHeroes}
         locked={lockedSlots}
         lockedOffset={5}
         winner={winner}

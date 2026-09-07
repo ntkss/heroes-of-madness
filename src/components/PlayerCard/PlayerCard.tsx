@@ -50,6 +50,7 @@ export interface PlayerCardProps {
   name: string;
   displayName?: string;
   role: string;
+  hero?: string;
   locked: boolean;
   team: "A" | "B";
   imageURL?: string;
@@ -66,6 +67,7 @@ export default function PlayerCard({
   name,
   displayName,
   role,
+  hero,
   locked,
   team,
   imageURL,
@@ -248,6 +250,14 @@ export default function PlayerCard({
                     LANE WR: {laneWinRate}%
                   </span>
                 )}
+            </div>
+          )}
+
+          {/* Randomly Selected Hero (Hero + Lane Modes) */}
+          {hero && locked && name !== "???" && name !== "DRAFTING" && (
+            <div className={styles.heroBadgeBox}>
+              <span className={styles.heroBadgeLabel}>HERO:</span>
+              <span className={styles.heroBadgeName}>{hero}</span>
             </div>
           )}
 

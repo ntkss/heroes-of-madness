@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Match,
+  MatchMode,
   DbPlayer,
   RankConfig,
   SeasonPlayerStat,
@@ -17,17 +18,20 @@ import styles from "./styles.module.css";
 import { playBeep, playWin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
 import { useAuth } from "@/utils/AuthContext";
+import { normalizeLane } from "@/constants/heroes";
 
 interface HistoryDashboardProps {
   matches: Match[];
   onDeleteMatch: (id: string) => void;
-  onDeleteAllMatches: () => void;
+  onDeleteAllMatches: (mode?: MatchMode) => void;
   onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
   isAdmin?: boolean;
   activeSeasonId?: number;
   seasons?: Season[];
+  activeMode?: MatchMode;
+  onModeChange?: (mode: MatchMode) => void;
 }
 
 interface MatchCardProps {
@@ -97,7 +101,11 @@ function MatchCardComponent({
     }
   };
 
-  const renderRoster = (team: string[], lanes: string[] | undefined) => {
+  const renderRoster = (
+    team: string[],
+    lanes: string[] | undefined,
+    heroes: string[] | undefined,
+  ) => {
     const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
     return (
       <div className={styles.rosterList}>
@@ -105,7 +113,8 @@ function MatchCardComponent({
           const pKey = getPlayerKey(playerNameOrId);
           const name = getPlayerDisplayName(playerNameOrId);
           const dbPlayer = availablePlayers.find((p) => p.id === pKey);
-          const lane = lanes ? lanes[idx] : defaultLanes[idx];
+          const lane = lanes ? normalizeLane(lanes[idx]) : defaultLanes[idx];
+          const hero = heroes ? heroes[idx] : undefined;
           const feedback = localFeedback[pKey] ||
             localFeedback[pKey.toLowerCase()] || { likes: 0, dislikes: 0 };
           const userVote =
@@ -128,7 +137,12 @@ function MatchCardComponent({
                 </div>
                 <div className={styles.playerMeta}>
                   <span className={styles.playerName}>{name}</span>
-                  <span className={styles.playerLaneBadge}>{lane}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={styles.playerLaneBadge}>{lane}</span>
+                    {hero && (
+                      <span className={styles.playerHeroBadge}>• {hero}</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -183,6 +197,31 @@ function MatchCardComponent({
     );
   };
 
+  const getModeBadge = (mode?: MatchMode) => {
+    switch (mode) {
+      case "HERO_ROV":
+        return {
+          icon: "🔥",
+          label: "HERO – ROV",
+          className: styles.modeBadgeHeroRov,
+        };
+      case "HERO_MLBB":
+        return {
+          icon: "⚡",
+          label: "HERO – MLBB",
+          className: styles.modeBadgeHeroMlbb,
+        };
+      default:
+        return {
+          icon: "⚔️",
+          label: "TEAM + LANE",
+          className: styles.modeBadgeTeamLane,
+        };
+    }
+  };
+
+  const modeBadgeInfo = getModeBadge(match.mode);
+
   return (
     <div className={styles.matchCardContainer}>
       <div className={styles.matchCard}>
@@ -190,7 +229,14 @@ function MatchCardComponent({
         <div className={styles.matchDetails}>
           {/* Header labels */}
           <div className={styles.matchDetailsHeader}>
-            <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
+            <div className="flex items-center gap-2">
+              <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
+              <span
+                className={`${styles.modeBadge} ${modeBadgeInfo.className}`}
+              >
+                {modeBadgeInfo.icon} {modeBadgeInfo.label}
+              </span>
+            </div>
             <span className={styles.matchDetailsHeaderDate}>
               {formatDate(match.createdAt)}
             </span>
@@ -201,12 +247,12 @@ function MatchCardComponent({
             {/* Blue */}
             <div className={styles.rosterCol}>
               <span className={styles.rosterLabelBlue}>BLUE TEAM</span>
-              {renderRoster(match.teamA, match.teamALanes)}
+              {renderRoster(match.teamA, match.teamALanes, match.teamAHeroes)}
             </div>
             {/* Red */}
             <div className={styles.rosterCol}>
               <span className={styles.rosterLabelRed}>RED TEAM</span>
-              {renderRoster(match.teamB, match.teamBLanes)}
+              {renderRoster(match.teamB, match.teamBLanes, match.teamBHeroes)}
             </div>
           </div>
         </div>
@@ -305,8 +351,10 @@ export default function HistoryDashboard({
   availablePlayers,
   rankConfig,
   isAdmin = false,
-  activeSeasonId,
-  seasons = [],
+  activeSeasonId = 1,
+  seasons,
+  activeMode = "TEAM_LANE",
+  onModeChange,
 }: HistoryDashboardProps) {
   const [selectedSeasonId, setSelectedSeasonId] = React.useState<number | null>(
     null,
@@ -324,6 +372,14 @@ export default function HistoryDashboard({
     null,
   );
   const [isDeletingMatch, setIsDeletingMatch] = React.useState(false);
+  const [internalSelectedMode, setInternalSelectedMode] =
+    React.useState<MatchMode>("TEAM_LANE");
+  const selectedMode = activeMode || internalSelectedMode;
+
+  const handleModeChange = (newMode: MatchMode) => {
+    setInternalSelectedMode(newMode);
+    onModeChange?.(newMode);
+  };
 
   // Determine effective season ID (defaults to activeSeasonId or 1 if selectedSeasonId is null)
   const effectiveSeasonId =
@@ -369,6 +425,14 @@ export default function HistoryDashboard({
     });
   }, [matches, effectiveSeasonId]);
 
+  // Filter matches by selected mode (strictly isolated, no ALL option)
+  const modeFilteredMatches = React.useMemo(() => {
+    return seasonMatches.filter((m) => {
+      const matchMode = m.mode || "TEAM_LANE";
+      return matchMode === selectedMode;
+    });
+  }, [seasonMatches, selectedMode]);
+
   const getPlayerKey = React.useCallback(
     (nameOrId: string) => {
       const found = availablePlayers.find(
@@ -382,12 +446,18 @@ export default function HistoryDashboard({
   );
   const handlePurgeAllClick = () => {
     playBeep(220, 0.1, "sawtooth");
+    const modeLabel =
+      selectedMode === "HERO_ROV"
+        ? "RANDOM HERO – ROV"
+        : selectedMode === "HERO_MLBB"
+          ? "RANDOM HERO – MLBB"
+          : "RANDOM TEAM + LANE";
     const confirmDelete = window.confirm(
-      "⚠️ DANGER! ARE YOU SURE YOU WANT TO PURGE ALL MATCH LOGS FROM THE CABINET DATABASE?\nTHIS ACTION CANNOT BE UNDONE!",
+      `⚠️ DANGER! ARE YOU SURE YOU WANT TO PURGE ALL [${modeLabel}] MATCH LOGS FROM THE CABINET DATABASE?\nTHIS ACTION CANNOT BE UNDONE!`,
     );
     if (confirmDelete) {
       playBeep(100, 0.3, "sawtooth");
-      onDeleteAllMatches();
+      onDeleteAllMatches(selectedMode);
     }
   };
 
@@ -457,37 +527,52 @@ export default function HistoryDashboard({
       }
     > = {};
 
-    // 1. Initialize stats map with database stats for all available players
-    availablePlayers.forEach((player) => {
-      const dbMatches = Number(player.total_match_played) || 0;
-      const dbWinrate = Number(player.winrate) || 0;
-      const dbWins = Math.round((dbWinrate / 100) * dbMatches);
-      const dbLosses = dbMatches - dbWins;
+    // 1. Initialize stats map
+    if (selectedMode === "TEAM_LANE") {
+      availablePlayers.forEach((player) => {
+        const dbMatches = Number(player.total_match_played) || 0;
+        const dbWinrate = Number(player.winrate) || 0;
+        const dbWins = Math.round((dbWinrate / 100) * dbMatches);
+        const dbLosses = dbMatches - dbWins;
 
-      const atMatches =
-        player.allTimeMatches !== undefined
-          ? Number(player.allTimeMatches)
-          : dbMatches;
-      const atWinrate =
-        player.allTimeWinrate !== undefined
-          ? Number(player.allTimeWinrate)
-          : dbWinrate;
-      const atWins =
-        player.allTimeWins !== undefined
-          ? Number(player.allTimeWins)
-          : Math.round((atWinrate / 100) * atMatches);
-      const atLosses = atMatches - atWins;
+        const atMatches =
+          player.allTimeMatches !== undefined
+            ? Number(player.allTimeMatches)
+            : dbMatches;
+        const atWinrate =
+          player.allTimeWinrate !== undefined
+            ? Number(player.allTimeWinrate)
+            : dbWinrate;
+        const atWins =
+          player.allTimeWins !== undefined
+            ? Number(player.allTimeWins)
+            : Math.round((atWinrate / 100) * atMatches);
+        const atLosses = atMatches - atWins;
 
-      statsMap[player.id] = {
-        wins: dbWins,
-        losses: dbLosses,
-        matches: dbMatches,
-        allTimeWins: atWins,
-        allTimeMatches: atMatches,
-        allTimeLosses: atLosses,
-        dbPlayer: player,
-      };
-    });
+        statsMap[player.id] = {
+          wins: dbWins,
+          losses: dbLosses,
+          matches: dbMatches,
+          allTimeWins: atWins,
+          allTimeMatches: atMatches,
+          allTimeLosses: atLosses,
+          dbPlayer: player,
+        };
+      });
+    } else {
+      // For HERO_ROV and HERO_MLBB modes, initialize with 0 so statistics are 100% isolated to this mode
+      availablePlayers.forEach((player) => {
+        statsMap[player.id] = {
+          wins: 0,
+          losses: 0,
+          matches: 0,
+          allTimeWins: 0,
+          allTimeMatches: 0,
+          allTimeLosses: 0,
+          dbPlayer: player,
+        };
+      });
+    }
 
     const getPlayerKey = (nameOrId: string) => {
       const found = availablePlayers.find(
@@ -506,9 +591,10 @@ export default function HistoryDashboard({
           ? Math.max(1, ...matches.map((m) => Number(m.seasonId) || 1))
           : 1;
 
-    // 2. Accumulate stats from matches log ONLY for unregistered players/bots (to avoid double-counting)
+    // 2. Accumulate stats from matches log strictly for the selected mode
     matches.forEach((match) => {
       if (!match.winner) return;
+      if ((match.mode || "TEAM_LANE") !== selectedMode) return;
 
       const matchSeasonId =
         match.seasonId !== undefined ? Number(match.seasonId) : 1;
@@ -632,6 +718,7 @@ export default function HistoryDashboard({
     statsSubTab,
     rankConfig.minMatches,
     activeSeasonId,
+    selectedMode,
   ]);
 
   // Dynamically compute podium positions for the winrates tab based on statsSubTab selection
@@ -772,17 +859,19 @@ export default function HistoryDashboard({
         <h2 className={styles.title}>ARENA LOGBOOK</h2>
         <div className={styles.headerControls}>
           <span className={styles.recordsCount}>
-            RECORDS: {seasonMatches.length}
+            RECORDS: {modeFilteredMatches.length}
           </span>
-          {seasonMatches.length > 0 && activeTab === "history" && isAdmin && (
-            <button
-              onClick={handlePurgeAllClick}
-              className={styles.purgeAllBtn}
-              title="Purge all match logs"
-            >
-              PURGE ALL
-            </button>
-          )}
+          {modeFilteredMatches.length > 0 &&
+            activeTab === "history" &&
+            isAdmin && (
+              <button
+                onClick={handlePurgeAllClick}
+                className={styles.purgeAllBtn}
+                title="Purge all match logs"
+              >
+                PURGE ALL
+              </button>
+            )}
         </div>
       </div>
 
@@ -852,7 +941,7 @@ export default function HistoryDashboard({
       {/* Tab Contents: MATCH HISTORY */}
       {activeTab === "history" && (
         <div className="flex flex-col gap-3">
-          {/* Season Selector Card */}
+          {/* Season & Mode Filter Card */}
           <div className={styles.seasonFilterCard}>
             <div className={styles.seasonFilterControls}>
               <span className={styles.seasonFilterLabel}>FILTER SEASON:</span>
@@ -871,22 +960,38 @@ export default function HistoryDashboard({
                 ))}
               </select>
             </div>
+            <div className={styles.seasonFilterControls}>
+              <span className={styles.seasonFilterLabel}>MODE:</span>
+              <select
+                value={selectedMode}
+                onChange={(e) => {
+                  playBeep(330, 0.1, "sine");
+                  handleModeChange(e.target.value as MatchMode);
+                }}
+                className={styles.seasonSelectBox}
+              >
+                <option value="TEAM_LANE">⚔️ RANDOM TEAM</option>
+                <option value="HERO_ROV">🔥 RANDOM HERO – ROV</option>
+                <option value="HERO_MLBB">⚡ RANDOM HERO – MLBB</option>
+              </select>
+            </div>
             <span className={styles.seasonMatchCountText}>
-              SHOWING {seasonMatches.length} MATCH
-              {seasonMatches.length === 1 ? "" : "ES"}
+              SHOWING {modeFilteredMatches.length} MATCH
+              {modeFilteredMatches.length === 1 ? "" : "ES"}
             </span>
           </div>
 
-          {seasonMatches.length === 0 ? (
+          {modeFilteredMatches.length === 0 ? (
             <div className={styles.emptyStateContainer}>
               <span className={styles.emptyStateTitle}>NO RECORDS FOUND</span>
               <span className={styles.emptyStateSubtitle}>
-                NO MATCH LOGS RECORDED FOR SEASON {effectiveSeasonId}.
+                NO MATCH LOGS RECORDED FOR MODE:{" "}
+                {selectedMode.replace("_", " ")} IN SEASON {effectiveSeasonId}.
               </span>
             </div>
           ) : (
             <div className={styles.historyList}>
-              {seasonMatches.map((match) => (
+              {modeFilteredMatches.map((match) => (
                 <MatchCardComponent
                   key={match.id}
                   match={match}

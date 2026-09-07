@@ -23,6 +23,9 @@ interface PlayerInputProps {
     avatar: string,
   ) => Promise<DbPlayer>;
   isAdmin?: boolean;
+  title?: string;
+  generateButtonText?: string;
+  subtitle?: string;
 }
 
 export default function PlayerInput({
@@ -35,6 +38,9 @@ export default function PlayerInput({
   onDeletePlayer,
   onUpdatePlayer,
   isAdmin = false,
+  title = "SELECT FIGHTERS",
+  generateButtonText,
+  subtitle,
 }: PlayerInputProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -97,7 +103,7 @@ export default function PlayerInput({
 
       {/* Screen Title */}
       <div className={styles.header}>
-        <h2 className={styles.title}>SELECT FIGHTERS</h2>
+        <h2 className={styles.title}>{title}</h2>
         <span
           className={`${styles.counterBox} ${
             isReady ? styles.counterReady : styles.counterNotReady
@@ -163,8 +169,8 @@ export default function PlayerInput({
         {/* Right Side: Quick Fill, Clear, Add new, Fight */}
         <div className={styles.rightCol}>
           <p className={styles.description}>
-            SELECT 10 PLAYERS FROM THE DATABASE BELOW. USE QUICK FILL TO LET
-            RANDOM BOTS FILL THE VOID.
+            {subtitle ||
+              "SELECT 10 PLAYERS FROM THE DATABASE BELOW. USE QUICK FILL TO LET RANDOM BOTS FILL THE VOID."}
           </p>
 
           <div className={styles.actionsGrid}>
@@ -214,7 +220,9 @@ export default function PlayerInput({
                   : styles.randomizeBtnActive
               }`}
             >
-              {isGenerating ? "DRAFTING..." : "FIGHT! RANDOMIZE"}
+              {isGenerating
+                ? "DRAFTING..."
+                : generateButtonText || "FIGHT! RANDOMIZE"}
             </button>
 
             {!isReady && (

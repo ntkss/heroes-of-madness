@@ -108,6 +108,10 @@
   @apply mt-4 flex flex-col gap-2;
 }
 
+.seedBtn {
+  @apply w-full border border-neon-yellow/50 bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow/20 hover:border-neon-yellow py-1.5 px-3 font-pixel text-[8px] tracking-wider transition-all duration-200 cursor-pointer text-center uppercase;
+}
+
 .purgeBtn {
   @apply w-full border border-neon-red/50 bg-neon-red/10 text-neon-red hover:bg-neon-red/20 hover:border-neon-red py-1.5 px-3 font-pixel text-[8px] tracking-wider transition-all duration-200 cursor-pointer text-center uppercase;
 }

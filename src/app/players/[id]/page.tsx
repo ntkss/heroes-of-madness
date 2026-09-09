@@ -17,6 +17,7 @@ import {
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 import { normalizeLane } from "@/constants/heroes";
+import { UserProfileWinRateChart } from "@/components/Charts";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -591,6 +592,17 @@ export default function PlayerProfilePage({ params }: PageProps) {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Win Rate Visualizations: Overall & Seasonal Breakdown */}
+              <div className="lg:col-span-12">
+                <UserProfileWinRateChart
+                  player={player}
+                  allMatches={allMatches}
+                  seasons={seasons}
+                  activeSeasonId={activeSeasonId}
+                  currentMode={selectedMode}
+                />
               </div>
 
               {/* Lane Statistics */}

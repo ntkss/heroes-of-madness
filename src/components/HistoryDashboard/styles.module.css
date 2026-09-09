@@ -65,6 +65,13 @@
     0 0 20px rgba(0, 210, 255, 0.4);
 }
 
+.tabButtonActiveGraph {
+  @apply border-emerald-400 text-emerald-400 bg-emerald-400/5 font-bold;
+  text-shadow:
+    0 0 10px rgba(52, 211, 153, 0.8),
+    0 0 20px rgba(52, 211, 153, 0.4);
+}
+
 /* Season Filter Card Styles */
 .seasonFilterCard {
   @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-black/50 border-2 border-slate-800 p-3 mb-4 transition-all;

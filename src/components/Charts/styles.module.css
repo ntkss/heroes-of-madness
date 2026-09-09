@@ -1,0 +1,162 @@
+@reference "../../app/globals.css";
+
+.chartCard {
+  @apply bg-bg-cabinet border-2 border-slate-800 p-4 sm:p-6 relative transition-all duration-300;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.chartCard:hover {
+  @apply border-slate-700;
+}
+
+/* Corner Rivets */
+.rivet {
+  @apply absolute w-1.5 h-1.5 bg-slate-700 border border-slate-900 pointer-events-none;
+}
+.rivetTopLeft {
+  @apply top-1.5 left-1.5;
+}
+.rivetTopRight {
+  @apply top-1.5 right-1.5;
+}
+.rivetBottomLeft {
+  @apply bottom-1.5 left-1.5;
+}
+.rivetBottomRight {
+  @apply bottom-1.5 right-1.5;
+}
+
+/* Header */
+.chartHeader {
+  @apply flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-slate-800/80 pb-4 mb-5;
+}
+
+.chartHeaderTitleGroup {
+  @apply flex flex-col gap-1;
+}
+
+.chartTitle {
+  @apply font-pixel text-xs sm:text-sm text-neon-yellow tracking-wider uppercase flex items-center gap-2;
+  text-shadow:
+    0 0 8px var(--color-neon-yellow),
+    0 0 15px rgba(255, 210, 0, 0.3);
+}
+
+.chartSubtitle {
+  @apply font-pixel text-[8px] text-slate-400 tracking-wider uppercase;
+}
+
+/* Controls & Filters */
+.chartControls {
+  @apply flex flex-wrap items-center gap-2.5;
+}
+
+.filterSelect {
+  @apply bg-slate-950 border-2 border-slate-700 hover:border-neon-yellow text-white font-pixel text-[8.5px] px-3 py-1.5 focus:outline-none focus:border-neon-yellow transition-all uppercase cursor-pointer rounded-none;
+}
+
+.toggleBtn {
+  @apply font-pixel text-[8px] px-2.5 py-1.5 border transition-all cursor-pointer select-none uppercase;
+}
+
+.toggleBtnActive {
+  @apply bg-neon-yellow/20 border-neon-yellow text-neon-yellow font-bold shadow-[0_0_10px_rgba(255,210,0,0.3)];
+}
+
+.toggleBtnInactive {
+  @apply bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700;
+}
+
+/* Summary Grid */
+.summaryGrid {
+  @apply grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6;
+}
+
+.summaryBox {
+  @apply bg-slate-950/80 border border-slate-800 p-3 flex flex-col gap-1 relative overflow-hidden;
+}
+
+.summaryLabel {
+  @apply font-pixel text-[7.5px] text-slate-400 uppercase tracking-wider;
+}
+
+.summaryValue {
+  @apply font-action text-2xl sm:text-3xl text-white tracking-wider leading-none mt-0.5;
+}
+
+.summarySubtext {
+  @apply font-mono text-[9px] text-slate-400 uppercase truncate;
+}
+
+/* Chart Canvas Wrappers */
+.canvasWrapper {
+  @apply relative w-full overflow-hidden bg-black/40 border border-slate-800/60 p-3 sm:p-4;
+}
+
+.canvasContainer {
+  @apply relative w-full h-[320px] sm:h-[380px];
+}
+
+.doughnutCanvasContainer {
+  @apply relative w-full h-[240px] sm:h-[260px] flex items-center justify-center;
+}
+
+.centerDoughnutText {
+  @apply absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none;
+}
+
+.centerWinrateNumber {
+  @apply font-action text-4xl sm:text-5xl text-neon-yellow font-bold tracking-tight leading-none;
+  text-shadow: 0 0 10px rgba(255, 210, 0, 0.4);
+}
+
+.centerWinrateSub {
+  @apply font-pixel text-[7.5px] text-slate-400 uppercase mt-1 tracking-widest;
+}
+
+/* Profile Dual Grid */
+.profileDualGrid {
+  @apply grid grid-cols-1 lg:grid-cols-12 gap-5;
+}
+
+.overallSection {
+  @apply lg:col-span-5 flex flex-col gap-4 bg-slate-950/60 border border-slate-800/80 p-4;
+}
+
+.seasonSection {
+  @apply lg:col-span-7 flex flex-col gap-4 bg-slate-950/60 border border-slate-800/80 p-4;
+}
+
+.sectionHeader {
+  @apply flex items-center justify-between border-b border-slate-800/80 pb-2.5;
+}
+
+.sectionTitle {
+  @apply font-pixel text-[9px] sm:text-[10px] text-slate-200 uppercase tracking-wider flex items-center gap-1.5;
+}
+
+.sectionBadge {
+  @apply font-pixel text-[7.5px] px-2 py-0.5 bg-slate-900 border border-slate-700 text-slate-300;
+}
+
+/* Stat row cards */
+.statRowCards {
+  @apply grid grid-cols-3 gap-2.5 mt-2;
+}
+
+.miniStatCard {
+  @apply bg-black/50 border border-slate-800 p-2.5 flex flex-col items-center text-center;
+}
+
+.miniStatLabel {
+  @apply font-pixel text-[7px] text-slate-400 uppercase tracking-tighter mb-1;
+}
+
+.miniStatValue {
+  @apply font-action text-xl sm:text-2xl font-bold leading-none;
+}
+
+/* Empty State */
+.emptyChart {
+  @apply flex flex-col items-center justify-center py-12 text-center text-slate-500 font-pixel text-[9px] uppercase tracking-widest gap-2;
+}

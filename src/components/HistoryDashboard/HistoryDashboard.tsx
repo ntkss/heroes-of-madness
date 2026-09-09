@@ -19,6 +19,7 @@ import { playBeep, playWin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
 import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
+import { ConsolidatedWinRateChart } from "@/components/Charts";
 
 interface HistoryDashboardProps {
   matches: Match[];
@@ -359,9 +360,9 @@ export default function HistoryDashboard({
   const [selectedSeasonId, setSelectedSeasonId] = React.useState<number | null>(
     null,
   );
-  const [activeTab, setActiveTab] = React.useState<"history" | "stats">(
-    "history",
-  );
+  const [activeTab, setActiveTab] = React.useState<
+    "history" | "stats" | "winrate_graph"
+  >("history");
   const [statsSubTab, setStatsSubTab] = React.useState<"season" | "alltime">(
     "season",
   );
@@ -903,6 +904,19 @@ export default function HistoryDashboard({
         >
           🏆 FIGHTER WINRATES
         </button>
+        <button
+          onClick={() => {
+            playBeep(440, 0.1, "sawtooth");
+            setActiveTab("winrate_graph");
+          }}
+          className={`${styles.tabButton} ${
+            activeTab === "winrate_graph"
+              ? styles.tabButtonActiveGraph
+              : styles.tabButtonInactive
+          }`}
+        >
+          📊 OVERALL WINRATE GRAPH
+        </button>
       </div>
 
       {/* Delete Log Confirmation Alert Overlay */}
@@ -1241,6 +1255,18 @@ export default function HistoryDashboard({
             </div>
           )}
         </div>
+      )}
+
+      {/* Tab Contents: OVERALL WINRATE GRAPH */}
+      {activeTab === "winrate_graph" && (
+        <ConsolidatedWinRateChart
+          matches={matches}
+          availablePlayers={availablePlayers}
+          seasons={seasons}
+          activeSeasonId={activeSeasonId}
+          activeMode={internalSelectedMode}
+          onModeChange={handleModeChange}
+        />
       )}
     </div>
   );

@@ -14,6 +14,8 @@ import {
 } from "chart.js";
 import { DbPlayer, Match, MatchMode, Season } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
+import { computePlayerProgression } from "@/utils/progression";
+import StockMarketLineChart from "./StockMarketLineChart";
 import styles from "./styles.module.css";
 
 // Register Chart.js modules
@@ -49,12 +51,16 @@ export default function UserProfileWinRateChart({
   const seasonalCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const seasonalChartRef = useRef<ChartJS | null>(null);
 
-  const [viewMode, setViewMode] = useState<"dual" | "overall" | "seasonal">(
-    "dual",
-  );
+  const [viewMode, setViewMode] = useState<
+    "stock" | "dual" | "overall" | "seasonal"
+  >("stock");
   const [filterMode, setFilterMode] = useState<"current_mode" | "all_modes">(
     "current_mode",
   );
+  const [stockSeason, setStockSeason] = useState<string>("all");
+  const [stockMetricType, setStockMetricType] = useState<
+    "winrate" | "performance_index"
+  >("winrate");
   const [selectedInspectSeason, setSelectedInspectSeason] = useState<
     number | null
   >(null);
@@ -202,9 +208,17 @@ export default function UserProfileWinRateChart({
     );
   }, [selectedInspectSeason, seasonalData, activeSeasonId]);
 
+  // Progressive stock chart series for this individual player
+  const playerSeries = useMemo(() => {
+    return computePlayerProgression(player.id, allMatches, [player], {
+      seasonId: stockSeason === "all" ? "all" : Number(stockSeason),
+      mode: filterMode === "current_mode" ? currentMode : "ALL",
+    });
+  }, [player, allMatches, stockSeason, filterMode, currentMode]);
+
   // Render Overall Doughnut Chart
   useEffect(() => {
-    if (viewMode === "seasonal") return;
+    if (viewMode === "seasonal" || viewMode === "stock") return;
     if (!doughnutCanvasRef.current) return;
 
     if (doughnutChartRef.current) {
@@ -284,7 +298,7 @@ export default function UserProfileWinRateChart({
 
   // Render Seasonal Breakdown Bar Chart
   useEffect(() => {
-    if (viewMode === "overall") return;
+    if (viewMode === "overall" || viewMode === "stock") return;
     if (!seasonalCanvasRef.current) return;
 
     if (seasonalChartRef.current) {
@@ -427,6 +441,47 @@ export default function UserProfileWinRateChart({
         </div>
 
         <div className={styles.chartControls}>
+          {/* Season Filter for Stock Mode */}
+          {viewMode === "stock" && (
+            <select
+              value={stockSeason}
+              onChange={(e) => {
+                playBeep(300, 0.08, "sine");
+                setStockSeason(e.target.value);
+              }}
+              className={styles.filterSelect}
+              title="Filter by Season"
+            >
+              <option value="all">🌐 ALL-TIME</option>
+              {seasonalData.map((s) => (
+                <option key={s.seasonId} value={String(s.seasonId)}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Metric Switcher for Stock Mode */}
+          {viewMode === "stock" && (
+            <button
+              type="button"
+              onClick={() => {
+                playBeep(320, 0.08, "sine");
+                setStockMetricType(
+                  stockMetricType === "winrate"
+                    ? "performance_index"
+                    : "winrate",
+                );
+              }}
+              className={`${styles.toggleBtn} ${styles.toggleBtnActive}`}
+              title="Switch between Win Rate % and Performance Index Points"
+            >
+              {stockMetricType === "winrate"
+                ? "METRIC: WIN RATE %"
+                : "METRIC: INDEX PTS"}
+            </button>
+          )}
+
           {/* Mode Scope Filter */}
           <button
             type="button"
@@ -446,6 +501,20 @@ export default function UserProfileWinRateChart({
 
           {/* View Mode Switcher */}
           <div className="flex items-center gap-1 border border-slate-800 bg-black/40 p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                playBeep(320, 0.08, "triangle");
+                setViewMode("stock");
+              }}
+              className={`${styles.toggleBtn} ${
+                viewMode === "stock"
+                  ? styles.toggleBtnActive
+                  : styles.toggleBtnInactive
+              }`}
+            >
+              📈 STOCK CHART
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -492,157 +561,282 @@ export default function UserProfileWinRateChart({
         </div>
       </div>
 
-      {/* Dual Grid Layout */}
-      <div className={styles.profileDualGrid}>
-        {/* Representation 1: Overall Lifetime Win Rate */}
-        {(viewMode === "dual" || viewMode === "overall") && (
-          <div
-            className={`${styles.overallSection} ${
-              viewMode === "overall" ? "!col-span-12" : ""
-            }`}
-          >
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>
-                <span>🎯</span> OVERALL LIFETIME WIN RATE
-              </span>
-              <span className={styles.sectionBadge}>
-                {overallData.total} MATCHES RECORDED
-              </span>
-            </div>
-
-            <div className={styles.doughnutCanvasContainer}>
-              <canvas ref={doughnutCanvasRef} />
-              <div className={styles.centerDoughnutText}>
-                <span className={styles.centerWinrateNumber}>
-                  {overallData.winrate}%
-                </span>
-                <span className={styles.centerWinrateSub}>
-                  {overallData.wins}W / {overallData.losses}L
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.statRowCards}>
-              <div className={styles.miniStatCard}>
-                <span className={styles.miniStatLabel}>VICTORIES</span>
-                <span className={`${styles.miniStatValue} text-neon-blue`}>
-                  {overallData.wins}
-                </span>
-              </div>
-              <div className={styles.miniStatCard}>
-                <span className={styles.miniStatLabel}>DEFEATS</span>
-                <span className={`${styles.miniStatValue} text-neon-red`}>
-                  {overallData.losses}
-                </span>
-              </div>
-              <div className={styles.miniStatCard}>
-                <span className={styles.miniStatLabel}>W/L RATIO</span>
-                <span className={`${styles.miniStatValue} text-neon-yellow`}>
-                  {overallData.ratio}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Representation 2: Seasonal Breakdown Chart */}
-        {(viewMode === "dual" || viewMode === "seasonal") && (
-          <div
-            className={`${styles.seasonSection} ${
-              viewMode === "seasonal" ? "!col-span-12" : ""
-            }`}
-          >
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>
-                <span>📅</span> SEASONAL BREAKDOWN
-              </span>
-              <span className={styles.sectionBadge}>
-                {seasonalData.length} SEASONS
-              </span>
-            </div>
-
-            {/* Seasonal Bar Chart */}
-            <div className="relative w-full h-[180px]">
-              <canvas ref={seasonalCanvasRef} />
-            </div>
-
-            {/* Seasonal Inspector & Selector */}
-            <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-slate-800/80">
-              <div className="flex items-center justify-between">
-                <span className="font-pixel text-[7.5px] text-slate-400 uppercase tracking-widest">
-                  SELECT SEASON TO INSPECT:
-                </span>
-                {inspectedSeasonData && (
-                  <span className="font-pixel text-[8px] text-neon-yellow font-bold">
-                    {inspectedSeasonData.label}
+      {/* VIEW MODE: INDIVIDUAL STOCK CHART */}
+      {viewMode === "stock" && (
+        <div className="flex flex-col">
+          {/* Stock Ticker HUD Banner */}
+          <div className={styles.stockTickerHUD}>
+            <div className={styles.stockTickerLeft}>
+              <div className={styles.stockTickerPlayer}>
+                <img
+                  src={
+                    playerSeries?.avatar ||
+                    player.avatar ||
+                    `https://api.dicebear.com/9.x/pixel-art/svg?seed=${player.id}&backgroundColor=1a1a2e`
+                  }
+                  alt={player.name}
+                  className={styles.stockTickerAvatar}
+                />
+                <div className={styles.stockTickerPlayerInfo}>
+                  <span className={styles.stockTickerSymbol}>
+                    ${player.name.toUpperCase().replace(/\s+/g, "_")}
                   </span>
-                )}
+                  <span className={styles.stockTickerName}>
+                    {player.alias || "MLBB COMBATANT"}
+                  </span>
+                </div>
               </div>
 
-              {/* Season Selection Pills */}
-              <div className="flex flex-wrap gap-1.5">
-                {seasonalData.map((s) => {
-                  const isSelected =
-                    inspectedSeasonData?.seasonId === s.seasonId;
-                  return (
-                    <button
-                      key={s.seasonId}
-                      type="button"
-                      onClick={() => {
-                        playBeep(320, 0.08, "sine");
-                        setSelectedInspectSeason(s.seasonId);
-                      }}
-                      className={`font-pixel text-[7.5px] px-2.5 py-1 transition-all uppercase cursor-pointer border ${
-                        isSelected
-                          ? "bg-neon-yellow text-black border-white font-bold glow-yellow"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
-                      }`}
-                    >
-                      {s.shortLabel} ({s.winrate}%)
-                    </button>
-                  );
-                })}
+              <div className="flex flex-col">
+                <span className={styles.stockPriceLabel}>CURRENT WIN RATE</span>
+                <span className={styles.stockPriceBig}>
+                  {playerSeries ? `${playerSeries.currentWinrate}%` : "0.0%"}
+                </span>
               </div>
 
-              {/* Inspected Season Metrics Summary */}
-              {inspectedSeasonData && (
-                <div className="bg-black/50 border border-slate-800/90 p-2.5 grid grid-cols-4 gap-2 mt-1">
-                  <div className="flex flex-col">
-                    <span className={styles.miniStatLabel}>MATCHES</span>
-                    <span className="font-action text-lg text-white leading-none">
-                      {inspectedSeasonData.total}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={styles.miniStatLabel}>RECORD</span>
-                    <span className="font-mono text-xs text-slate-300 font-bold leading-none mt-1">
-                      <span className="text-neon-blue">
-                        {inspectedSeasonData.wins}W
-                      </span>{" "}
-                      /{" "}
-                      <span className="text-neon-red">
-                        {inspectedSeasonData.losses}L
-                      </span>
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={styles.miniStatLabel}>WIN RATE</span>
-                    <span className="font-action text-lg text-neon-yellow leading-none">
-                      {inspectedSeasonData.winrate}%
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={styles.miniStatLabel}>STATUS</span>
-                    <span className="font-pixel text-[7px] text-slate-400 uppercase leading-none mt-1 truncate">
-                      {inspectedSeasonData.isCurrent ? "ACTIVE" : "ARCHIVED"}
-                    </span>
-                  </div>
+              {playerSeries && playerSeries.totalMatches > 0 && (
+                <div
+                  className={
+                    playerSeries.changePercent >= 0
+                      ? styles.bullishBadge
+                      : styles.bearishBadge
+                  }
+                >
+                  <span>
+                    {playerSeries.changePercent >= 0 ? "▲" : "▼"}{" "}
+                    {playerSeries.changePercent >= 0 ? "+" : ""}
+                    {playerSeries.changePercent}%
+                  </span>
+                  <span>
+                    {playerSeries.changePercent >= 0 ? "BULLISH" : "BEARISH"}
+                  </span>
                 </div>
               )}
             </div>
+
+            <div className={styles.stockMetricsRow}>
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>ALL-TIME HIGH</span>
+                <span className="font-action text-base text-neon-yellow leading-none">
+                  {playerSeries && playerSeries.totalMatches > 0
+                    ? `${playerSeries.peakWinrate}%`
+                    : "--"}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400">ATH</span>
+              </div>
+
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>ALL-TIME LOW</span>
+                <span className="font-action text-base text-neon-red leading-none">
+                  {playerSeries && playerSeries.totalMatches > 0
+                    ? `${playerSeries.troughWinrate}%`
+                    : "--"}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400">ATL</span>
+              </div>
+
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>STREAK</span>
+                <span className="font-action text-base text-white leading-none">
+                  {playerSeries && playerSeries.totalMatches > 0
+                    ? `${playerSeries.currentStreak.count} ${playerSeries.currentStreak.type}`
+                    : "--"}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400">
+                  {playerSeries?.currentStreak.type === "WIN"
+                    ? "🔥 HOT"
+                    : "❄️ COLD"}
+                </span>
+              </div>
+
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>VOLUME</span>
+                <span className="font-action text-base text-neon-blue leading-none">
+                  {playerSeries ? playerSeries.totalMatches : 0}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400">
+                  {playerSeries
+                    ? `${playerSeries.totalWins}W / ${playerSeries.totalLosses}L`
+                    : "0W / 0L"}
+                </span>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Stock Market Canvas */}
+          {!playerSeries || playerSeries.points.length === 0 ? (
+            <div className={styles.emptyChart}>
+              <span>⚠️ NO MATCHES LOGGED FOR THIS TIMEFRAME</span>
+              <span className="text-[7.5px] text-slate-500">
+                TRY SELECTING ALL-TIME OR ALL MODES
+              </span>
+            </div>
+          ) : (
+            <div className={styles.stockCanvasContainer}>
+              <StockMarketLineChart
+                seriesList={[playerSeries]}
+                metricType={stockMetricType}
+                height={360}
+                showLegend={false}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dual Grid Layout */}
+      {viewMode !== "stock" && (
+        <div className={styles.profileDualGrid}>
+          {/* Representation 1: Overall Lifetime Win Rate */}
+          {(viewMode === "dual" || viewMode === "overall") && (
+            <div
+              className={`${styles.overallSection} ${
+                viewMode === "overall" ? "!col-span-12" : ""
+              }`}
+            >
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>
+                  <span>🎯</span> OVERALL LIFETIME WIN RATE
+                </span>
+                <span className={styles.sectionBadge}>
+                  {overallData.total} MATCHES RECORDED
+                </span>
+              </div>
+
+              <div className={styles.doughnutCanvasContainer}>
+                <canvas ref={doughnutCanvasRef} />
+                <div className={styles.centerDoughnutText}>
+                  <span className={styles.centerWinrateNumber}>
+                    {overallData.winrate}%
+                  </span>
+                  <span className={styles.centerWinrateSub}>
+                    {overallData.wins}W / {overallData.losses}L
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.statRowCards}>
+                <div className={styles.miniStatCard}>
+                  <span className={styles.miniStatLabel}>VICTORIES</span>
+                  <span className={`${styles.miniStatValue} text-neon-blue`}>
+                    {overallData.wins}
+                  </span>
+                </div>
+                <div className={styles.miniStatCard}>
+                  <span className={styles.miniStatLabel}>DEFEATS</span>
+                  <span className={`${styles.miniStatValue} text-neon-red`}>
+                    {overallData.losses}
+                  </span>
+                </div>
+                <div className={styles.miniStatCard}>
+                  <span className={styles.miniStatLabel}>W/L RATIO</span>
+                  <span className={`${styles.miniStatValue} text-neon-yellow`}>
+                    {overallData.ratio}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Representation 2: Seasonal Breakdown Chart */}
+          {(viewMode === "dual" || viewMode === "seasonal") && (
+            <div
+              className={`${styles.seasonSection} ${
+                viewMode === "seasonal" ? "!col-span-12" : ""
+              }`}
+            >
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>
+                  <span>📅</span> SEASONAL BREAKDOWN
+                </span>
+                <span className={styles.sectionBadge}>
+                  {seasonalData.length} SEASONS
+                </span>
+              </div>
+
+              {/* Seasonal Bar Chart */}
+              <div className="relative w-full h-[180px]">
+                <canvas ref={seasonalCanvasRef} />
+              </div>
+
+              {/* Seasonal Inspector & Selector */}
+              <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <span className="font-pixel text-[7.5px] text-slate-400 uppercase tracking-widest">
+                    SELECT SEASON TO INSPECT:
+                  </span>
+                  {inspectedSeasonData && (
+                    <span className="font-pixel text-[8px] text-neon-yellow font-bold">
+                      {inspectedSeasonData.label}
+                    </span>
+                  )}
+                </div>
+
+                {/* Season Selection Pills */}
+                <div className="flex flex-wrap gap-1.5">
+                  {seasonalData.map((s) => {
+                    const isSelected =
+                      inspectedSeasonData?.seasonId === s.seasonId;
+                    return (
+                      <button
+                        key={s.seasonId}
+                        type="button"
+                        onClick={() => {
+                          playBeep(320, 0.08, "sine");
+                          setSelectedInspectSeason(s.seasonId);
+                        }}
+                        className={`font-pixel text-[7.5px] px-2.5 py-1 transition-all uppercase cursor-pointer border ${
+                          isSelected
+                            ? "bg-neon-yellow text-black border-white font-bold glow-yellow"
+                            : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+                        }`}
+                      >
+                        {s.shortLabel} ({s.winrate}%)
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Inspected Season Metrics Summary */}
+                {inspectedSeasonData && (
+                  <div className="bg-black/50 border border-slate-800/90 p-2.5 grid grid-cols-4 gap-2 mt-1">
+                    <div className="flex flex-col">
+                      <span className={styles.miniStatLabel}>MATCHES</span>
+                      <span className="font-action text-lg text-white leading-none">
+                        {inspectedSeasonData.total}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={styles.miniStatLabel}>RECORD</span>
+                      <span className="font-mono text-xs text-slate-300 font-bold leading-none mt-1">
+                        <span className="text-neon-blue">
+                          {inspectedSeasonData.wins}W
+                        </span>{" "}
+                        /{" "}
+                        <span className="text-neon-red">
+                          {inspectedSeasonData.losses}L
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={styles.miniStatLabel}>WIN RATE</span>
+                      <span className="font-action text-lg text-neon-yellow leading-none">
+                        {inspectedSeasonData.winrate}%
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={styles.miniStatLabel}>STATUS</span>
+                      <span className="font-pixel text-[7px] text-slate-400 uppercase leading-none mt-1 truncate">
+                        {inspectedSeasonData.isCurrent ? "ACTIVE" : "ARCHIVED"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

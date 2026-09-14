@@ -160,3 +160,161 @@
 .emptyChart {
   @apply flex flex-col items-center justify-center py-12 text-center text-slate-500 font-pixel text-[9px] uppercase tracking-widest gap-2;
 }
+
+/* =========================================================
+   STOCK MARKET STYLE CHART EXTENSIONS
+   ========================================================= */
+
+/* Stock Ticker HUD Banner */
+.stockTickerHUD {
+  @apply bg-slate-950/90 border border-slate-800/90 p-3 sm:p-4 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden;
+  background-image: linear-gradient(
+    to right,
+    rgba(0, 255, 136, 0.03),
+    rgba(0, 210, 255, 0.03)
+  );
+}
+
+.stockTickerHUD::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00ff88 0%, #00d2ff 50%, #ffd200 100%);
+  opacity: 0.8;
+}
+
+.stockTickerLeft {
+  @apply flex flex-wrap items-baseline gap-3 sm:gap-4;
+}
+
+.stockTickerPlayer {
+  @apply flex items-center gap-2.5;
+}
+
+.stockTickerAvatar {
+  @apply w-9 h-9 border border-slate-700 bg-slate-900 object-cover shrink-0;
+}
+
+.stockTickerPlayerInfo {
+  @apply flex flex-col;
+}
+
+.stockTickerSymbol {
+  @apply font-pixel text-[11px] text-white tracking-wider uppercase;
+}
+
+.stockTickerName {
+  @apply font-pixel text-[8px] text-slate-400 uppercase;
+}
+
+.stockPriceBig {
+  @apply font-action text-3xl sm:text-4xl text-white tracking-tight leading-none;
+}
+
+.stockPriceLabel {
+  @apply font-pixel text-[8px] text-slate-400 uppercase tracking-wider block;
+}
+
+.bullishBadge {
+  @apply font-pixel text-[8px] px-2 py-1 bg-emerald-950/80 border border-emerald-500 text-emerald-400 font-bold tracking-wider uppercase flex items-center gap-1;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.bearishBadge {
+  @apply font-pixel text-[8px] px-2 py-1 bg-rose-950/80 border border-rose-500 text-rose-400 font-bold tracking-wider uppercase flex items-center gap-1;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.25);
+}
+
+.neutralBadge {
+  @apply font-pixel text-[8px] px-2 py-1 bg-slate-900 border border-slate-600 text-slate-300 font-bold tracking-wider uppercase flex items-center gap-1;
+}
+
+.stockMetricsRow {
+  @apply flex flex-wrap items-center gap-2 sm:gap-3;
+}
+
+.tickerMetric {
+  @apply bg-black/60 border border-slate-800/80 px-2.5 py-1.5 flex flex-col items-start min-w-[72px];
+}
+
+.tickerMetricLabel {
+  @apply font-pixel text-[7px] text-slate-500 uppercase tracking-tighter;
+}
+
+.tickerMetricValue {
+  @apply font-action text-lg text-slate-200 leading-none mt-0.5;
+}
+
+/* Fighter Multi-Select Filter Chips */
+.fighterChipsSection {
+  @apply flex flex-col gap-2 mb-4 bg-black/40 border border-slate-800/70 p-3;
+}
+
+.fighterChipsHeader {
+  @apply flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2;
+}
+
+.fighterChipsTitle {
+  @apply font-pixel text-[8px] text-slate-400 uppercase tracking-wider flex items-center gap-1.5;
+}
+
+.fighterChipsActions {
+  @apply flex items-center gap-2;
+}
+
+.chipQuickActionBtn {
+  @apply font-pixel text-[7.5px] text-slate-400 hover:text-neon-yellow underline cursor-pointer uppercase transition-colors;
+}
+
+.fighterChipsGrid {
+  @apply flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1 pr-1;
+}
+
+.fighterChip {
+  @apply flex items-center gap-1.5 px-2 py-1 border text-[8px] font-pixel cursor-pointer select-none transition-all uppercase;
+}
+
+.fighterChipActive {
+  @apply bg-slate-900/90 text-white font-bold shadow-sm;
+}
+
+.fighterChipInactive {
+  @apply bg-slate-950/40 border-slate-800 text-slate-500 opacity-60 hover:opacity-90 hover:border-slate-700;
+}
+
+.chipColorIndicator {
+  @apply w-2 h-2 rounded-none inline-block shrink-0;
+}
+
+.chipAvatar {
+  @apply w-3.5 h-3.5 object-cover shrink-0;
+}
+
+/* Mode Switcher Nav (Stock Chart vs Bars) */
+.subTabNav {
+  @apply flex items-center gap-1.5 border-b border-slate-800 pb-3 mb-4 flex-wrap;
+}
+
+.subTabButton {
+  @apply font-pixel text-[8.5px] px-3 py-1.5 border transition-all cursor-pointer select-none uppercase tracking-wider;
+}
+
+.subTabButtonActive {
+  @apply bg-neon-yellow/15 border-neon-yellow text-neon-yellow font-bold shadow-[0_0_12px_rgba(255,210,0,0.25)];
+}
+
+.subTabButtonInactive {
+  @apply bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200;
+}
+
+/* Stock Chart Canvas Container */
+.stockCanvasContainer {
+  @apply relative w-full h-[360px] sm:h-[420px] bg-[#070a12] border border-slate-800/80 p-2 sm:p-3 overflow-hidden;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+}

@@ -14,6 +14,8 @@ import {
 } from "chart.js";
 import { Match, MatchMode, DbPlayer, Season } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
+import { computeComparativeSeasonProgression } from "@/utils/progression";
+import StockMarketLineChart from "./StockMarketLineChart";
 import styles from "./styles.module.css";
 
 // Register necessary Chart.js elements
@@ -48,11 +50,27 @@ export default function ConsolidatedWinRateChart({
   const chartInstanceRef = useRef<ChartJS | null>(null);
 
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
-  const [userSelectedMode, setUserSelectedMode] = useState<string | null>(null);
-  const selectedMode =
-    userSelectedMode !== null ? userSelectedMode : activeMode || "ALL";
+  const [userSelectedMode, setUserSelectedMode] = useState<
+    MatchMode | "ALL" | null
+  >(null);
+  const selectedMode: MatchMode | "ALL" =
+    userSelectedMode !== null
+      ? userSelectedMode
+      : ((activeMode || "ALL") as MatchMode | "ALL");
   const [minMatchesOnly, setMinMatchesOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"winrate" | "matches">("winrate");
+
+  // Stock Market Mode & Selection States
+  const [viewMode, setViewMode] = useState<"stock_timeline" | "ranking_bars">(
+    "stock_timeline",
+  );
+  const [metricType, setMetricType] = useState<"winrate" | "performance_index">(
+    "winrate",
+  );
+  const [customFighterIds, setCustomFighterIds] = useState<string[] | null>(
+    null,
+  );
+  const [spotlightId, setSpotlightId] = useState<string | null>(null);
 
   // Season options list
   const seasonOptions = useMemo(() => {
@@ -282,8 +300,62 @@ export default function ConsolidatedWinRateChart({
     };
   }, [computedPlayerStats]);
 
-  // Render & Update Chart.js instance
+  // Progressive Stock-Market comparative series
+  const comparativeProgression = useMemo(() => {
+    return computeComparativeSeasonProgression(matches, availablePlayers, {
+      seasonId: selectedSeason === "all" ? "all" : Number(selectedSeason),
+      mode: selectedMode,
+      minMatches: minMatchesOnly ? 3 : 1,
+    });
+  }, [matches, availablePlayers, selectedSeason, selectedMode, minMatchesOnly]);
+
+  // Derive effective active fighter IDs (default top 6 if user hasn't customized)
+  const activeFighterIds = useMemo(() => {
+    if (customFighterIds !== null) return customFighterIds;
+    return comparativeProgression.series.slice(0, 6).map((s) => s.playerId);
+  }, [customFighterIds, comparativeProgression.series]);
+
+  const visibleSeries = useMemo(() => {
+    return comparativeProgression.series.filter((s) =>
+      activeFighterIds.includes(s.playerId),
+    );
+  }, [comparativeProgression.series, activeFighterIds]);
+
+  const toggleFighterVisibility = (fId: string) => {
+    playBeep(320, 0.06, "sine");
+    setCustomFighterIds((prev) => {
+      const current =
+        prev ??
+        comparativeProgression.series.slice(0, 6).map((s) => s.playerId);
+      return current.includes(fId)
+        ? current.filter((id) => id !== fId)
+        : [...current, fId];
+    });
+  };
+
+  const handleSpotlightFighter = (fId: string) => {
+    playBeep(440, 0.08, "triangle");
+    setSpotlightId((prev) => (prev === fId ? null : fId));
+    // Ensure the spotlighted fighter is visible
+    if (!activeFighterIds.includes(fId)) {
+      setCustomFighterIds((prev) => {
+        const current =
+          prev ??
+          comparativeProgression.series.slice(0, 6).map((s) => s.playerId);
+        return [...current, fId];
+      });
+    }
+  };
+
+  // Render & Update Chart.js Bar instance
   useEffect(() => {
+    if (viewMode !== "ranking_bars") {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
+      return;
+    }
     if (!canvasRef.current) return;
 
     if (chartInstanceRef.current) {
@@ -422,7 +494,7 @@ export default function ConsolidatedWinRateChart({
         chartInstanceRef.current = null;
       }
     };
-  }, [computedPlayerStats]);
+  }, [computedPlayerStats, viewMode]);
 
   const dynamicCanvasHeight = Math.max(
     320,
@@ -437,14 +509,59 @@ export default function ConsolidatedWinRateChart({
       <div className={`${styles.rivet} ${styles.rivetBottomLeft}`} />
       <div className={`${styles.rivet} ${styles.rivetBottomRight}`} />
 
+      {/* Sub-Tab View Mode Switcher Navigation */}
+      <div className={styles.subTabNav}>
+        <button
+          type="button"
+          onClick={() => {
+            playBeep(440, 0.08, "triangle");
+            setViewMode("stock_timeline");
+          }}
+          className={`${styles.subTabButton} ${
+            viewMode === "stock_timeline"
+              ? styles.subTabButtonActive
+              : styles.subTabButtonInactive
+          }`}
+        >
+          📈 STOCK MARKET TIMELINE (COMPARATIVE)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            playBeep(380, 0.08, "triangle");
+            setViewMode("ranking_bars");
+          }}
+          className={`${styles.subTabButton} ${
+            viewMode === "ranking_bars"
+              ? styles.subTabButtonActive
+              : styles.subTabButtonInactive
+          }`}
+        >
+          📊 FIGHTER RANKING BARS
+        </button>
+        <Link
+          href="/graphs"
+          onClick={() => playBeep(520, 0.1, "sine")}
+          className="ml-auto font-pixel text-[8px] text-neon-blue hover:text-white border border-neon-blue/60 hover:border-neon-blue bg-neon-blue/10 px-2.5 py-1.5 transition-all flex items-center gap-1 uppercase select-none"
+        >
+          <span>🖥️ TRADING TERMINAL</span>
+          <span>↗</span>
+        </Link>
+      </div>
+
       {/* Header & Filter Controls */}
       <div className={styles.chartHeader}>
         <div className={styles.chartHeaderTitleGroup}>
           <h3 className={styles.chartTitle}>
-            <span>📊</span> OVERALL WINRATE GRAPH (ALL FIGHTERS)
+            <span>{viewMode === "stock_timeline" ? "📈" : "📊"}</span>
+            {viewMode === "stock_timeline"
+              ? "STOCK-MARKET PROGRESSION GRAPH"
+              : "OVERALL WINRATE GRAPH (ALL FIGHTERS)"}
           </h3>
           <p className={styles.chartSubtitle}>
-            CONSOLIDATED CROSS-FIGHTER WIN RATE COMPARISON & BENCHMARKS
+            {viewMode === "stock_timeline"
+              ? "CHRONOLOGICAL CROSS-USER PERFORMANCE TRAJECTORY OVER MATCH TIMELINE"
+              : "CONSOLIDATED CROSS-FIGHTER WIN RATE COMPARISON & BENCHMARKS"}
           </p>
         </div>
 
@@ -471,7 +588,7 @@ export default function ConsolidatedWinRateChart({
             value={selectedMode}
             onChange={(e) => {
               playBeep(300, 0.08, "sine");
-              setUserSelectedMode(e.target.value);
+              setUserSelectedMode(e.target.value as MatchMode | "ALL");
               if (onModeChange && e.target.value !== "ALL") {
                 onModeChange(e.target.value as MatchMode);
               }
@@ -485,18 +602,36 @@ export default function ConsolidatedWinRateChart({
             <option value="HERO_MLBB">⚡ RANDOM HERO – MLBB</option>
           </select>
 
-          {/* Sort By Toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              playBeep(260, 0.08, "sine");
-              setSortBy(sortBy === "winrate" ? "matches" : "winrate");
-            }}
-            className={`${styles.toggleBtn} ${styles.toggleBtnActive}`}
-            title="Sort chart records"
-          >
-            {sortBy === "winrate" ? "SORT: WIN RATE ▾" : "SORT: MATCHES ▾"}
-          </button>
+          {/* Metric Selector for Stock Timeline */}
+          {viewMode === "stock_timeline" ? (
+            <button
+              type="button"
+              onClick={() => {
+                playBeep(320, 0.08, "sine");
+                setMetricType(
+                  metricType === "winrate" ? "performance_index" : "winrate",
+                );
+              }}
+              className={`${styles.toggleBtn} ${styles.toggleBtnActive}`}
+              title="Switch between Win Rate % and Performance Index Points"
+            >
+              {metricType === "winrate"
+                ? "METRIC: WIN RATE %"
+                : "METRIC: INDEX PTS"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                playBeep(260, 0.08, "sine");
+                setSortBy(sortBy === "winrate" ? "matches" : "winrate");
+              }}
+              className={`${styles.toggleBtn} ${styles.toggleBtnActive}`}
+              title="Sort chart records"
+            >
+              {sortBy === "winrate" ? "SORT: WIN RATE ▾" : "SORT: MATCHES ▾"}
+            </button>
+          )}
 
           {/* Min Matches Toggle */}
           <button
@@ -515,65 +650,254 @@ export default function ConsolidatedWinRateChart({
         </div>
       </div>
 
-      {/* Summary Stat Grid */}
-      <div className={styles.summaryGrid}>
-        <div className={styles.summaryBox}>
-          <span className={styles.summaryLabel}>TOP WIN RATE</span>
-          <span className="font-action text-2xl text-neon-yellow leading-none">
-            {metrics.leader ? `${metrics.leader.winrate}%` : "--"}
-          </span>
-          <span className={styles.summarySubtext}>
-            {metrics.leader ? metrics.leader.name : "NO RECORD"}
-          </span>
-        </div>
+      {/* VIEW MODE 1: STOCK MARKET TIMELINE */}
+      {viewMode === "stock_timeline" && (
+        <div className="flex flex-col">
+          {/* Stock Ticker HUD Banner */}
+          <div className={styles.stockTickerHUD}>
+            <div className={styles.stockTickerLeft}>
+              <div className="flex flex-col">
+                <span className={styles.stockPriceLabel}>
+                  MARKET EQUILIBRIUM
+                </span>
+                <span className={styles.stockPriceBig}>
+                  {metrics.averageWinrate}%
+                </span>
+              </div>
+              {comparativeProgression.topGainer && (
+                <div className={styles.bullishBadge}>
+                  <span>▲ TOP GAINER:</span>
+                  <span>{comparativeProgression.topGainer.playerName}</span>
+                  <span>
+                    (+{comparativeProgression.topGainer.changePercent}%)
+                  </span>
+                </div>
+              )}
+            </div>
 
-        <div className={styles.summaryBox}>
-          <span className={styles.summaryLabel}>AVERAGE WIN RATE</span>
-          <span className="font-action text-2xl text-neon-blue leading-none">
-            {metrics.averageWinrate}%
-          </span>
-          <span className={styles.summarySubtext}>COMMUNITY BENCHMARK</span>
-        </div>
+            <div className={styles.stockMetricsRow}>
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>PEAK LEADER</span>
+                <span className="font-action text-base text-neon-yellow leading-none truncate max-w-[120px]">
+                  {comparativeProgression.highestWinrate
+                    ? `${comparativeProgression.highestWinrate.currentWinrate}%`
+                    : "--"}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400 truncate max-w-[100px]">
+                  {comparativeProgression.highestWinrate
+                    ? comparativeProgression.highestWinrate.playerName
+                    : "NONE"}
+                </span>
+              </div>
 
-        <div className={styles.summaryBox}>
-          <span className={styles.summaryLabel}>MOST ACTIVE FIGHTER</span>
-          <span className="font-action text-2xl text-white leading-none">
-            {metrics.mostActive
-              ? `${metrics.mostActive.matches} BATTLES`
-              : "--"}
-          </span>
-          <span className={styles.summarySubtext}>
-            {metrics.mostActive ? metrics.mostActive.name : "NO RECORD"}
-          </span>
-        </div>
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>HIGH VOLUME</span>
+                <span className="font-action text-base text-neon-blue leading-none">
+                  {comparativeProgression.highestVolume
+                    ? `${comparativeProgression.highestVolume.totalMatches} TRADES`
+                    : "--"}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400 truncate max-w-[100px]">
+                  {comparativeProgression.highestVolume
+                    ? comparativeProgression.highestVolume.playerName
+                    : "NONE"}
+                </span>
+              </div>
 
-        <div className={styles.summaryBox}>
-          <span className={styles.summaryLabel}>FILTERED MATCHES</span>
-          <span className="font-action text-2xl text-slate-200 leading-none">
-            {computedPlayerStats.totalMatchesCount}
-          </span>
-          <span className={styles.summarySubtext}>
-            {metrics.totalParticipants} FIGHTERS SHOWN
-          </span>
-        </div>
-      </div>
-
-      {/* Chart Canvas Area */}
-      {computedPlayerStats.fighters.length === 0 ? (
-        <div className={styles.emptyChart}>
-          <span>⚠️ NO COMBAT MATCHES FOUND FOR CHOSEN FILTERS</span>
-          <span className="text-[7.5px] text-slate-600">
-            TRY SELECTING ALL-TIME OR ALL MODES
-          </span>
-        </div>
-      ) : (
-        <div className={styles.canvasWrapper}>
-          <div
-            className="w-full relative"
-            style={{ height: `${dynamicCanvasHeight}px` }}
-          >
-            <canvas ref={canvasRef} />
+              <div className={styles.tickerMetric}>
+                <span className={styles.tickerMetricLabel}>TOTAL MATCHES</span>
+                <span className="font-action text-base text-white leading-none">
+                  {comparativeProgression.totalSeasonMatches}
+                </span>
+                <span className="font-mono text-[8px] text-slate-400">
+                  {comparativeProgression.series.length} FIGHTERS
+                </span>
+              </div>
+            </div>
           </div>
+
+          {/* Fighter Selection Multi-Chips */}
+          {comparativeProgression.series.length > 0 && (
+            <div className={styles.fighterChipsSection}>
+              <div className={styles.fighterChipsHeader}>
+                <span className={styles.fighterChipsTitle}>
+                  <span>📊</span> SELECT FIGHTERS TO PLOT (
+                  {visibleSeries.length}/{comparativeProgression.series.length}{" "}
+                  ACTIVE)
+                </span>
+                <div className={styles.fighterChipsActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(350, 0.05, "sine");
+                      setCustomFighterIds(
+                        comparativeProgression.series
+                          .slice(0, 6)
+                          .map((s) => s.playerId),
+                      );
+                    }}
+                    className={styles.chipQuickActionBtn}
+                  >
+                    TOP 6
+                  </button>
+                  <span className="text-slate-600 text-[8px]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(350, 0.05, "sine");
+                      setCustomFighterIds(
+                        comparativeProgression.series.map((s) => s.playerId),
+                      );
+                    }}
+                    className={styles.chipQuickActionBtn}
+                  >
+                    SELECT ALL
+                  </button>
+                  <span className="text-slate-600 text-[8px]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playBeep(300, 0.05, "sine");
+                      setCustomFighterIds([]);
+                      setSpotlightId(null);
+                    }}
+                    className={styles.chipQuickActionBtn}
+                  >
+                    CLEAR
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.fighterChipsGrid}>
+                {comparativeProgression.series.map((s) => {
+                  const isChecked = activeFighterIds.includes(s.playerId);
+                  const isSpotlight = spotlightId === s.playerId;
+
+                  return (
+                    <button
+                      key={s.playerId}
+                      type="button"
+                      onClick={() => toggleFighterVisibility(s.playerId)}
+                      onDoubleClick={() => handleSpotlightFighter(s.playerId)}
+                      className={`${styles.fighterChip} ${
+                        isChecked
+                          ? styles.fighterChipActive
+                          : styles.fighterChipInactive
+                      }`}
+                      style={{
+                        borderColor: isChecked ? s.color : undefined,
+                        boxShadow: isSpotlight
+                          ? `0 0 10px ${s.color}`
+                          : undefined,
+                      }}
+                      title="Click to toggle, double-click to spotlight line"
+                    >
+                      <span
+                        className={styles.chipColorIndicator}
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <img
+                        src={s.avatar}
+                        alt={s.playerName}
+                        className={styles.chipAvatar}
+                      />
+                      <span>{s.playerName}</span>
+                      <span className="font-mono text-[7.5px] opacity-80">
+                        {s.currentWinrate}%
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Stock Market Canvas */}
+          {visibleSeries.length === 0 ? (
+            <div className={styles.emptyChart}>
+              <span>⚠️ NO FIGHTERS SELECTED TO PLOT</span>
+              <span className="text-[7.5px] text-slate-500">
+                CLICK THE FIGHTER CHIPS ABOVE TO ADD PROGRESSIVE LINES
+              </span>
+            </div>
+          ) : (
+            <div className={styles.stockCanvasContainer}>
+              <StockMarketLineChart
+                seriesList={visibleSeries}
+                spotlightId={spotlightId}
+                metricType={metricType}
+                height={380}
+                showLegend={true}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VIEW MODE 2: FIGHTER RANKING BARS */}
+      {viewMode === "ranking_bars" && (
+        <div className="flex flex-col">
+          {/* Summary Stat Grid */}
+          <div className={styles.summaryGrid}>
+            <div className={styles.summaryBox}>
+              <span className={styles.summaryLabel}>TOP WIN RATE</span>
+              <span className="font-action text-2xl text-neon-yellow leading-none">
+                {metrics.leader ? `${metrics.leader.winrate}%` : "--"}
+              </span>
+              <span className={styles.summarySubtext}>
+                {metrics.leader ? metrics.leader.name : "NO RECORD"}
+              </span>
+            </div>
+
+            <div className={styles.summaryBox}>
+              <span className={styles.summaryLabel}>AVERAGE WIN RATE</span>
+              <span className="font-action text-2xl text-neon-blue leading-none">
+                {metrics.averageWinrate}%
+              </span>
+              <span className={styles.summarySubtext}>COMMUNITY BENCHMARK</span>
+            </div>
+
+            <div className={styles.summaryBox}>
+              <span className={styles.summaryLabel}>MOST ACTIVE FIGHTER</span>
+              <span className="font-action text-2xl text-white leading-none">
+                {metrics.mostActive
+                  ? `${metrics.mostActive.matches} BATTLES`
+                  : "--"}
+              </span>
+              <span className={styles.summarySubtext}>
+                {metrics.mostActive ? metrics.mostActive.name : "NO RECORD"}
+              </span>
+            </div>
+
+            <div className={styles.summaryBox}>
+              <span className={styles.summaryLabel}>FILTERED MATCHES</span>
+              <span className="font-action text-2xl text-slate-200 leading-none">
+                {computedPlayerStats.totalMatchesCount}
+              </span>
+              <span className={styles.summarySubtext}>
+                {metrics.totalParticipants} FIGHTERS SHOWN
+              </span>
+            </div>
+          </div>
+
+          {/* Bar Chart Canvas Area */}
+          {computedPlayerStats.fighters.length === 0 ? (
+            <div className={styles.emptyChart}>
+              <span>⚠️ NO COMBAT MATCHES FOUND FOR CHOSEN FILTERS</span>
+              <span className="text-[7.5px] text-slate-600">
+                TRY SELECTING ALL-TIME OR ALL MODES
+              </span>
+            </div>
+          ) : (
+            <div className={styles.canvasWrapper}>
+              <div
+                className="w-full relative"
+                style={{ height: `${dynamicCanvasHeight}px` }}
+              >
+                <canvas ref={canvasRef} />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

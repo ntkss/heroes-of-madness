@@ -65,6 +65,21 @@ interface TeamRowProps {
   playerChampionMap: Record<string, number[]>;
 }
 
+function findSquadPlayer(
+  idOrNameOrAlias: string,
+  squadList: DbPlayer[],
+): DbPlayer | undefined {
+  if (!idOrNameOrAlias) return undefined;
+  const key = idOrNameOrAlias.toLowerCase().trim();
+  return squadList.find(
+    (p) =>
+      (p.alias && p.alias.toLowerCase() === key) ||
+      p.id.toLowerCase() === key ||
+      p.id === idOrNameOrAlias.trim() ||
+      p.name.toLowerCase() === key,
+  );
+}
+
 function TeamRow({
   label,
   side,
@@ -88,12 +103,7 @@ function TeamRow({
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
   const isLoser = winner !== null && !isWinner;
 
-  const getPlayer = (idOrName: string) =>
-    squad.find(
-      (p) =>
-        p.id === idOrName.toLowerCase() ||
-        p.name.toLowerCase() === idOrName.toLowerCase(),
-    );
+  const getPlayer = (idOrName: string) => findSquadPlayer(idOrName, squad);
 
   const getPlayerRankClass = (player: DbPlayer | undefined) => {
     if (!player || !rankConfig) return null;
@@ -112,6 +122,9 @@ function TeamRow({
   const getPlayerChampionSeasons = (nameOrId: string, player?: DbPlayer) => {
     const key = nameOrId.toLowerCase();
     const seasonsFromKey = playerChampionMap[key] || [];
+    const seasonsFromAlias = player?.alias
+      ? playerChampionMap[player.alias.toLowerCase()] || []
+      : [];
     const seasonsFromId = player
       ? playerChampionMap[player.id.toLowerCase()] || []
       : [];
@@ -120,7 +133,12 @@ function TeamRow({
       : [];
 
     const combined = Array.from(
-      new Set([...seasonsFromKey, ...seasonsFromId, ...seasonsFromName]),
+      new Set([
+        ...seasonsFromKey,
+        ...seasonsFromAlias,
+        ...seasonsFromId,
+        ...seasonsFromName,
+      ]),
     ).sort((a, b) => a - b);
 
     return combined;
@@ -430,11 +448,7 @@ export default function VersesArena({
       const rollPool =
         teamA.length || teamB.length
           ? [...teamA, ...teamB].map((idOrName) => {
-              const p = squad.find(
-                (x) =>
-                  x.id === idOrName.toLowerCase() ||
-                  x.name.toLowerCase() === idOrName.toLowerCase(),
-              );
+              const p = findSquadPlayer(idOrName, squad);
               return p ? p.name : idOrName;
             })
           : SQUAD_NAMES;
@@ -471,12 +485,14 @@ export default function VersesArena({
 
           setDispA((prev) => {
             const next = [...prev];
-            next[i] = teamA[i] || "BOT";
+            const p = findSquadPlayer(teamA[i] || "", squad);
+            next[i] = p ? p.name : teamA[i] || "BOT";
             return next;
           });
           setDispB((prev) => {
             const next = [...prev];
-            next[i] = teamB[i] || "BOT";
+            const p = findSquadPlayer(teamB[i] || "", squad);
+            next[i] = p ? p.name : teamB[i] || "BOT";
             return next;
           });
 
@@ -516,8 +532,20 @@ export default function VersesArena({
     } else {
       // Defer state updates to avoid synchronous setState inside effect warnings
       const resetTimer = setTimeout(() => {
-        setDispA(teamA.length ? teamA : Array(5).fill("DRAFTING"));
-        setDispB(teamB.length ? teamB : Array(5).fill("DRAFTING"));
+        const resolvedTeamA = teamA.map((idOrName) => {
+          const p = findSquadPlayer(idOrName, squad);
+          return p ? p.name : idOrName;
+        });
+        const resolvedTeamB = teamB.map((idOrName) => {
+          const p = findSquadPlayer(idOrName, squad);
+          return p ? p.name : idOrName;
+        });
+        setDispA(
+          resolvedTeamA.length ? resolvedTeamA : Array(5).fill("DRAFTING"),
+        );
+        setDispB(
+          resolvedTeamB.length ? resolvedTeamB : Array(5).fill("DRAFTING"),
+        );
         setLockedSlots(Array(10).fill(true));
         setPercentages(Array(10).fill(100));
       }, 0);

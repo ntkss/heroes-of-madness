@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ alias?: string; id?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
-  const rawId = resolvedParams.id || "Fighter";
+  const rawId = resolvedParams.alias || resolvedParams.id || "Fighter";
   const name = decodeURIComponent(rawId);
   const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
 

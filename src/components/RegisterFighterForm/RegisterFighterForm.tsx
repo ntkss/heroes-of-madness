@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { validateAlias } from "@/utils/firebase";
 import styles from "./styles.module.css";
 
 interface RegisterFighterFormProps {
@@ -117,18 +118,25 @@ export default function RegisterFighterForm({
       return;
     }
 
+    const aliasValidation = validateAlias(alias);
+    if (!aliasValidation.valid) {
+      setError(aliasValidation.error || "INVALID ALIAS!");
+      return;
+    }
+    const cleanAlias = aliasValidation.alias;
+
     setLoading(true);
     try {
       let finalAvatar = avatarBase64;
       if (!finalAvatar) {
         // Fallback to Dicebear pixel art if no image uploaded
-        const seed = trimmedName.toLowerCase();
+        const seed = cleanAlias.toLowerCase();
         finalAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${seed}&backgroundColor=1a1a2e`;
       }
 
       await onSubmit({
         name: trimmedName,
-        alias: alias.trim(),
+        alias: cleanAlias,
         avatar: finalAvatar,
       });
     } catch (err) {
@@ -168,7 +176,7 @@ export default function RegisterFighterForm({
 
         {/* Alias */}
         <div className={styles.inputGroup}>
-          <label className={styles.label}>ALIAS</label>
+          <label className={styles.label}>ALIAS (REQ, A-Z, 0-9)</label>
           <input
             type="text"
             placeholder="e.g. nutty"

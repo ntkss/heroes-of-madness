@@ -134,17 +134,23 @@ export default function ConsolidatedWinRateChart({
     const getCanonicalPlayer = (idOrName: string) => {
       const target = idOrName.toLowerCase().trim();
       const found = availablePlayers.find(
-        (p) => p.id.toLowerCase() === target || p.name.toLowerCase() === target,
+        (p) =>
+          (p.alias && p.alias.toLowerCase() === target) ||
+          p.id.toLowerCase() === target ||
+          p.id === idOrName.trim() ||
+          p.name.toLowerCase() === target,
       );
       if (found) {
         return {
           id: found.id,
+          alias: found.alias || found.id,
           name: found.name,
           avatar: found.avatar || found.imageURL,
         };
       }
       return {
         id: target,
+        alias: target,
         name: idOrName,
         avatar: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${target}&backgroundColor=1a1a2e`,
       };
@@ -154,6 +160,7 @@ export default function ConsolidatedWinRateChart({
       string,
       {
         id: string;
+        alias: string;
         name: string;
         avatar?: string;
         wins: number;
@@ -165,9 +172,10 @@ export default function ConsolidatedWinRateChart({
 
     // Pre-populate with all known available registered players
     availablePlayers.forEach((p) => {
-      const key = p.id.toLowerCase();
+      const key = (p.alias || p.id).toLowerCase();
       statsMap[key] = {
         id: p.id,
+        alias: p.alias || p.id,
         name: p.name,
         avatar: p.avatar || p.imageURL,
         wins: 0,
@@ -187,10 +195,11 @@ export default function ConsolidatedWinRateChart({
 
       winningTeam.forEach((p) => {
         const canonical = getCanonicalPlayer(p);
-        const key = canonical.id.toLowerCase();
+        const key = canonical.alias.toLowerCase();
         if (!statsMap[key]) {
           statsMap[key] = {
             id: canonical.id,
+            alias: canonical.alias,
             name: canonical.name,
             avatar: canonical.avatar,
             wins: 0,
@@ -205,10 +214,11 @@ export default function ConsolidatedWinRateChart({
 
       losingTeam.forEach((p) => {
         const canonical = getCanonicalPlayer(p);
-        const key = canonical.id.toLowerCase();
+        const key = canonical.alias.toLowerCase();
         if (!statsMap[key]) {
           statsMap[key] = {
             id: canonical.id,
+            alias: canonical.alias,
             name: canonical.name,
             avatar: canonical.avatar,
             wins: 0,
@@ -910,7 +920,7 @@ export default function ConsolidatedWinRateChart({
           {computedPlayerStats.fighters.slice(0, 10).map((f) => (
             <Link
               key={f.id}
-              href={`/players/${encodeURIComponent(f.id)}`}
+              href={`/players/${encodeURIComponent(f.alias || f.id)}`}
               onClick={() => playBeep(350, 0.08, "sine")}
               className="font-pixel text-[7.5px] bg-black/60 border border-slate-800 hover:border-neon-yellow hover:text-neon-yellow px-2 py-1 text-slate-300 transition-colors uppercase flex items-center gap-1.5"
             >

@@ -114,13 +114,33 @@ export default function Home() {
     return saved;
   };
 
-  const handleDeletePlayer = async (playerId: string) => {
-    const playerObj = availablePlayers.find((p) => p.id === playerId);
+  const handleDeletePlayer = async (playerRef: string) => {
+    const refLower = playerRef.trim().toLowerCase();
+    const playerObj = availablePlayers.find(
+      (p) =>
+        (p.alias && p.alias.toLowerCase() === refLower) ||
+        p.id.toLowerCase() === refLower ||
+        p.id === playerRef ||
+        p.name.toLowerCase() === refLower,
+    );
     if (!playerObj) return;
 
-    await deletePlayer(playerId);
-    setAvailablePlayers((prev) => prev.filter((p) => p.id !== playerId));
-    setNames((prev) => prev.filter((name) => name !== playerObj.name));
+    await deletePlayer(playerRef);
+    setAvailablePlayers((prev) =>
+      prev.filter(
+        (p) =>
+          p.id !== playerObj.id &&
+          (!p.alias || p.alias.toLowerCase() !== playerObj.alias.toLowerCase()),
+      ),
+    );
+    setNames((prev) =>
+      prev.filter(
+        (name) =>
+          name.toLowerCase() !== playerObj.alias.toLowerCase() &&
+          name.toLowerCase() !== playerObj.id.toLowerCase() &&
+          name.toLowerCase() !== playerObj.name.toLowerCase(),
+      ),
+    );
 
     // Sync with database/localstorage
     const updatedPlayers = await fetchPlayers();
@@ -128,15 +148,36 @@ export default function Home() {
   };
 
   const handleUpdatePlayer = async (
-    oldPlayerId: string,
+    oldPlayerRef: string,
     name: string,
     alias: string,
     avatar: string,
   ) => {
-    const oldPlayer = availablePlayers.find((p) => p.id === oldPlayerId);
+    const refLower = oldPlayerRef.trim().toLowerCase();
+    const oldPlayer = availablePlayers.find(
+      (p) =>
+        (p.alias && p.alias.toLowerCase() === refLower) ||
+        p.id.toLowerCase() === refLower ||
+        p.id === oldPlayerRef ||
+        p.name.toLowerCase() === refLower,
+    );
     if (!oldPlayer) throw new Error("FIGHTER NOT FOUND!");
 
-    const updated = await updatePlayer(oldPlayerId, { name, alias, avatar });
+    const updated = await updatePlayer(oldPlayerRef, { name, alias, avatar });
+
+    // Sync draft names if the fighter was in the draft
+    setNames((prev) =>
+      prev.map((n) => {
+        if (
+          n.toLowerCase() === oldPlayer.alias.toLowerCase() ||
+          n.toLowerCase() === oldPlayer.id.toLowerCase() ||
+          n.toLowerCase() === oldPlayer.name.toLowerCase()
+        ) {
+          return updated.alias;
+        }
+        return n;
+      }),
+    );
 
     // Sync with database/localstorage
     const updatedPlayers = await fetchPlayers();
@@ -264,16 +305,19 @@ export default function Home() {
       const lineConfig = await fetchLineConfig();
       if (!lineConfig.enabled || !lineConfig.groupId) return;
 
-      const resolvePlayer = (idOrName: string) => {
+      const resolvePlayer = (idOrNameOrAlias: string) => {
+        const key = (idOrNameOrAlias || "").toLowerCase().trim();
         const found = availablePlayers.find(
           (p) =>
-            p.id === idOrName ||
-            p.name.toLowerCase() === idOrName.toLowerCase(),
+            (p.alias && p.alias.toLowerCase() === key) ||
+            p.id.toLowerCase() === key ||
+            p.id === idOrNameOrAlias ||
+            p.name.toLowerCase() === key,
         );
         if (found) {
           return found.alias ? `${found.name} (${found.alias})` : found.name;
         }
-        return idOrName; // Bot or fallback
+        return idOrNameOrAlias; // Bot or fallback
       };
 
       const roles = ["Top", "Jungle", "Mid", "ADC", "Support"];
@@ -326,16 +370,19 @@ export default function Home() {
       const match = matches.find((m) => m.id === matchId);
       if (!match) return;
 
-      const resolvePlayer = (idOrName: string) => {
+      const resolvePlayer = (idOrNameOrAlias: string) => {
+        const key = (idOrNameOrAlias || "").toLowerCase().trim();
         const found = availablePlayers.find(
           (p) =>
-            p.id === idOrName ||
-            p.name.toLowerCase() === idOrName.toLowerCase(),
+            (p.alias && p.alias.toLowerCase() === key) ||
+            p.id.toLowerCase() === key ||
+            p.id === idOrNameOrAlias ||
+            p.name.toLowerCase() === key,
         );
         if (found) {
           return found.alias ? `${found.name} (${found.alias})` : found.name;
         }
-        return idOrName;
+        return idOrNameOrAlias;
       };
 
       const winningTeamColor =
@@ -463,9 +510,16 @@ export default function Home() {
     const draftNames = [...names];
     if (draftNames.length < 10) {
       const needed = 10 - draftNames.length;
-      const selectedDisplayNames = names.map((id) => {
-        const found = availablePlayers.find((p) => p.id === id);
-        return found ? found.name.toLowerCase() : id.toLowerCase();
+      const selectedDisplayNames = names.map((idOrAlias) => {
+        const key = (idOrAlias || "").toLowerCase().trim();
+        const found = availablePlayers.find(
+          (p) =>
+            (p.alias && p.alias.toLowerCase() === key) ||
+            p.id.toLowerCase() === key ||
+            p.id === idOrAlias ||
+            p.name.toLowerCase() === key,
+        );
+        return found ? found.name.toLowerCase() : key;
       });
       const availableBots = FILL_POOL_NAMES.filter(
         (p) => !selectedDisplayNames.includes(p.toLowerCase()),

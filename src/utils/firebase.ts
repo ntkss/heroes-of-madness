@@ -18,6 +18,7 @@ import {
   Firestore,
   DocumentData,
   increment,
+  where,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -645,6 +646,33 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
   return [];
 }
 
+/**
+ * Strict validation rule for ALIAS:
+ * - Must be strictly English letters or numbers only (alphanumeric: /^[a-zA-Z0-9]+$/).
+ * - Must automatically trim any whitespace.
+ * - Is required (cannot be empty).
+ */
+export function validateAlias(rawAlias: string | undefined | null): {
+  valid: boolean;
+  alias: string;
+  error?: string;
+} {
+  const trimmed = (rawAlias || "").trim();
+  if (!trimmed) {
+    return { valid: false, alias: "", error: "ALIAS IS REQUIRED!" };
+  }
+  const alphanumericRegex = /^[a-zA-Z0-9]+$/;
+  if (!alphanumericRegex.test(trimmed)) {
+    return {
+      valid: false,
+      alias: trimmed,
+      error:
+        "ALIAS MUST BE STRICTLY ENGLISH LETTERS OR NUMBERS ONLY (A-Z, 0-9)!",
+    };
+  }
+  return { valid: true, alias: trimmed };
+}
+
 // Save a new player to database
 export async function savePlayer(
   playerData: Omit<DbPlayer, "id">,
@@ -653,15 +681,29 @@ export async function savePlayer(
   if (!nameTrimmed) {
     throw new Error("FIGHTER NAME CANNOT BE EMPTY!");
   }
+
+  const aliasValidation = validateAlias(playerData.alias);
+  if (!aliasValidation.valid) {
+    throw new Error(aliasValidation.error);
+  }
+  const aliasTrimmed = aliasValidation.alias;
+
   const cleanAvatar = playerData.avatar || playerData.imageURL || "";
 
-  // Load all players first to check if name exists (case-insensitive)
+  // Load all players first to check if name or alias exists (case-insensitive)
   const players = await fetchPlayers();
   const nameExists = players.some(
     (p) => p.name.toLowerCase() === nameTrimmed.toLowerCase(),
   );
   if (nameExists) {
     throw new Error("FIGHTER NAME ALREADY EXISTS!");
+  }
+
+  const aliasExists = players.some(
+    (p) => p.alias && p.alias.toLowerCase() === aliasTrimmed.toLowerCase(),
+  );
+  if (aliasExists) {
+    throw new Error("FIGHTER ALIAS ALREADY EXISTS!");
   }
 
   // Generate unique document ID
@@ -674,7 +716,7 @@ export async function savePlayer(
 
   const firestoreData = {
     name: nameTrimmed,
-    alias: playerData.alias || nameTrimmed,
+    alias: aliasTrimmed,
     avatar: cleanAvatar,
     winrate: Number(playerData.winrate) || 0,
     current_rank: playerData.current_rank,
@@ -1392,15 +1434,57 @@ export async function recalculateRanks(
 }
 
 // Delete player from database
-export async function deletePlayer(playerId: string): Promise<boolean> {
+export async function deletePlayer(playerRef: string): Promise<boolean> {
   let success = false;
-  const playerIdLower = playerId.toLowerCase();
+  const refTrimmed = (playerRef || "").trim();
+  if (!refTrimmed) return false;
+  const refLower = refTrimmed.toLowerCase();
 
-  if (db && !playerIdLower.startsWith("local_")) {
+  const players = await fetchPlayers();
+  const player = players.find(
+    (p) =>
+      (p.alias && p.alias.toLowerCase() === refLower) ||
+      p.id.toLowerCase() === refLower ||
+      p.id === refTrimmed ||
+      p.name.toLowerCase() === refLower,
+  );
+
+  const targetDocId = player ? player.id : refTrimmed;
+
+  if (db && !targetDocId.toLowerCase().startsWith("local_")) {
     try {
-      const docRef = doc(db, "players", playerIdLower);
+      // 1. Delete by exact target document ID
+      const docRef = doc(db, "players", targetDocId);
       await deleteDoc(docRef);
       success = true;
+
+      // 2. If lowercase differs, clean up lowercase ID too
+      if (targetDocId !== targetDocId.toLowerCase()) {
+        try {
+          await deleteDoc(doc(db, "players", targetDocId.toLowerCase()));
+        } catch {}
+      }
+
+      // 3. If player has an alias document in Firestore (e.g. seeded squad)
+      if (player?.alias) {
+        try {
+          await deleteDoc(doc(db, "players", player.alias.toLowerCase()));
+        } catch {}
+      }
+
+      // 4. Query to clean up any remaining docs with this alias
+      if (player?.alias) {
+        try {
+          const q = query(
+            collection(db, "players"),
+            where("alias", "==", player.alias),
+          );
+          const querySnapshot = await getDocs(q);
+          querySnapshot.forEach(async (docSnap) => {
+            await deleteDoc(docSnap.ref);
+          });
+        } catch {}
+      }
     } catch (e) {
       console.error("Error deleting player from Firestore:", e);
     }
@@ -1412,7 +1496,14 @@ export async function deletePlayer(playerId: string): Promise<boolean> {
     if (stored) {
       try {
         const list = JSON.parse(stored) as DbPlayer[];
-        const filtered = list.filter((p) => p.id !== playerIdLower);
+        const filtered = list.filter(
+          (p) =>
+            p.id !== targetDocId &&
+            p.id.toLowerCase() !== refLower &&
+            (!p.alias || p.alias.toLowerCase() !== refLower) &&
+            (!player?.alias ||
+              p.alias.toLowerCase() !== player.alias.toLowerCase()),
+        );
         localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filtered));
         if (!db) success = true;
       } catch (e) {
@@ -1426,7 +1517,7 @@ export async function deletePlayer(playerId: string): Promise<boolean> {
 
 // Update player display name, alias, and avatar
 export async function updatePlayer(
-  oldPlayerId: string,
+  oldPlayerRef: string,
   updatedFields: { name: string; alias: string; avatar: string },
 ): Promise<DbPlayer> {
   const newName = (updatedFields.name || "").trim();
@@ -1437,12 +1528,24 @@ export async function updatePlayer(
     throw new Error("NAME TOO LONG (MAX 16 CHARS)!");
   }
 
-  const newAlias = (updatedFields.alias || "").trim() || newName;
-  const oldPlayerIdLower = oldPlayerId.toLowerCase();
+  const aliasValidation = validateAlias(updatedFields.alias);
+  if (!aliasValidation.valid) {
+    throw new Error(aliasValidation.error);
+  }
+  const newAlias = aliasValidation.alias;
+
+  const refTrimmed = (oldPlayerRef || "").trim();
+  const refLower = refTrimmed.toLowerCase();
 
   // Load current player list to check for duplicates and get old player data
   const players = await fetchPlayers();
-  const oldPlayer = players.find((p) => p.id === oldPlayerIdLower);
+  const oldPlayer = players.find(
+    (p) =>
+      (p.alias && p.alias.toLowerCase() === refLower) ||
+      p.id.toLowerCase() === refLower ||
+      p.id === refTrimmed ||
+      p.name.toLowerCase() === refLower,
+  );
   if (!oldPlayer) {
     throw new Error("FIGHTER NOT FOUND!");
   }
@@ -1450,11 +1553,21 @@ export async function updatePlayer(
   // Check if name already exists for ANOTHER player (case-insensitive)
   const nameExists = players.some(
     (p) =>
-      p.id !== oldPlayerIdLower &&
-      p.name.toLowerCase() === newName.toLowerCase(),
+      p.id !== oldPlayer.id && p.name.toLowerCase() === newName.toLowerCase(),
   );
   if (nameExists) {
     throw new Error("FIGHTER NAME ALREADY EXISTS!");
+  }
+
+  // Check if alias already exists for ANOTHER player (case-insensitive)
+  const aliasExists = players.some(
+    (p) =>
+      p.id !== oldPlayer.id &&
+      p.alias &&
+      p.alias.toLowerCase() === newAlias.toLowerCase(),
+  );
+  if (aliasExists) {
+    throw new Error("FIGHTER ALIAS ALREADY EXISTS!");
   }
 
   const cleanAvatar = updatedFields.avatar || "";
@@ -1467,15 +1580,19 @@ export async function updatePlayer(
     imageURL: cleanAvatar,
   };
 
-  if (db && !oldPlayerIdLower.startsWith("local_")) {
+  if (db && !oldPlayer.id.toLowerCase().startsWith("local_")) {
     try {
-      // Always update document in-place
-      const docRef = doc(db, "players", oldPlayerIdLower);
-      await updateDoc(docRef, {
-        name: newName,
-        alias: newAlias,
-        avatar: cleanAvatar,
-      });
+      // Update document using exact oldPlayer.id and setDoc with merge to safely handle missing fields
+      const docRef = doc(db, "players", oldPlayer.id);
+      await setDoc(
+        docRef,
+        {
+          name: newName,
+          alias: newAlias,
+          avatar: cleanAvatar,
+        },
+        { merge: true },
+      );
     } catch (e) {
       console.error("Error updating player in Firestore:", e);
       throw new Error("FAILED TO UPDATE FIRESTORE DOCUMENT!");
@@ -1488,7 +1605,7 @@ export async function updatePlayer(
     if (stored) {
       try {
         const list = JSON.parse(stored) as DbPlayer[];
-        const filtered = list.filter((p) => p.id !== oldPlayerIdLower);
+        const filtered = list.filter((p) => p.id !== oldPlayer.id);
         filtered.push(newPlayer);
         localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(filtered));
       } catch (e) {

@@ -60,7 +60,7 @@ export function normalizeLaneName(lane: string): string {
 }
 
 /**
- * Checks if a player identifier from a match matches the target player ID or Name.
+ * Checks if a player identifier from a match matches the target player ID, Name, or Alias.
  */
 function matchesPlayer(
   matchPlayerStr: string,
@@ -72,12 +72,17 @@ function matchesPlayer(
   const p2 = targetIdOrName.trim().toLowerCase();
   if (p1 === p2) return true;
 
-  // Search squad for deeper ID/Name matching
+  // Search squad for deeper ID/Name/Alias matching
   const targetPlayer = squad.find(
-    (p) => p.id.toLowerCase() === p2 || p.name.toLowerCase() === p2,
+    (p) =>
+      (p.alias && p.alias.toLowerCase() === p2) ||
+      p.id.toLowerCase() === p2 ||
+      p.id === targetIdOrName.trim() ||
+      p.name.toLowerCase() === p2,
   );
   if (targetPlayer) {
     if (
+      (targetPlayer.alias && p1 === targetPlayer.alias.toLowerCase()) ||
       p1 === targetPlayer.id.toLowerCase() ||
       p1 === targetPlayer.name.toLowerCase()
     ) {
@@ -86,10 +91,15 @@ function matchesPlayer(
   }
 
   const matchPlayer = squad.find(
-    (p) => p.id.toLowerCase() === p1 || p.name.toLowerCase() === p1,
+    (p) =>
+      (p.alias && p.alias.toLowerCase() === p1) ||
+      p.id.toLowerCase() === p1 ||
+      p.id === matchPlayerStr.trim() ||
+      p.name.toLowerCase() === p1,
   );
   if (matchPlayer) {
     if (
+      (matchPlayer.alias && p2 === matchPlayer.alias.toLowerCase()) ||
       p2 === matchPlayer.id.toLowerCase() ||
       p2 === matchPlayer.name.toLowerCase()
     ) {

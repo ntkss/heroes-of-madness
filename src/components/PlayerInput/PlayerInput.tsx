@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { playBeep, playCoin } from "@/utils/audio";
-import { DbPlayer } from "@/utils/firebase";
+import { DbPlayer, validateAlias } from "@/utils/firebase";
 import RegisterFighterForm from "@/components/RegisterFighterForm";
 import FighterDirectory from "@/components/FighterDirectory";
 import styles from "./styles.module.css";
@@ -50,24 +50,39 @@ export default function PlayerInput({
   const handleTogglePlayer = (player: DbPlayer) => {
     if (isGenerating) return;
 
-    const exists = names.includes(player.id);
+    const playerIdentifier = player.alias || player.id;
+    const exists = names.some(
+      (n) =>
+        n.toLowerCase() === playerIdentifier.toLowerCase() ||
+        n.toLowerCase() === player.id.toLowerCase() ||
+        (player.alias && n.toLowerCase() === player.alias.toLowerCase()),
+    );
     if (exists) {
       playBeep(220, 0.1, "sawtooth");
-      onChange(names.filter((id) => id !== player.id));
+      onChange(
+        names.filter(
+          (n) =>
+            n.toLowerCase() !== playerIdentifier.toLowerCase() &&
+            n.toLowerCase() !== player.id.toLowerCase() &&
+            (!player.alias || n.toLowerCase() !== player.alias.toLowerCase()),
+        ),
+      );
     } else {
       if (names.length >= 10) {
         playBeep(120, 0.2, "sawtooth"); // Error beep, draft full
         return;
       }
       playCoin();
-      onChange([...names, player.id]);
+      onChange([...names, playerIdentifier]);
     }
   };
 
-  const handleRemoveName = (idToRemove: string) => {
+  const handleRemoveName = (refToRemove: string) => {
     if (isGenerating) return;
     playBeep(220, 0.1, "sawtooth");
-    onChange(names.filter((id) => id !== idToRemove));
+    onChange(
+      names.filter((n) => n.toLowerCase() !== refToRemove.toLowerCase()),
+    );
   };
 
   const handleClear = () => {
@@ -78,13 +93,21 @@ export default function PlayerInput({
   const handleQuickFill = () => {
     playCoin();
     // Find players not yet selected
-    const unselected = availablePlayers.filter((p) => !names.includes(p.id));
+    const unselected = availablePlayers.filter(
+      (p) =>
+        !names.some(
+          (n) =>
+            n.toLowerCase() === (p.alias || p.id).toLowerCase() ||
+            n.toLowerCase() === p.id.toLowerCase() ||
+            (p.alias && n.toLowerCase() === p.alias.toLowerCase()),
+        ),
+    );
     // Shuffle unselected
     const shuffled = [...unselected].sort(() => Math.random() - 0.5);
     // Take what is needed to reach 10
     const needed = 10 - names.length;
     if (needed <= 0) return;
-    const toAdd = shuffled.slice(0, needed).map((p) => p.id);
+    const toAdd = shuffled.slice(0, needed).map((p) => p.alias || p.id);
     onChange([...names, ...toAdd]);
   };
 
@@ -122,31 +145,36 @@ export default function PlayerInput({
           </span>
           <div className={styles.slotsGrid}>
             {Array.from({ length: 10 }).map((_, index) => {
-              const selectedId = names[index];
+              const selectedRef = names[index];
               const playerObj = availablePlayers.find(
-                (p) => p.id === selectedId,
+                (p) =>
+                  (p.alias &&
+                    p.alias.toLowerCase() ===
+                      (selectedRef || "").toLowerCase()) ||
+                  p.id.toLowerCase() === (selectedRef || "").toLowerCase() ||
+                  p.name.toLowerCase() === (selectedRef || "").toLowerCase(),
               );
 
-              return selectedId ? (
+              return selectedRef ? (
                 <div
                   key={index}
-                  onClick={() => handleRemoveName(selectedId)}
+                  onClick={() => handleRemoveName(selectedRef)}
                   className={styles.slotSelected}
                 >
                   <div className={styles.slotAvatar}>
                     <Image
                       src={
                         playerObj?.avatar ||
-                        `https://api.dicebear.com/9.x/pixel-art/svg?seed=${(playerObj?.name || selectedId).toLowerCase()}&backgroundColor=1a1a2e`
+                        `https://api.dicebear.com/9.x/pixel-art/svg?seed=${(playerObj?.alias || playerObj?.name || selectedRef).toLowerCase()}&backgroundColor=1a1a2e`
                       }
-                      alt={playerObj?.name || selectedId}
+                      alt={playerObj?.name || selectedRef}
                       fill
                       className="object-cover"
                       unoptimized
                     />
                   </div>
                   <span className={styles.slotName}>
-                    {playerObj?.name || selectedId}
+                    {playerObj?.name || selectedRef}
                   </span>
                   <span className={styles.slotAlias}>
                     {playerObj?.alias || "Fighter"}
@@ -243,19 +271,31 @@ export default function PlayerInput({
               throw new Error("FIGHTER NAME REQUIRED!");
             }
 
+            const aliasValidation = validateAlias(data.alias);
+            if (!aliasValidation.valid) {
+              throw new Error(aliasValidation.error || "INVALID ALIAS!");
+            }
+            const cleanAlias = aliasValidation.alias;
+
             // Check uniqueness
             const nameExists = availablePlayers.some(
-              (p) =>
-                p.name.toLowerCase() === trimmedName.toLowerCase() ||
-                p.id.toLowerCase() === trimmedName.toLowerCase(),
+              (p) => p.name.toLowerCase() === trimmedName.toLowerCase(),
             );
             if (nameExists) {
               throw new Error("FIGHTER NAME ALREADY EXISTS!");
             }
 
+            const aliasExists = availablePlayers.some(
+              (p) =>
+                p.alias && p.alias.toLowerCase() === cleanAlias.toLowerCase(),
+            );
+            if (aliasExists) {
+              throw new Error("FIGHTER ALIAS ALREADY EXISTS!");
+            }
+
             const added = await onAddPlayer({
               name: trimmedName,
-              alias: (data.alias || "").trim() || trimmedName.toLowerCase(),
+              alias: cleanAlias,
               avatar: data.avatar,
               imageURL: data.avatar,
               winrate: 0,
@@ -268,9 +308,9 @@ export default function PlayerInput({
             setIsAdding(false);
             playCoin();
 
-            // Auto-add new player to draft if there's space
+            // Auto-add new player to draft using their ALIAS if there's space
             if (names.length < 10) {
-              onChange([...names, added.id]);
+              onChange([...names, added.alias]);
             }
           }}
           onClose={() => setIsAdding(false)}

@@ -50,7 +50,7 @@ export default function PodiumStandings({
               />
             </div>
             <Link
-              href={`/players/${secondPlace.id}`}
+              href={`/players/${secondPlace.alias || secondPlace.id}`}
               className={`${styles.podiumName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {secondPlace.name}
@@ -104,7 +104,7 @@ export default function PodiumStandings({
               </div>
             </div>
             <Link
-              href={`/players/${firstPlace.id}`}
+              href={`/players/${firstPlace.alias || firstPlace.id}`}
               className={`${styles.championName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {firstPlace.name}
@@ -140,7 +140,7 @@ export default function PodiumStandings({
               />
             </div>
             <Link
-              href={`/players/${thirdPlace.id}`}
+              href={`/players/${thirdPlace.alias || thirdPlace.id}`}
               className={`${styles.podiumName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {thirdPlace.name}
@@ -183,7 +183,7 @@ export default function PodiumStandings({
               />
             </div>
             <Link
-              href={`/players/${lastPlace.id}`}
+              href={`/players/${lastPlace.alias || lastPlace.id}`}
               className={`${styles.spoonName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {lastPlace.name}

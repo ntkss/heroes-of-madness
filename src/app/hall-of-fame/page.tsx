@@ -20,6 +20,7 @@ interface FameCardData {
   seasonId: number;
   seasonName: string;
   championId?: string;
+  championAlias?: string;
   championName: string;
   championAvatar?: string;
   winrate: number;
@@ -61,15 +62,22 @@ export default function HallOfFamePage() {
   const yearGroupedCards = React.useMemo(() => {
     const fameCards: FameCardData[] = [];
 
-    // Helper to get player info by name or ID
+    // Helper to get player info by name, ID, or alias
     const getPlayerInfo = (playerName: string, statId?: string) => {
+      const pNameLower = playerName?.toLowerCase();
+      const sIdLower = statId?.toLowerCase();
       const found = players.find(
         (p) =>
-          p.name.toLowerCase() === playerName.toLowerCase() ||
-          p.id.toLowerCase() === playerName.toLowerCase(),
+          (p.alias &&
+            (p.alias.toLowerCase() === pNameLower ||
+              p.alias.toLowerCase() === sIdLower)) ||
+          p.name.toLowerCase() === pNameLower ||
+          p.id.toLowerCase() === pNameLower ||
+          (statId && p.id.toLowerCase() === sIdLower),
       );
       return {
         id: found?.id || statId || playerName.toLowerCase(),
+        alias: found?.alias,
         avatar:
           found?.avatar ||
           `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(
@@ -117,6 +125,7 @@ export default function HallOfFamePage() {
           seasonId: season.id,
           seasonName: season.name || `Season ${season.id}`,
           championId: pInfo.id,
+          championAlias: pInfo.alias,
           championName: championStat.name,
           championAvatar: pInfo.avatar,
           winrate,
@@ -219,7 +228,7 @@ export default function HallOfFamePage() {
                     {yearGroupedCards[year].map((card) => (
                       <Link
                         key={card.seasonId}
-                        href={`/players/${encodeURIComponent(card.championId || card.championName)}`}
+                        href={`/players/${encodeURIComponent(card.championAlias || card.championId || card.championName)}`}
                         className={styles.fameCard}
                         onClick={() => playBeep(400, 0.1, "sine")}
                       >

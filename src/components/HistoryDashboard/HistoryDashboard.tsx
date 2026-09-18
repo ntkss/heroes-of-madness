@@ -436,12 +436,15 @@ export default function HistoryDashboard({
 
   const getPlayerKey = React.useCallback(
     (nameOrId: string) => {
+      const key = (nameOrId || "").toLowerCase().trim();
       const found = availablePlayers.find(
         (p) =>
-          p.id === nameOrId.toLowerCase() ||
-          p.name.toLowerCase() === nameOrId.toLowerCase(),
+          (p.alias && p.alias.toLowerCase() === key) ||
+          p.id.toLowerCase() === key ||
+          p.id === nameOrId ||
+          p.name.toLowerCase() === key,
       );
-      return found ? found.id : nameOrId.toLowerCase();
+      return found ? found.alias || found.id : key;
     },
     [availablePlayers],
   );
@@ -505,10 +508,13 @@ export default function HistoryDashboard({
   };
 
   const getPlayerDisplayName = (idOrName: string) => {
+    const key = (idOrName || "").toLowerCase().trim();
     const player = availablePlayers.find(
       (p) =>
-        p.id === idOrName.toLowerCase() ||
-        p.name.toLowerCase() === idOrName.toLowerCase(),
+        (p.alias && p.alias.toLowerCase() === key) ||
+        p.id.toLowerCase() === key ||
+        p.id === idOrName ||
+        p.name.toLowerCase() === key,
     );
     return player ? player.name : idOrName;
   };
@@ -576,12 +582,15 @@ export default function HistoryDashboard({
     }
 
     const getPlayerKey = (nameOrId: string) => {
+      const key = (nameOrId || "").toLowerCase().trim();
       const found = availablePlayers.find(
         (p) =>
-          p.id === nameOrId.toLowerCase() ||
-          p.name.toLowerCase() === nameOrId.toLowerCase(),
+          (p.alias && p.alias.toLowerCase() === key) ||
+          p.id.toLowerCase() === key ||
+          p.id === nameOrId ||
+          p.name.toLowerCase() === key,
       );
-      return found ? found.id : nameOrId.toLowerCase();
+      return found ? found.alias || found.id : key;
     };
 
     // Determine current active season ID
@@ -1203,7 +1212,7 @@ export default function HistoryDashboard({
                             {stats.name}
                           </span>
                           <Link
-                            href={`/players/${stats.dbPlayer?.id || stats.name.toLowerCase()}`}
+                            href={`/players/${stats.dbPlayer?.alias || stats.dbPlayer?.id || stats.name.toLowerCase()}`}
                             onClick={() => playBeep(300, 0.1, "sine")}
                             className="font-pixel text-[7.5px] border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue px-2 py-0.5 hover:bg-neon-blue/10 transition-all rounded-none uppercase select-none cursor-pointer"
                           >

@@ -20,12 +20,12 @@ import { normalizeLane } from "@/constants/heroes";
 import { UserProfileWinRateChart } from "@/components/Charts";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ alias?: string; id?: string }>;
 }
 
 export default function PlayerProfilePage({ params }: PageProps) {
   const resolvedParams = use(params);
-  const playerId = resolvedParams.id;
+  const playerSlug = resolvedParams.alias || resolvedParams.id || "";
 
   const [player, setPlayer] = useState<DbPlayer | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -52,16 +52,20 @@ export default function PlayerProfilePage({ params }: PageProps) {
           setActiveSeasonId(seasonCfg.activeSeasonId);
         }
 
-        const key = playerId.toLowerCase();
+        const key = playerSlug.toLowerCase().trim();
         let foundPlayer = players.find(
-          (p) => p.id === key || p.name.toLowerCase() === key,
+          (p) =>
+            (p.alias && p.alias.toLowerCase() === key) ||
+            p.id.toLowerCase() === key ||
+            p.id === playerSlug.trim() ||
+            p.name.toLowerCase() === key,
         );
 
         if (!foundPlayer) {
           foundPlayer = {
             id: key,
-            name: playerId,
-            alias: "UNREGISTERED",
+            name: playerSlug,
+            alias: playerSlug,
             avatar: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${key}&backgroundColor=1a1a2e`,
             current_rank: "Unranked",
             highest_rank: "Unranked",
@@ -82,7 +86,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
     };
 
     loadData();
-  }, [playerId]);
+  }, [playerSlug]);
 
   // Dynamically compute statistics strictly isolated for the selected mode
   const { overallStats, laneStats, matchHistory } = useMemo(() => {
@@ -144,16 +148,17 @@ export default function PlayerProfilePage({ params }: PageProps) {
     }> = [];
 
     modeMatches.forEach((match) => {
-      const isTeamA = match.teamA.some(
-        (p) =>
-          p.toLowerCase() === player.id.toLowerCase() ||
-          p.toLowerCase() === player.name.toLowerCase(),
-      );
-      const isTeamB = match.teamB.some(
-        (p) =>
-          p.toLowerCase() === player.id.toLowerCase() ||
-          p.toLowerCase() === player.name.toLowerCase(),
-      );
+      const playerMatchesMatch = (p: string) => {
+        const pLower = p.toLowerCase().trim();
+        return (
+          pLower === player.id.toLowerCase() ||
+          pLower === player.name.toLowerCase() ||
+          (player.alias && pLower === player.alias.toLowerCase())
+        );
+      };
+
+      const isTeamA = match.teamA.some(playerMatchesMatch);
+      const isTeamB = match.teamB.some(playerMatchesMatch);
 
       if (!isTeamA && !isTeamB) return;
 
@@ -163,21 +168,13 @@ export default function PlayerProfilePage({ params }: PageProps) {
       let hero: string | undefined;
       let playerIdx = -1;
       if (isTeamA) {
-        playerIdx = match.teamA.findIndex(
-          (p) =>
-            p.toLowerCase() === player.id.toLowerCase() ||
-            p.toLowerCase() === player.name.toLowerCase(),
-        );
+        playerIdx = match.teamA.findIndex(playerMatchesMatch);
         const rawLane =
           match.teamALanes?.[playerIdx] || defaultLanes[playerIdx] || "Unknown";
         lane = normalizeLane(rawLane);
         hero = match.teamAHeroes?.[playerIdx];
       } else {
-        playerIdx = match.teamB.findIndex(
-          (p) =>
-            p.toLowerCase() === player.id.toLowerCase() ||
-            p.toLowerCase() === player.name.toLowerCase(),
-        );
+        playerIdx = match.teamB.findIndex(playerMatchesMatch);
         const rawLane =
           match.teamBLanes?.[playerIdx] || defaultLanes[playerIdx] || "Unknown";
         lane = normalizeLane(rawLane);

@@ -169,11 +169,12 @@ export default function Home() {
     setNames((prev) =>
       prev.map((n) => {
         if (
-          n.toLowerCase() === oldPlayer.alias.toLowerCase() ||
           n.toLowerCase() === oldPlayer.id.toLowerCase() ||
+          (oldPlayer.alias &&
+            n.toLowerCase() === oldPlayer.alias.toLowerCase()) ||
           n.toLowerCase() === oldPlayer.name.toLowerCase()
         ) {
-          return updated.alias;
+          return updated.id;
         }
         return n;
       }),
@@ -320,7 +321,7 @@ export default function Home() {
         return idOrNameOrAlias; // Bot or fallback
       };
 
-      const roles = ["Top", "Jungle", "Mid", "ADC", "Support"];
+      const roles = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
       const formatTeam = (team: string[]) => {
         return team
           .map((player, idx) => {
@@ -514,9 +515,9 @@ export default function Home() {
         const key = (idOrAlias || "").toLowerCase().trim();
         const found = availablePlayers.find(
           (p) =>
-            (p.alias && p.alias.toLowerCase() === key) ||
             p.id.toLowerCase() === key ||
             p.id === idOrAlias ||
+            (p.alias && p.alias.toLowerCase() === key) ||
             p.name.toLowerCase() === key,
         );
         return found ? found.name.toLowerCase() : key;
@@ -546,7 +547,7 @@ export default function Home() {
 
     if (activeMode === "HERO_ROV" || activeMode === "HERO_MLBB") {
       const currentGame: GameType = activeMode === "HERO_ROV" ? "ROV" : "MLBB";
-      const baseLanes: HeroLane[] = ["Top", "Jungle", "Mid", "ADC", "Support"];
+      const baseLanes: HeroLane[] = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
 
       // Shuffle the 5 lanes for Team A and Team B
       const lanesA = [...baseLanes].sort(() => Math.random() - 0.5);
@@ -605,16 +606,16 @@ export default function Home() {
     // Normal mode: reset heroes, use default lanes
     setTeamAHeroes([]);
     setTeamBHeroes([]);
-    setTeamALanes(["Top", "Jungle", "Mid", "ADC", "Support"]);
-    setTeamBLanes(["Top", "Jungle", "Mid", "ADC", "Support"]);
+    setTeamALanes(["Exp", "Jungle", "Mid", "Gold", "Roam"]);
+    setTeamBLanes(["Exp", "Jungle", "Mid", "Gold", "Roam"]);
 
     setTimeout(async () => {
       try {
         const saved = await saveMatch({
           teamA: finalTeamA,
           teamB: finalTeamB,
-          teamALanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
-          teamBLanes: ["Top", "Jungle", "Mid", "ADC", "Support"],
+          teamALanes: ["Exp", "Jungle", "Mid", "Gold", "Roam"],
+          teamBLanes: ["Exp", "Jungle", "Mid", "Gold", "Roam"],
           winner: null,
           createdAt: Date.now(),
           seasonId: activeSeasonId,

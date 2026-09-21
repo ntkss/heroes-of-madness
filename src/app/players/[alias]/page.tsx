@@ -55,9 +55,9 @@ export default function PlayerProfilePage({ params }: PageProps) {
         const key = playerSlug.toLowerCase().trim();
         let foundPlayer = players.find(
           (p) =>
-            (p.alias && p.alias.toLowerCase() === key) ||
             p.id.toLowerCase() === key ||
             p.id === playerSlug.trim() ||
+            (p.alias && p.alias.toLowerCase() === key) ||
             p.name.toLowerCase() === key,
         );
 
@@ -127,7 +127,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
     let totalLikes = 0;
     let totalDislikes = 0;
 
-    const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
+    const defaultLanes = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
     const laneCounters: Record<
       string,
       { matches: number; wins: number; losses: number }
@@ -344,7 +344,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
     );
   }
 
-  const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
+  const defaultLanes = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
   const lanesPlayed = defaultLanes.filter(
     (lane) => (laneStats[lane]?.matches || 0) > 0,
   );

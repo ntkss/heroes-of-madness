@@ -107,13 +107,15 @@ function MatchCardComponent({
     lanes: string[] | undefined,
     heroes: string[] | undefined,
   ) => {
-    const defaultLanes = ["Top", "Jungle", "Mid", "ADC", "Support"];
+    const defaultLanes = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
     return (
       <div className={styles.rosterList}>
         {team.map((playerNameOrId, idx) => {
           const pKey = getPlayerKey(playerNameOrId);
           const name = getPlayerDisplayName(playerNameOrId);
-          const dbPlayer = availablePlayers.find((p) => p.id === pKey);
+          const dbPlayer = availablePlayers.find(
+            (p) => p.id.toLowerCase() === pKey.toLowerCase(),
+          );
           const lane = lanes ? normalizeLane(lanes[idx]) : defaultLanes[idx];
           const hero = heroes ? heroes[idx] : undefined;
           const feedback = localFeedback[pKey] ||
@@ -444,7 +446,7 @@ export default function HistoryDashboard({
           p.id === nameOrId ||
           p.name.toLowerCase() === key,
       );
-      return found ? found.alias || found.id : key;
+      return found ? found.id.toLowerCase() : key;
     },
     [availablePlayers],
   );
@@ -534,29 +536,63 @@ export default function HistoryDashboard({
       }
     > = {};
 
+    const isTargetSeasonActive = effectiveSeasonId === activeSeasonId;
+    const targetArchiveSeason = seasons?.find(
+      (s) => s.id === effectiveSeasonId,
+    );
+    const hasArchiveStats = !!(
+      targetArchiveSeason?.fighterStats &&
+      targetArchiveSeason.fighterStats.length > 0
+    );
+
     // 1. Initialize stats map
     if (selectedMode === "TEAM_LANE") {
       availablePlayers.forEach((player) => {
-        const dbMatches = Number(player.total_match_played) || 0;
-        const dbWinrate = Number(player.winrate) || 0;
-        const dbWins = Math.round((dbWinrate / 100) * dbMatches);
-        const dbLosses = dbMatches - dbWins;
+        let dbMatches = 0;
+        let dbWinrate = 0;
+        let dbWins = 0;
+        let dbLosses = 0;
+
+        if (isTargetSeasonActive) {
+          dbMatches = Number(player.total_match_played) || 0;
+          dbWinrate = Number(player.winrate) || 0;
+          dbWins = Math.round((dbWinrate / 100) * dbMatches);
+          dbLosses = dbMatches - dbWins;
+        } else if (hasArchiveStats && targetArchiveSeason) {
+          const arch = targetArchiveSeason.fighterStats.find(
+            (s) =>
+              s.id.toLowerCase() === player.id.toLowerCase() ||
+              (player.alias &&
+                s.alias.toLowerCase() === player.alias.toLowerCase()) ||
+              s.name.toLowerCase() === player.name.toLowerCase(),
+          );
+          if (arch) {
+            dbMatches = Number(arch.total_match_played) || 0;
+            dbWinrate = Number(arch.winrate) || 0;
+            dbWins =
+              arch.wins !== undefined
+                ? arch.wins
+                : Math.round((dbWinrate / 100) * dbMatches);
+            dbLosses =
+              arch.losses !== undefined ? arch.losses : dbMatches - dbWins;
+          }
+        }
 
         const atMatches =
           player.allTimeMatches !== undefined
             ? Number(player.allTimeMatches)
-            : dbMatches;
+            : Number(player.total_match_played) || 0;
         const atWinrate =
           player.allTimeWinrate !== undefined
             ? Number(player.allTimeWinrate)
-            : dbWinrate;
+            : Number(player.winrate) || 0;
         const atWins =
           player.allTimeWins !== undefined
             ? Number(player.allTimeWins)
             : Math.round((atWinrate / 100) * atMatches);
         const atLosses = atMatches - atWins;
 
-        statsMap[player.id] = {
+        statsMap[player.id.toLowerCase()] = {
           wins: dbWins,
           losses: dbLosses,
           matches: dbMatches,
@@ -569,7 +605,7 @@ export default function HistoryDashboard({
     } else {
       // For HERO_ROV and HERO_MLBB modes, initialize with 0 so statistics are 100% isolated to this mode
       availablePlayers.forEach((player) => {
-        statsMap[player.id] = {
+        statsMap[player.id.toLowerCase()] = {
           wins: 0,
           losses: 0,
           matches: 0,
@@ -590,25 +626,25 @@ export default function HistoryDashboard({
           p.id === nameOrId ||
           p.name.toLowerCase() === key,
       );
-      return found ? found.alias || found.id : key;
+      return found ? found.id.toLowerCase() : key;
     };
 
-    // Determine current active season ID
-    const currentSeasonId =
-      activeSeasonId !== undefined
-        ? activeSeasonId
-        : matches.length > 0
-          ? Math.max(1, ...matches.map((m) => Number(m.seasonId) || 1))
-          : 1;
-
     // 2. Accumulate stats from matches log strictly for the selected mode
+    // For TEAM_LANE: registered players' stats come from DB fields in active season,
+    // or from archived season stats if frozen. If viewing an archived season without
+    // frozen stats, accumulate from match logs.
+    // For HERO_ROV/HERO_MLBB: all stats are 100% derived from match logs.
+    const accumulateForRegistered =
+      selectedMode !== "TEAM_LANE" ||
+      (!isTargetSeasonActive && !hasArchiveStats);
+
     matches.forEach((match) => {
       if (!match.winner) return;
       if ((match.mode || "TEAM_LANE") !== selectedMode) return;
 
       const matchSeasonId =
         match.seasonId !== undefined ? Number(match.seasonId) : 1;
-      const isCurrentSeason = matchSeasonId === currentSeasonId;
+      const isCurrentSeason = matchSeasonId === effectiveSeasonId;
 
       const teamAPlayers = match.teamA || [];
       const teamBPlayers = match.teamB || [];
@@ -629,7 +665,7 @@ export default function HistoryDashboard({
             allTimeMatches: 0,
           };
         }
-        if (!statsMap[key].dbPlayer) {
+        if (accumulateForRegistered || !statsMap[key].dbPlayer) {
           if (isCurrentSeason) {
             statsMap[key].wins += 1;
             statsMap[key].matches += 1;
@@ -651,7 +687,7 @@ export default function HistoryDashboard({
             allTimeMatches: 0,
           };
         }
-        if (!statsMap[key].dbPlayer) {
+        if (accumulateForRegistered || !statsMap[key].dbPlayer) {
           if (isCurrentSeason) {
             statsMap[key].losses += 1;
             statsMap[key].matches += 1;
@@ -728,6 +764,8 @@ export default function HistoryDashboard({
     statsSubTab,
     rankConfig.minMatches,
     activeSeasonId,
+    effectiveSeasonId,
+    seasons,
     selectedMode,
   ]);
 
@@ -1037,7 +1075,63 @@ export default function HistoryDashboard({
       {/* Tab Contents: FIGHTER WINRATES */}
       {activeTab === "stats" && (
         <div className="flex flex-col gap-4">
-          {/* Sub-tabs for Current Season vs All-Time */}
+          {/* Season & Mode Filter Card for Fighter Winrates */}
+          <div className={styles.seasonFilterCard}>
+            <div className={styles.seasonFilterControls}>
+              <span className={styles.seasonFilterLabel}>FILTER SEASON:</span>
+              <select
+                value={
+                  statsSubTab === "alltime"
+                    ? "alltime"
+                    : String(effectiveSeasonId)
+                }
+                onChange={(e) => {
+                  playBeep(330, 0.1, "sine");
+                  const val = e.target.value;
+                  if (val === "alltime") {
+                    setStatsSubTab("alltime");
+                  } else {
+                    setStatsSubTab("season");
+                    setSelectedSeasonId(Number(val));
+                  }
+                }}
+                className={styles.seasonSelectBox}
+              >
+                <optgroup label="🏆 BY SEASON">
+                  {seasonOptions.map((opt) => (
+                    <option key={opt.id} value={String(opt.id)}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🌍 ALL-TIME">
+                  <option value="alltime">🌍 ALL-TIME CAREER</option>
+                </optgroup>
+              </select>
+            </div>
+            <div className={styles.seasonFilterControls}>
+              <span className={styles.seasonFilterLabel}>MODE:</span>
+              <select
+                value={selectedMode}
+                onChange={(e) => {
+                  playBeep(330, 0.1, "sine");
+                  handleModeChange(e.target.value as MatchMode);
+                }}
+                className={styles.seasonSelectBox}
+              >
+                <option value="TEAM_LANE">⚔️ RANDOM TEAM</option>
+                <option value="HERO_ROV">🔥 RANDOM HERO – ROV</option>
+                <option value="HERO_MLBB">⚡ RANDOM HERO – MLBB</option>
+              </select>
+            </div>
+            <span className={styles.seasonMatchCountText}>
+              {statsSubTab === "alltime"
+                ? "VIEWING ALL-TIME STATS"
+                : `VIEWING ${seasonOptions.find((o) => o.id === effectiveSeasonId)?.label || `SEASON ${effectiveSeasonId}`}`}
+            </span>
+          </div>
+
+          {/* Sub-tabs for Current/Selected Season vs All-Time */}
           <div className="flex justify-center border-b-2 border-slate-800 pb-2.5 mb-2 gap-3 select-none">
             <button
               onClick={() => {
@@ -1050,7 +1144,9 @@ export default function HistoryDashboard({
                   : "border-slate-800 text-slate-500 hover:text-slate-300"
               }`}
             >
-              🏆 CURRENT SEASON
+              🏆{" "}
+              {seasonOptions.find((o) => o.id === effectiveSeasonId)?.label ||
+                `SEASON ${effectiveSeasonId}`}
             </button>
             <button
               onClick={() => {
@@ -1212,7 +1308,7 @@ export default function HistoryDashboard({
                             {stats.name}
                           </span>
                           <Link
-                            href={`/players/${stats.dbPlayer?.alias || stats.dbPlayer?.id || stats.name.toLowerCase()}`}
+                            href={`/players/${stats.dbPlayer?.id || stats.dbPlayer?.alias || stats.name.toLowerCase()}`}
                             onClick={() => playBeep(300, 0.1, "sine")}
                             className="font-pixel text-[7.5px] border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue px-2 py-0.5 hover:bg-neon-blue/10 transition-all rounded-none uppercase select-none cursor-pointer"
                           >

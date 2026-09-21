@@ -29,25 +29,25 @@ export interface TeamWinRateSummary {
   favoredTeam: "teamA" | "teamB" | "tie";
 }
 
-const DEFAULT_LANES = ["Top", "Jungle", "Mid", "ADC", "Support"];
-const ROLE_NAMES = ["Top", "Jungle", "Mid", "ADC", "Support"];
+const DEFAULT_LANES = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
+const ROLE_NAMES = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
 
 /**
- * Normalizes lane names across different conventions (e.g. "EXP" / "Top" / "Fighter", "GOLD" / "ADC" / "Marksman", "ROAMING" / "Support" / "Tank / Support")
+ * Normalizes lane names across different conventions (e.g. "Exp" / "Top" / "Fighter", "Gold" / "ADC" / "Marksman", "Roam" / "Support" / "Tank / Support")
  */
 export function normalizeLaneName(lane: string): string {
   if (!lane) return "";
   const l = lane.trim().toLowerCase();
-  if (l === "top" || l === "exp" || l === "top lane" || l === "fighter")
-    return "TOP";
+  if (l === "exp" || l === "top" || l === "top lane" || l === "fighter")
+    return "Exp";
   if (l === "jungle" || l === "jug" || l === "jungler" || l === "assassin")
-    return "JUNGLE";
-  if (l === "mid" || l === "mid lane" || l === "mage") return "MID";
-  if (l === "adc" || l === "gold" || l === "gold lane" || l === "marksman")
-    return "ADC";
+    return "Jungle";
+  if (l === "mid" || l === "mid lane" || l === "mage") return "Mid";
+  if (l === "gold" || l === "adc" || l === "gold lane" || l === "marksman")
+    return "Gold";
   if (
-    l === "support" ||
     l === "roam" ||
+    l === "support" ||
     l === "roaming" ||
     l === "sup" ||
     l === "tank / support" ||
@@ -55,8 +55,8 @@ export function normalizeLaneName(lane: string): string {
     l === "tank" ||
     l === "sp"
   )
-    return "SUPPORT";
-  return lane.toUpperCase();
+    return "Roam";
+  return lane.charAt(0).toUpperCase() + lane.slice(1).toLowerCase();
 }
 
 /**

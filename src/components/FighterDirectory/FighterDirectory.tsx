@@ -48,7 +48,7 @@ export default function FighterDirectory({
     setIsDeleting(true);
     try {
       playBeep(120, 0.35, "sawtooth", 0.15); // alarm warning sound
-      await onDeletePlayer(deletingPlayer.alias || deletingPlayer.id);
+      await onDeletePlayer(deletingPlayer.id);
       setDeletingPlayer(null);
     } catch (e) {
       console.error("Delete player failed:", e);
@@ -64,12 +64,7 @@ export default function FighterDirectory({
   ) => {
     if (!editingPlayer) return;
     try {
-      await onUpdatePlayer(
-        editingPlayer.alias || editingPlayer.id,
-        name,
-        alias,
-        avatar,
-      );
+      await onUpdatePlayer(editingPlayer.id, name, alias, avatar);
       playCoin(); // retro success chime
       setEditingPlayer(null);
     } catch (e) {
@@ -146,13 +141,14 @@ export default function FighterDirectory({
       ) : (
         <div className={styles.grid}>
           {filteredPlayers.map((player) => {
-            const playerIdentifier = player.alias || player.id;
+            const playerIdentifier = player.id;
             const isSelected = names.some(
               (n) =>
                 n.toLowerCase() === playerIdentifier.toLowerCase() ||
                 n.toLowerCase() === player.id.toLowerCase() ||
                 (player.alias &&
-                  n.toLowerCase() === player.alias.toLowerCase()),
+                  n.toLowerCase() === player.alias.toLowerCase()) ||
+                n.toLowerCase() === player.name.toLowerCase(),
             );
             const isThaiName = /[\u0E00-\u0E7F]/.test(player.name);
             const isThaiRank = /[\u0E00-\u0E7F]/.test(player.current_rank);
@@ -209,7 +205,7 @@ export default function FighterDirectory({
                       </span>
                     </span>
                     <Link
-                      href={`/players/${player.alias || player.id}`}
+                      href={`/players/${player.id}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         playBeep(300, 0.1, "sine");

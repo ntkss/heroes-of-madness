@@ -1443,9 +1443,9 @@ export async function deletePlayer(playerRef: string): Promise<boolean> {
   const players = await fetchPlayers();
   const player = players.find(
     (p) =>
-      (p.alias && p.alias.toLowerCase() === refLower) ||
       p.id.toLowerCase() === refLower ||
       p.id === refTrimmed ||
+      (p.alias && p.alias.toLowerCase() === refLower) ||
       p.name.toLowerCase() === refLower,
   );
 
@@ -1541,9 +1541,9 @@ export async function updatePlayer(
   const players = await fetchPlayers();
   const oldPlayer = players.find(
     (p) =>
-      (p.alias && p.alias.toLowerCase() === refLower) ||
       p.id.toLowerCase() === refLower ||
       p.id === refTrimmed ||
+      (p.alias && p.alias.toLowerCase() === refLower) ||
       p.name.toLowerCase() === refLower,
   );
   if (!oldPlayer) {

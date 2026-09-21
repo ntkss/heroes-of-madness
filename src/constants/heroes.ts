@@ -1,39 +1,33 @@
 export type GameType = "ROV" | "MLBB";
 
-export type HeroLane = "Top" | "Jungle" | "Mid" | "ADC" | "Support";
+export type HeroLane = "Exp" | "Jungle" | "Mid" | "Gold" | "Roam";
 
-export const HERO_LANES: HeroLane[] = [
-  "Top",
-  "Jungle",
-  "Mid",
-  "ADC",
-  "Support",
-];
+export const HERO_LANES: HeroLane[] = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
 
 /**
  * Normalizes any legacy or variant lane name to the standardized 5 lane names:
- * Top, Jungle, Mid, ADC, Support
+ * EXP, Jungle, Mid, GOLD, ROAM
  */
 export function normalizeLane(rawLane: string | undefined | null): string {
   if (!rawLane) return "";
   const l = rawLane.trim().toLowerCase();
-  if (l === "top" || l === "fighter" || l === "exp" || l === "top lane")
-    return "Top";
+  if (l === "exp" || l === "top" || l === "fighter" || l === "top lane")
+    return "Exp";
   if (l === "jungle" || l === "assassin" || l === "jug" || l === "jungler")
     return "Jungle";
   if (l === "mid" || l === "mage" || l === "mid lane") return "Mid";
-  if (l === "adc" || l === "marksman" || l === "gold" || l === "gold lane")
-    return "ADC";
+  if (l === "gold" || l === "adc" || l === "marksman" || l === "gold lane")
+    return "Gold";
   if (
+    l === "roam" ||
     l === "support" ||
     l === "tank / support" ||
     l === "tank/support" ||
     l === "tank" ||
-    l === "roam" ||
     l === "roaming" ||
     l === "sup"
   )
-    return "Support";
+    return "Roam";
   return rawLane;
 }
 
@@ -49,7 +43,7 @@ export interface HeroRandomResult {
  */
 export const HERO_POOLS: Record<GameType, Record<HeroLane, string[]>> = {
   ROV: {
-    Support: [
+    Roam: [
       "Thane",
       "Toro",
       "Mina",
@@ -74,7 +68,7 @@ export const HERO_POOLS: Record<GameType, Record<HeroLane, string[]>> = {
       "Grakk",
       "Wiro",
     ],
-    Top: [
+    Exp: [
       "Arthur",
       "Lu Bu",
       "Ryoma",
@@ -143,7 +137,7 @@ export const HERO_POOLS: Record<GameType, Record<HeroLane, string[]>> = {
       "Sephera",
       "Ming",
     ],
-    ADC: [
+    Gold: [
       "Valhein",
       "Yorn",
       "Tel'Annas",
@@ -165,7 +159,7 @@ export const HERO_POOLS: Record<GameType, Record<HeroLane, string[]>> = {
     ],
   },
   MLBB: {
-    Support: [
+    Roam: [
       "Tigreal",
       "Akai",
       "Franco",
@@ -193,7 +187,7 @@ export const HERO_POOLS: Record<GameType, Record<HeroLane, string[]>> = {
       "Carmilla",
       "Floryn",
     ],
-    Top: [
+    Exp: [
       "Balmond",
       "Alucard",
       "Bane",
@@ -272,7 +266,7 @@ export const HERO_POOLS: Record<GameType, Record<HeroLane, string[]>> = {
       "Novaria",
       "Zhuxin",
     ],
-    ADC: [
+    Gold: [
       "Miya",
       "Bruno",
       "Clint",

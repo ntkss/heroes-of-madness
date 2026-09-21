@@ -25,7 +25,7 @@ import { calculateTeamWinRates, PlayerOverallStats } from "@/utils/winrate";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
-const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"];
+const ROLES = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
 
 interface VersesArenaProps {
   teamA: string[];

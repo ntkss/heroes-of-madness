@@ -170,15 +170,15 @@ export default function HeroRandomizer({
 
   const getLaneBadgeClass = (lane: HeroLane) => {
     switch (lane) {
-      case "Support":
+      case "Roam":
         return styles.laneBadgeTankSupport;
-      case "Top":
+      case "Exp":
         return styles.laneBadgeFighter;
       case "Jungle":
         return styles.laneBadgeAssassin;
       case "Mid":
         return styles.laneBadgeMage;
-      case "ADC":
+      case "Gold":
         return styles.laneBadgeMarksman;
       default:
         return "";
@@ -187,15 +187,15 @@ export default function HeroRandomizer({
 
   const getLaneIcon = (lane: HeroLane) => {
     switch (lane) {
-      case "Support":
+      case "Roam":
         return "🛡️";
-      case "Top":
+      case "Exp":
         return "⚔️";
       case "Jungle":
         return "🗡️";
       case "Mid":
         return "🔮";
-      case "ADC":
+      case "Gold":
         return "🏹";
       default:
         return "⚡";

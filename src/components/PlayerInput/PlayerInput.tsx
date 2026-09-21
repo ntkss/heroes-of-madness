@@ -50,12 +50,13 @@ export default function PlayerInput({
   const handleTogglePlayer = (player: DbPlayer) => {
     if (isGenerating) return;
 
-    const playerIdentifier = player.alias || player.id;
+    const playerIdentifier = player.id;
     const exists = names.some(
       (n) =>
         n.toLowerCase() === playerIdentifier.toLowerCase() ||
         n.toLowerCase() === player.id.toLowerCase() ||
-        (player.alias && n.toLowerCase() === player.alias.toLowerCase()),
+        (player.alias && n.toLowerCase() === player.alias.toLowerCase()) ||
+        n.toLowerCase() === player.name.toLowerCase(),
     );
     if (exists) {
       playBeep(220, 0.1, "sawtooth");
@@ -64,7 +65,8 @@ export default function PlayerInput({
           (n) =>
             n.toLowerCase() !== playerIdentifier.toLowerCase() &&
             n.toLowerCase() !== player.id.toLowerCase() &&
-            (!player.alias || n.toLowerCase() !== player.alias.toLowerCase()),
+            (!player.alias || n.toLowerCase() !== player.alias.toLowerCase()) &&
+            n.toLowerCase() !== player.name.toLowerCase(),
         ),
       );
     } else {
@@ -97,9 +99,9 @@ export default function PlayerInput({
       (p) =>
         !names.some(
           (n) =>
-            n.toLowerCase() === (p.alias || p.id).toLowerCase() ||
             n.toLowerCase() === p.id.toLowerCase() ||
-            (p.alias && n.toLowerCase() === p.alias.toLowerCase()),
+            (p.alias && n.toLowerCase() === p.alias.toLowerCase()) ||
+            n.toLowerCase() === p.name.toLowerCase(),
         ),
     );
     // Shuffle unselected
@@ -107,7 +109,7 @@ export default function PlayerInput({
     // Take what is needed to reach 10
     const needed = 10 - names.length;
     if (needed <= 0) return;
-    const toAdd = shuffled.slice(0, needed).map((p) => p.alias || p.id);
+    const toAdd = shuffled.slice(0, needed).map((p) => p.id);
     onChange([...names, ...toAdd]);
   };
 

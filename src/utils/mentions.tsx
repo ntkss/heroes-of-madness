@@ -53,19 +53,36 @@ export function PlayerMentionBadge({ playerId }: { playerId: string }) {
 // Custom component to fetch and render match mention badge with interactive modal
 export function MatchMentionBadge({ matchId }: { matchId: string }) {
   const [match, setMatch] = useState<Match | null>(null);
+  const [players, setPlayers] = useState<DbPlayer[]>([]);
   const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const found = await fetchMatchById(matchId);
-        if (found) setMatch(found);
+        const [foundMatch, playersList] = await Promise.all([
+          fetchMatchById(matchId),
+          fetchPlayers(),
+        ]);
+        if (foundMatch) setMatch(foundMatch);
+        if (playersList) setPlayers(playersList);
       } catch (e) {
         console.error("Error fetching match for mention:", e);
       }
     };
     load();
   }, [matchId]);
+
+  const getPlayerName = (idOrAlias: string) => {
+    if (!idOrAlias) return "?";
+    const key = idOrAlias.toLowerCase().trim();
+    const found = players.find(
+      (p) =>
+        p.id.toLowerCase() === key ||
+        (p.alias && p.alias.toLowerCase() === key) ||
+        p.name.toLowerCase() === key,
+    );
+    return found ? (found.name || found.alias || idOrAlias) : idOrAlias;
+  };
 
   if (!match) {
     return (
@@ -114,7 +131,7 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
                       key={idx}
                       className="flex justify-between items-center text-[11px]"
                     >
-                      <span className="font-semibold">{p}</span>
+                      <span className="font-semibold">{getPlayerName(p)}</span>
                       <span className="text-slate-500 font-mono text-[9px] uppercase bg-slate-900 px-1 py-0.5">
                         {match.teamALanes?.[idx] || "ALL"}
                       </span>
@@ -139,7 +156,7 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
                       key={idx}
                       className="flex justify-between items-center text-[11px]"
                     >
-                      <span className="font-semibold">{p}</span>
+                      <span className="font-semibold">{getPlayerName(p)}</span>
                       <span className="text-slate-500 font-mono text-[9px] uppercase bg-slate-900 px-1 py-0.5">
                         {match.teamBLanes?.[idx] || "ALL"}
                       </span>

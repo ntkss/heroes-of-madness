@@ -80,20 +80,45 @@ export function isPlayerInTeam(
   if (!team || team.length === 0 || !playerKeyOrName) return false;
   const target = playerKeyOrName.trim().toLowerCase();
 
+  const targetPlayer = squad.find(
+    (sp) =>
+      (sp.alias && sp.alias.toLowerCase() === target) ||
+      sp.id.toLowerCase() === target ||
+      sp.id === playerKeyOrName.trim() ||
+      sp.name.toLowerCase() === target,
+  );
+
   return team.some((p) => {
     const pTrimmed = p.trim().toLowerCase();
     if (pTrimmed === target) return true;
 
+    if (targetPlayer) {
+      if (
+        (targetPlayer.alias && targetPlayer.alias.toLowerCase() === pTrimmed) ||
+        targetPlayer.id.toLowerCase() === pTrimmed ||
+        targetPlayer.name.toLowerCase() === pTrimmed
+      ) {
+        return true;
+      }
+    }
+
     // Deep check against squad database
     const foundSquad = squad.find(
       (sp) =>
-        sp.id.toLowerCase() === pTrimmed || sp.name.toLowerCase() === pTrimmed,
+        (sp.alias && sp.alias.toLowerCase() === pTrimmed) ||
+        sp.id.toLowerCase() === pTrimmed ||
+        sp.id === p.trim() ||
+        sp.name.toLowerCase() === pTrimmed,
     );
     if (foundSquad) {
       if (
+        (foundSquad.alias && foundSquad.alias.toLowerCase() === target) ||
         foundSquad.id.toLowerCase() === target ||
         foundSquad.name.toLowerCase() === target
       ) {
+        return true;
+      }
+      if (targetPlayer && foundSquad.id === targetPlayer.id) {
         return true;
       }
     }
@@ -118,7 +143,11 @@ export function computePlayerProgression(
 
   const target = playerIdOrName.trim().toLowerCase();
   const dbPlayer = squad.find(
-    (p) => p.id.toLowerCase() === target || p.name.toLowerCase() === target,
+    (p) =>
+      (p.alias && p.alias.toLowerCase() === target) ||
+      p.id.toLowerCase() === target ||
+      p.id === playerIdOrName.trim() ||
+      p.name.toLowerCase() === target,
   );
 
   const canonicalId = dbPlayer ? dbPlayer.id : target;

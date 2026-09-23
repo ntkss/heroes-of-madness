@@ -190,6 +190,7 @@ export function getPlayerLaneWinRate(
   if (!mode) {
     const foundPlayer = squad.find(
       (p) =>
+        (p.alias && p.alias.toLowerCase() === playerIdOrName.toLowerCase()) ||
         p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
         p.name.toLowerCase() === playerIdOrName.toLowerCase(),
     );
@@ -290,6 +291,7 @@ export function getPlayerOverallWinRate(
   if (!mode) {
     const foundPlayer = squad.find(
       (p) =>
+        (p.alias && p.alias.toLowerCase() === playerIdOrName.toLowerCase()) ||
         p.id.toLowerCase() === playerIdOrName.toLowerCase() ||
         p.name.toLowerCase() === playerIdOrName.toLowerCase(),
     );

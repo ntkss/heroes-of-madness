@@ -143,7 +143,7 @@ export default function ConsolidatedWinRateChart({
       if (found) {
         return {
           id: found.id,
-          alias: found.alias || found.id,
+          alias: (found.alias || found.id).toLowerCase(),
           name: found.name,
           avatar: found.avatar || found.imageURL,
         };

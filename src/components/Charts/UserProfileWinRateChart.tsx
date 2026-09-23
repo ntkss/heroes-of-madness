@@ -65,12 +65,22 @@ export default function UserProfileWinRateChart({
     number | null
   >(null);
 
+  // Helper to match player participation by ID, Name, or Alias
+  const playerMatchesMatch = useMemo(() => {
+    return (p: string) => {
+      if (!p || !player) return false;
+      const pLower = p.toLowerCase().trim();
+      return (
+        pLower === player.id.toLowerCase() ||
+        pLower === player.name.toLowerCase() ||
+        (player.alias && pLower === player.alias.toLowerCase())
+      );
+    };
+  }, [player]);
+
   // Compute player's matches filtered by mode
   const relevantMatches = useMemo(() => {
     if (!player || allMatches.length === 0) return [];
-
-    const playerId = player.id.toLowerCase();
-    const playerName = player.name.toLowerCase();
 
     return allMatches.filter((m) => {
       // Must have resolved winner
@@ -85,32 +95,21 @@ export default function UserProfileWinRateChart({
       }
 
       // Check player participation
-      const isTeamA = m.teamA?.some(
-        (p) => p.toLowerCase() === playerId || p.toLowerCase() === playerName,
-      );
-      const isTeamB = m.teamB?.some(
-        (p) => p.toLowerCase() === playerId || p.toLowerCase() === playerName,
-      );
+      const isTeamA = m.teamA?.some(playerMatchesMatch);
+      const isTeamB = m.teamB?.some(playerMatchesMatch);
 
       return isTeamA || isTeamB;
     });
-  }, [player, allMatches, filterMode, currentMode]);
+  }, [player, allMatches, filterMode, currentMode, playerMatchesMatch]);
 
   // Overall lifetime stats across relevant matches
   const overallData = useMemo(() => {
-    const playerId = player.id.toLowerCase();
-    const playerName = player.name.toLowerCase();
-
     let wins = 0;
     let losses = 0;
 
     relevantMatches.forEach((m) => {
-      const isTeamA = m.teamA?.some(
-        (p) => p.toLowerCase() === playerId || p.toLowerCase() === playerName,
-      );
-      const isTeamB = m.teamB?.some(
-        (p) => p.toLowerCase() === playerId || p.toLowerCase() === playerName,
-      );
+      const isTeamA = m.teamA?.some(playerMatchesMatch);
+      const isTeamB = m.teamB?.some(playerMatchesMatch);
 
       const won =
         (m.winner === "teamA" && isTeamA) || (m.winner === "teamB" && isTeamB);
@@ -131,13 +130,10 @@ export default function UserProfileWinRateChart({
       winrate,
       ratio,
     };
-  }, [player, relevantMatches]);
+  }, [relevantMatches, playerMatchesMatch]);
 
   // Seasonal breakdown data
   const seasonalData = useMemo(() => {
-    const playerId = player.id.toLowerCase();
-    const playerName = player.name.toLowerCase();
-
     // Collect all season IDs
     const seasonIdsSet = new Set<number>();
     seasonIdsSet.add(activeSeasonId || 1);
@@ -157,12 +153,8 @@ export default function UserProfileWinRateChart({
       let losses = 0;
 
       seasonMatches.forEach((m) => {
-        const isTeamA = m.teamA?.some(
-          (p) => p.toLowerCase() === playerId || p.toLowerCase() === playerName,
-        );
-        const isTeamB = m.teamB?.some(
-          (p) => p.toLowerCase() === playerId || p.toLowerCase() === playerName,
-        );
+        const isTeamA = m.teamA?.some(playerMatchesMatch);
+        const isTeamB = m.teamB?.some(playerMatchesMatch);
 
         const won =
           (m.winner === "teamA" && isTeamA) ||
@@ -192,7 +184,7 @@ export default function UserProfileWinRateChart({
         isCurrent,
       };
     });
-  }, [player, relevantMatches, activeSeasonId, seasons]);
+  }, [playerMatchesMatch, relevantMatches, activeSeasonId, seasons]);
 
   // Active inspect season data
   const inspectedSeasonData = useMemo(() => {

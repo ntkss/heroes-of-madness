@@ -1298,12 +1298,15 @@ export async function recalculateRanks(
       const losingTeam = match.winner === "teamA" ? teamBPlayers : teamAPlayers;
 
       const getPlayerKey = (nameOrId: string) => {
+        const key = (nameOrId || "").toLowerCase().trim();
         const found = players.find(
           (p) =>
-            p.id === nameOrId.toLowerCase() ||
-            p.name.toLowerCase() === nameOrId.toLowerCase(),
+            (p.alias && p.alias.toLowerCase() === key) ||
+            p.id.toLowerCase() === key ||
+            p.id === nameOrId.trim() ||
+            p.name.toLowerCase() === key,
         );
-        return found ? found.id : nameOrId.toLowerCase();
+        return found ? found.id : key;
       };
 
       const matchSeasonId =

@@ -138,6 +138,18 @@ export default function ForumPostDetailClient({ params }: PageProps) {
     }
   };
 
+  const getPlayerName = (idOrAlias: string) => {
+    if (!idOrAlias) return "?";
+    const key = idOrAlias.toLowerCase().trim();
+    const found = players.find(
+      (p) =>
+        p.id.toLowerCase() === key ||
+        (p.alias && p.alias.toLowerCase() === key) ||
+        p.name.toLowerCase() === key,
+    );
+    return found && found.name ? found.name : idOrAlias;
+  };
+
   const handleUpdatePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditError("");
@@ -815,9 +827,11 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                       <option value="">-- CHOOSE MATCH --</option>
                       {recentMatches.map((m) => {
                         const date = new Date(m.createdAt).toLocaleDateString();
+                        const teamAName = getPlayerName(m.teamA[0]);
+                        const teamBName = getPlayerName(m.teamB[0]);
                         return (
                           <option key={m.id} value={m.id}>
-                            Match: {m.teamA[0]} vs {m.teamB[0]} ({date})
+                            Match: {teamAName} vs {teamBName} ({date})
                           </option>
                         );
                       })}

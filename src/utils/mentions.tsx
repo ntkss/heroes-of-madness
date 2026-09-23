@@ -81,7 +81,7 @@ export function MatchMentionBadge({ matchId }: { matchId: string }) {
         (p.alias && p.alias.toLowerCase() === key) ||
         p.name.toLowerCase() === key,
     );
-    return found ? (found.name || found.alias || idOrAlias) : idOrAlias;
+    return found ? found.name || found.alias || idOrAlias : idOrAlias;
   };
 
   if (!match) {

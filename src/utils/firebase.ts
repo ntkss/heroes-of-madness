@@ -1088,10 +1088,21 @@ export async function endCurrentSeason(): Promise<boolean> {
 
     const config = await fetchRankConfig();
     const players = await fetchPlayers();
+    const allMatches = await fetchAllMatches();
 
-    // Sort players who qualified (played at least minMatches) by season winrate descending
+    const seasonMatches = allMatches.filter(
+      (m) =>
+        (m.seasonId !== undefined ? Number(m.seasonId) : 1) === activeSeasonId &&
+        !!m.winner,
+    );
+    const requiredMinMatches = getRequiredMinMatches(
+      seasonMatches.length,
+      config.minMatches,
+    );
+
+    // Sort players who qualified (played at least requiredMinMatches) by season winrate descending
     const qualifiedPlayers = players
-      .filter((p) => p.total_match_played >= config.minMatches)
+      .filter((p) => p.total_match_played >= requiredMinMatches)
       .sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
@@ -1346,6 +1357,16 @@ export async function recalculateRanks(
       });
     });
 
+    const seasonMatches = matches.filter(
+      (m) =>
+        (m.seasonId !== undefined ? Number(m.seasonId) : 1) === activeSeasonId &&
+        !!m.winner,
+    );
+    const requiredMinMatches = getRequiredMinMatches(
+      seasonMatches.length,
+      config.minMatches,
+    );
+
     const updatedPlayers = await Promise.all(
       players.map(async (player) => {
         const key = player.id;
@@ -1358,7 +1379,7 @@ export async function recalculateRanks(
           totalMatches > 0 ? Math.round((sStats.wins / totalMatches) * 100) : 0;
 
         let newRank = "Unranked";
-        if (totalMatches >= config.minMatches) {
+        if (totalMatches >= requiredMinMatches) {
           if (winrate >= config.highTierWinrate) {
             newRank = config.tiers.high;
           } else if (winrate <= config.lowTierWinrate) {
@@ -2039,15 +2060,32 @@ export async function clearMockSeasons(): Promise<boolean> {
 }
 
 /**
+ * Calculates the dynamic qualification threshold (minimum matches)
+ * to qualify for the ranked standings / podium.
+ * - Scales with season activity (20% of season matches), capped at 10 matches.
+ * - Minimum floor is configuredMinMatches (default: 3).
+ * This ensures:
+ * - Early season (1-10 matches): low bar (3 matches) so leaderboards populate quickly.
+ * - Mid/Late season (50+ matches): scales up to 10 matches so low-sample players (e.g. 4 matches) cannot steal podiums from active veterans.
+ */
+export function getRequiredMinMatches(
+  totalSeasonMatches: number,
+  configuredMinMatches: number = 3,
+): number {
+  const dynamicMin = Math.ceil(totalSeasonMatches * 0.2);
+  return Math.max(configuredMinMatches, Math.min(10, dynamicMin));
+}
+
+/**
  * Calculates a weighted win rate using Laplace smoothing (Bayesian average)
  * to prevent small sample sizes from dominating the rankings.
  * Formula: (Wins + C * prior) / (Total Matches + C) * 100
- * where C is a smoothing constant (default: 5) and prior is the baseline win rate (default: 50% / 0.5).
+ * where C is a smoothing constant (default: 10, increased from 5 for fairer sampling) and prior is the baseline win rate (default: 50% / 0.5).
  */
 export function getWeightedWinrate(
   wins: number,
   totalMatches: number,
-  C: number = 5,
+  C: number = 10,
 ): number {
   if (totalMatches === 0) return 0;
   const prior = 0.5;

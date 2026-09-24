@@ -475,8 +475,7 @@ export default function SettingsPage() {
                         disabled={loading}
                       />
                       <span className={styles.inputHelpText}>
-                        Players with total games below this threshold will be
-                        Unranked.
+                        Base minimum matches required. Standing threshold automatically scales dynamically with season activity (at least 20% of season matches, capped at 10) to protect rankings from low-sample distortions.
                       </span>
                     </div>
 

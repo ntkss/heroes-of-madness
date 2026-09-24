@@ -11,6 +11,7 @@ import {
   SeasonPlayerStat,
   Season,
   getWeightedWinrate,
+  getRequiredMinMatches,
   togglePlayerFeedback,
   PlayerFeedback,
 } from "@/utils/firebase";
@@ -436,6 +437,21 @@ export default function HistoryDashboard({
     });
   }, [seasonMatches, selectedMode]);
 
+  // Dynamic minimum matches threshold for ranking qualification
+  const seasonFinishedMatchCount = React.useMemo(() => {
+    return modeFilteredMatches.filter((m) => !!m.winner).length;
+  }, [modeFilteredMatches]);
+
+  const effectiveMinMatches = React.useMemo(() => {
+    if (statsSubTab === "season") {
+      return getRequiredMinMatches(
+        seasonFinishedMatchCount,
+        rankConfig.minMatches,
+      );
+    }
+    return Math.max(rankConfig.minMatches, 10);
+  }, [statsSubTab, seasonFinishedMatchCount, rankConfig.minMatches]);
+
   const getPlayerKey = React.useCallback(
     (nameOrId: string) => {
       const key = (nameOrId || "").toLowerCase().trim();
@@ -731,7 +747,7 @@ export default function HistoryDashboard({
     });
 
     // Sort based on the selected sub-tab using fair weighted win rate (consider sample size).
-    // Ranked players (matches >= rankConfig.minMatches) must stay at the top.
+    // Ranked players (matches >= effectiveMinMatches) must stay at the top.
     // Unranked players must always stay at the bottom.
     return filteredStatsList.sort((a, b) => {
       const isSeason = statsSubTab === "season";
@@ -740,8 +756,8 @@ export default function HistoryDashboard({
       const aMatches = isSeason ? a.matches : a.allTimeMatches;
       const bMatches = isSeason ? b.matches : b.allTimeMatches;
 
-      const aRanked = aMatches >= rankConfig.minMatches;
-      const bRanked = bMatches >= rankConfig.minMatches;
+      const aRanked = aMatches >= effectiveMinMatches;
+      const bRanked = bMatches >= effectiveMinMatches;
 
       if (aRanked !== bRanked) {
         return aRanked ? -1 : 1;
@@ -762,7 +778,7 @@ export default function HistoryDashboard({
     matches,
     availablePlayers,
     statsSubTab,
-    rankConfig.minMatches,
+    effectiveMinMatches,
     activeSeasonId,
     effectiveSeasonId,
     seasons,
@@ -780,7 +796,7 @@ export default function HistoryDashboard({
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
       const wins = isSeason ? stat.wins : stat.allTimeWins;
       const losses = isSeason ? stat.losses : stat.allTimeLosses;
-      const isRanked = totalMatches >= rankConfig.minMatches;
+      const isRanked = totalMatches >= effectiveMinMatches;
       const currentRank = stat.dbPlayer
         ? stat.dbPlayer.current_rank
         : isRanked
@@ -831,7 +847,7 @@ export default function HistoryDashboard({
     const isPlayerRanked = (stat?: (typeof playerStats)[0]) => {
       if (!stat) return false;
       const totalMatches = isSeason ? stat.matches : stat.allTimeMatches;
-      return totalMatches >= rankConfig.minMatches;
+      return totalMatches >= effectiveMinMatches;
     };
 
     return {
@@ -856,7 +872,7 @@ export default function HistoryDashboard({
             )
           : null,
     };
-  }, [playerStats, statsSubTab, rankConfig]);
+  }, [playerStats, statsSubTab, effectiveMinMatches]);
 
   const renderRankInfo = (dbPlayer: DbPlayer | undefined) => {
     if (!dbPlayer) return null;
@@ -1196,7 +1212,7 @@ export default function HistoryDashboard({
                   statsSubTab === "season"
                     ? stats.matches
                     : stats.allTimeMatches;
-                const isRanked = displayMatches >= rankConfig.minMatches;
+                const isRanked = displayMatches >= effectiveMinMatches;
 
                 // Ranked players in top 3 are displayed on the PodiumStandings above
                 if (index < 3 && isRanked) return null;
@@ -1215,7 +1231,7 @@ export default function HistoryDashboard({
                 let nextRankMsg = "";
 
                 if (!isRanked) {
-                  const needed = rankConfig.minMatches - displayMatches;
+                  const needed = effectiveMinMatches - displayMatches;
                   nextRankMsg = `NEEDS ${needed} MATCH${needed > 1 ? "ES" : ""} FOR RANK`;
                 } else {
                   const rankPos = index + 1;

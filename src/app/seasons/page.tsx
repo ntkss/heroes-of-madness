@@ -15,6 +15,7 @@ import {
   fetchAllMatches,
   fetchRankConfig,
   getWeightedWinrate,
+  getRequiredMinMatches,
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 
@@ -63,7 +64,20 @@ export default function SeasonsPage() {
 
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId) || null;
 
-  const minMatches = rankConfig?.minMatches ?? 3;
+  // Filter matches of selected season
+  const seasonMatches = useMemo(() => {
+    return selectedSeasonId !== null
+      ? matches.filter((m) => m.seasonId === selectedSeasonId)
+      : [];
+  }, [matches, selectedSeasonId]);
+
+  const minMatches = useMemo(() => {
+    const finishedMatches = seasonMatches.filter((m) => !!m.winner).length;
+    return getRequiredMinMatches(
+      finishedMatches,
+      rankConfig?.minMatches ?? 3,
+    );
+  }, [seasonMatches, rankConfig?.minMatches]);
 
   const sortedFighterStats = useMemo(() => {
     if (!selectedSeason) return [];
@@ -88,12 +102,6 @@ export default function SeasonsPage() {
       return b.total_match_played - a.total_match_played;
     });
   }, [selectedSeason, minMatches]);
-
-  // Filter matches of selected season
-  const seasonMatches =
-    selectedSeasonId !== null
-      ? matches.filter((m) => m.seasonId === selectedSeasonId)
-      : [];
 
   const formatDate = (timestamp: number) => {
     const d = new Date(timestamp);

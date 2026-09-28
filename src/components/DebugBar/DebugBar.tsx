@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { isFirebaseConfigured, seedMockSeasons } from "@/utils/firebase";
+import { isFirebaseConfigured } from "@/utils/firebase";
 import pkg from "../../../package.json";
 import styles from "./styles.module.css";
 
@@ -92,29 +92,6 @@ export default function DebugBar() {
       clearTimeout(initTimer);
     };
   }, []);
-
-  const handleSeedMockData = async () => {
-    if (
-      confirm(
-        "🌱 SEED MULTI-SEASON DEMO DATA?\nThis will populate mock Season 1, Season 2, and active Season 3 matches for multi-season testing.",
-      )
-    ) {
-      await seedMockSeasons();
-      window.location.reload();
-    }
-  };
-
-  const handleClearHistory = () => {
-    if (
-      confirm(
-        "⚠️ DESTROY DATABASE HISTORY?\nThis will clear LocalStorage match history logs and cached player profiles. Proceed?",
-      )
-    ) {
-      localStorage.removeItem("mlbb_generator_matches");
-      localStorage.removeItem("mlbb_generator_players");
-      window.location.reload();
-    }
-  };
 
   const nextVersion = pkg.dependencies.next?.replace("^", "") || "16.2.6";
   const reactVersion = pkg.dependencies.react?.replace("^", "") || "19.2.4";
@@ -233,25 +210,13 @@ export default function DebugBar() {
               </span>
             </div>
           </div>
-
-          {/* Dev Utils Actions */}
-          <div className={styles.actionsContainer}>
-            <button onClick={handleSeedMockData} className={styles.seedBtn}>
-              🌱 SEED MULTI-SEASON DEMO DATA
-            </button>
-            <button onClick={handleClearHistory} className={styles.purgeBtn}>
-              PURGE LOCAL RECORDS
-            </button>
-          </div>
         </div>
       )}
 
       {/* Main Debug Pill Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`${styles.toggleBtn} ${
-          isOpen ? styles.toggleBtnActive : styles.toggleBtnInactive
-        }`}
+        className={`${styles.toggleBtn} ${isOpen ? styles.toggleBtnActive : styles.toggleBtnInactive}`}
       >
         <span className={styles.btnLabel}>
           <span

@@ -409,6 +409,20 @@
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
 }
 
+.backupBtn {
+  @apply font-pixel text-[9px] text-black bg-cyan-400 hover:bg-cyan-300 border border-white px-4 py-2.5 cursor-pointer transition-all duration-150 select-none uppercase font-bold disabled:opacity-50 flex items-center gap-2;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+}
+
+.migrateBtn {
+  @apply font-pixel text-[9px] text-black bg-amber-400 hover:bg-amber-300 border border-white px-5 py-2.5 cursor-pointer transition-all duration-150 select-none uppercase font-bold disabled:opacity-50 flex items-center gap-2;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.migrationLogBox {
+  @apply bg-black/90 p-3 border border-slate-800 rounded font-mono text-[10px] text-slate-300 max-h-56 overflow-y-auto flex flex-col gap-1;
+}
+
 .footer {
   @apply border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none;
 }

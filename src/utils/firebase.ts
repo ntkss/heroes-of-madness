@@ -1088,10 +1088,21 @@ export async function endCurrentSeason(): Promise<boolean> {
 
     const config = await fetchRankConfig();
     const players = await fetchPlayers();
+    const allMatches = await fetchAllMatches();
 
-    // Sort players who qualified (played at least minMatches) by season winrate descending
+    const seasonMatches = allMatches.filter(
+      (m) =>
+        (m.seasonId !== undefined ? Number(m.seasonId) : 1) ===
+          activeSeasonId && !!m.winner,
+    );
+    const requiredMinMatches = getRequiredMinMatches(
+      seasonMatches.length,
+      config.minMatches,
+    );
+
+    // Sort players who qualified (played at least requiredMinMatches) by season winrate descending
     const qualifiedPlayers = players
-      .filter((p) => p.total_match_played >= config.minMatches)
+      .filter((p) => p.total_match_played >= requiredMinMatches)
       .sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
@@ -1346,6 +1357,16 @@ export async function recalculateRanks(
       });
     });
 
+    const seasonMatches = matches.filter(
+      (m) =>
+        (m.seasonId !== undefined ? Number(m.seasonId) : 1) ===
+          activeSeasonId && !!m.winner,
+    );
+    const requiredMinMatches = getRequiredMinMatches(
+      seasonMatches.length,
+      config.minMatches,
+    );
+
     const updatedPlayers = await Promise.all(
       players.map(async (player) => {
         const key = player.id;
@@ -1358,7 +1379,7 @@ export async function recalculateRanks(
           totalMatches > 0 ? Math.round((sStats.wins / totalMatches) * 100) : 0;
 
         let newRank = "Unranked";
-        if (totalMatches >= config.minMatches) {
+        if (totalMatches >= requiredMinMatches) {
           if (winrate >= config.highTierWinrate) {
             newRank = config.tiers.high;
           } else if (winrate <= config.lowTierWinrate) {
@@ -2039,15 +2060,32 @@ export async function clearMockSeasons(): Promise<boolean> {
 }
 
 /**
+ * Calculates the dynamic qualification threshold (minimum matches)
+ * to qualify for the ranked standings / podium.
+ * - Scales with season activity (20% of season matches), capped at 10 matches.
+ * - Minimum floor is configuredMinMatches (default: 3).
+ * This ensures:
+ * - Early season (1-10 matches): low bar (3 matches) so leaderboards populate quickly.
+ * - Mid/Late season (50+ matches): scales up to 10 matches so low-sample players (e.g. 4 matches) cannot steal podiums from active veterans.
+ */
+export function getRequiredMinMatches(
+  totalSeasonMatches: number,
+  configuredMinMatches: number = 3,
+): number {
+  const dynamicMin = Math.ceil(totalSeasonMatches * 0.2);
+  return Math.max(configuredMinMatches, Math.min(10, dynamicMin));
+}
+
+/**
  * Calculates a weighted win rate using Laplace smoothing (Bayesian average)
  * to prevent small sample sizes from dominating the rankings.
  * Formula: (Wins + C * prior) / (Total Matches + C) * 100
- * where C is a smoothing constant (default: 5) and prior is the baseline win rate (default: 50% / 0.5).
+ * where C is a smoothing constant (default: 10, increased from 5 for fairer sampling) and prior is the baseline win rate (default: 50% / 0.5).
  */
 export function getWeightedWinrate(
   wins: number,
   totalMatches: number,
-  C: number = 5,
+  C: number = 10,
 ): number {
   if (totalMatches === 0) return 0;
   const prior = 0.5;
@@ -3045,4 +3083,308 @@ export async function uploadBase64Image(
   await uploadString(storageRef, base64DataUrl, "data_url", metadata);
   const downloadUrl = await getDownloadURL(storageRef);
   return downloadUrl;
+}
+
+// ─── Data Backup & Migration Utilities ─────────────────────────────────────────
+
+export interface DatabaseBackup {
+  version: string;
+  exportedAt: number;
+  exportedAtISO: string;
+  totalMatches: number;
+  totalPlayers: number;
+  totalSeasons: number;
+  matches: Match[];
+  players: DbPlayer[];
+  seasons: Season[];
+  rankConfig: RankConfig;
+  seasonConfig: SeasonConfig;
+  lineConfig: LineConfig;
+}
+
+export interface MigrationReport {
+  success: boolean;
+  totalMatches: number;
+  migratedMatches: number;
+  convertedSlots: number;
+  backupTimestamp: number;
+  details: string[];
+}
+
+/**
+ * Creates a comprehensive snapshot of all collections and configurations in the system.
+ */
+export async function exportAllDataAsBackup(): Promise<DatabaseBackup> {
+  const [matches, players, seasons, rankConfig, seasonConfig, lineConfig] =
+    await Promise.all([
+      fetchAllMatches(),
+      fetchPlayers(),
+      fetchSeasons(),
+      fetchRankConfig(),
+      fetchSeasonConfig(),
+      fetchLineConfig(),
+    ]);
+
+  const timestamp = Date.now();
+  return {
+    version: "1.0.0",
+    exportedAt: timestamp,
+    exportedAtISO: new Date(timestamp).toISOString(),
+    totalMatches: matches.length,
+    totalPlayers: players.length,
+    totalSeasons: seasons.length,
+    matches,
+    players,
+    seasons,
+    rankConfig,
+    seasonConfig,
+    lineConfig,
+  };
+}
+
+/**
+ * Triggers a browser download of the given backup object as a timestamped JSON file.
+ */
+export function downloadBackupFile(backup: DatabaseBackup): void {
+  if (typeof window === "undefined") return;
+  const jsonStr = JSON.stringify(backup, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  const dateStr = new Date(backup.exportedAt)
+    .toISOString()
+    .replace(/[:.]/g, "-");
+  link.download = `hom-backup-${dateStr}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Migrates match records (teamA and teamB) to strictly store player Document IDs.
+ * - Automatically takes a full backup first (saves to LocalStorage + downloads JSON).
+ * - Matches names or aliases and replaces them with canonical player.id.
+ * - Leaves bot placeholders untouched.
+ * - Updates Firestore in batches of 400 (or updates LocalStorage in offline mode).
+ */
+export async function migrateMatchesToDocumentIds(): Promise<MigrationReport> {
+  const details: string[] = [];
+  details.push("🚀 Initiating Match Data Migration...");
+
+  // 1. Fetch current data
+  const [players, matches] = await Promise.all([
+    fetchPlayers(),
+    fetchAllMatches(),
+  ]);
+
+  details.push(
+    `Found ${players.length} players and ${matches.length} matches in database.`,
+  );
+
+  // 2. Pre-migration backup
+  const backup = await exportAllDataAsBackup();
+  const backupKey = `hom_migration_backup_${backup.exportedAt}`;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(backupKey, JSON.stringify(backup));
+      details.push(`💾 Stored local safety backup at: ${backupKey}`);
+      downloadBackupFile(backup);
+      details.push("⬇️ Downloaded physical JSON backup to client device.");
+    } catch (e) {
+      console.warn("Could not save full backup to LocalStorage:", e);
+    }
+  }
+
+  // 3. Helper to resolve any player identifier to canonical Document ID
+  const resolvePlayerId = (
+    identifier: string,
+  ): { resolvedId: string; changed: boolean } => {
+    if (!identifier) return { resolvedId: "", changed: false };
+    const trimmed = identifier.trim();
+    const lower = trimmed.toLowerCase();
+
+    // Check if already an exact Document ID
+    const exact = players.find((p) => p.id === trimmed);
+    if (exact) {
+      return { resolvedId: exact.id, changed: false };
+    }
+
+    // Check case-insensitive Document ID
+    const caseId = players.find((p) => p.id.toLowerCase() === lower);
+    if (caseId) {
+      return { resolvedId: caseId.id, changed: trimmed !== caseId.id };
+    }
+
+    // Check Alias
+    const byAlias = players.find(
+      (p) => p.alias && p.alias.toLowerCase() === lower,
+    );
+    if (byAlias) {
+      return { resolvedId: byAlias.id, changed: true };
+    }
+
+    // Check Display Name
+    const byName = players.find((p) => p.name.toLowerCase() === lower);
+    if (byName) {
+      return { resolvedId: byName.id, changed: true };
+    }
+
+    // Bot / placeholder player - unchanged
+    return { resolvedId: trimmed, changed: false };
+  };
+
+  // 4. Scan and convert matches
+  let convertedSlots = 0;
+  let migratedMatchesCount = 0;
+  const updatedMatches: Match[] = [];
+
+  for (const match of matches) {
+    let matchModified = false;
+
+    // Team A
+    const newTeamA = (match.teamA || []).map((slot) => {
+      const res = resolvePlayerId(slot);
+      if (res.changed) {
+        convertedSlots++;
+        matchModified = true;
+      }
+      return res.resolvedId;
+    });
+
+    // Team B
+    const newTeamB = (match.teamB || []).map((slot) => {
+      const res = resolvePlayerId(slot);
+      if (res.changed) {
+        convertedSlots++;
+        matchModified = true;
+      }
+      return res.resolvedId;
+    });
+
+    // Feedback keys migration
+    let newFeedback = match.feedback;
+    if (match.feedback) {
+      const fbEntries = Object.entries(match.feedback);
+      let fbModified = false;
+      const remappedFb: { [key: string]: PlayerFeedback } = {};
+
+      for (const [key, val] of fbEntries) {
+        const res = resolvePlayerId(key);
+        if (res.changed) {
+          fbModified = true;
+          remappedFb[res.resolvedId] = val;
+        } else {
+          remappedFb[key] = val;
+        }
+      }
+
+      if (fbModified) {
+        newFeedback = remappedFb;
+        matchModified = true;
+      }
+    }
+
+    if (matchModified) {
+      migratedMatchesCount++;
+      const updatedMatch: Match = {
+        ...match,
+        teamA: newTeamA,
+        teamB: newTeamB,
+        feedback: newFeedback,
+      };
+      updatedMatches.push(updatedMatch);
+    } else {
+      updatedMatches.push(match);
+    }
+  }
+
+  details.push(
+    `Analysis complete: ${migratedMatchesCount} matches require migration (${convertedSlots} player slots converted).`,
+  );
+
+  if (migratedMatchesCount === 0) {
+    details.push("✅ All matches are already using canonical Document IDs!");
+    return {
+      success: true,
+      totalMatches: matches.length,
+      migratedMatches: 0,
+      convertedSlots: 0,
+      backupTimestamp: backup.exportedAt,
+      details,
+    };
+  }
+
+  // 5. Write changes to Firestore or LocalStorage
+  if (db) {
+    try {
+      details.push("Writing updates to Firestore...");
+      const BATCH_SIZE = 400;
+      const modifiedOnly = updatedMatches.filter((m) =>
+        matches.some(
+          (orig) =>
+            orig.id === m.id &&
+            (JSON.stringify(orig.teamA) !== JSON.stringify(m.teamA) ||
+              JSON.stringify(orig.teamB) !== JSON.stringify(m.teamB)),
+        ),
+      );
+
+      for (let i = 0; i < modifiedOnly.length; i += BATCH_SIZE) {
+        const chunk = modifiedOnly.slice(i, i + BATCH_SIZE);
+        const batch = writeBatch(db);
+
+        for (const m of chunk) {
+          const docRef = doc(db, "matches", m.id);
+          const updatePayload: DocumentData = {
+            teamA: m.teamA,
+            teamB: m.teamB,
+          };
+          if (m.feedback) {
+            updatePayload.feedback = m.feedback;
+          }
+          batch.update(docRef, updatePayload);
+        }
+
+        await batch.commit();
+        details.push(
+          `Batch committed: ${Math.min(i + BATCH_SIZE, modifiedOnly.length)} / ${modifiedOnly.length} matches.`,
+        );
+      }
+    } catch (err) {
+      console.error("Firestore batch update failed during migration:", err);
+      details.push(`❌ Firestore update error: ${String(err)}`);
+      return {
+        success: false,
+        totalMatches: matches.length,
+        migratedMatches: migratedMatchesCount,
+        convertedSlots,
+        backupTimestamp: backup.exportedAt,
+        details,
+      };
+    }
+  }
+
+  // Always update LocalStorage cache
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedMatches));
+      details.push("Synced updated matches to LocalStorage cache.");
+    } catch (e) {
+      console.warn("Could not sync to LocalStorage:", e);
+    }
+  }
+
+  details.push(
+    `🎉 Migration completed successfully! Converted ${convertedSlots} player references across ${migratedMatchesCount} matches.`,
+  );
+
+  return {
+    success: true,
+    totalMatches: matches.length,
+    migratedMatches: migratedMatchesCount,
+    convertedSlots,
+    backupTimestamp: backup.exportedAt,
+    details,
+  };
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { SeasonPlayerStat } from "@/utils/firebase";
+import { SeasonPlayerStat, getPlayerReadableSlug } from "@/utils/firebase";
 import styles from "./styles.module.css";
 
 interface PodiumStandingsProps {
@@ -50,7 +50,7 @@ export default function PodiumStandings({
               />
             </div>
             <Link
-              href={`/players/${secondPlace.alias || secondPlace.id}`}
+              href={`/players/${getPlayerReadableSlug(secondPlace)}`}
               className={`${styles.podiumName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {secondPlace.name}
@@ -104,7 +104,7 @@ export default function PodiumStandings({
               </div>
             </div>
             <Link
-              href={`/players/${firstPlace.alias || firstPlace.id}`}
+              href={`/players/${getPlayerReadableSlug(firstPlace)}`}
               className={`${styles.championName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {firstPlace.name}
@@ -140,7 +140,7 @@ export default function PodiumStandings({
               />
             </div>
             <Link
-              href={`/players/${thirdPlace.alias || thirdPlace.id}`}
+              href={`/players/${getPlayerReadableSlug(thirdPlace)}`}
               className={`${styles.podiumName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {thirdPlace.name}
@@ -183,7 +183,7 @@ export default function PodiumStandings({
               />
             </div>
             <Link
-              href={`/players/${lastPlace.alias || lastPlace.id}`}
+              href={`/players/${getPlayerReadableSlug(lastPlace)}`}
               className={`${styles.spoonName} hover:text-neon-yellow transition-colors cursor-pointer decoration-dotted hover:underline`}
             >
               {lastPlace.name}

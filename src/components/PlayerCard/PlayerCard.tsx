@@ -48,6 +48,7 @@ function RankBadge({
 // ─── Player Card ───────────────────────────────────────────────────────────────
 export interface PlayerCardProps {
   name: string;
+  alias?: string;
   displayName?: string;
   role: string;
   hero?: string;
@@ -56,7 +57,7 @@ export interface PlayerCardProps {
   imageURL?: string;
   isWinner: boolean;
   isLoser: boolean;
-  percentage: number;
+  percentage?: number;
   currentRank?: string;
   rankClass?: "high" | "normal" | "low" | null;
   laneWinRate?: number;
@@ -65,6 +66,7 @@ export interface PlayerCardProps {
 
 export default function PlayerCard({
   name,
+  alias,
   displayName,
   role,
   hero,
@@ -73,7 +75,6 @@ export default function PlayerCard({
   imageURL,
   isWinner,
   isLoser,
-  percentage,
   currentRank,
   rankClass,
   laneWinRate,
@@ -199,18 +200,20 @@ export default function PlayerCard({
             }`}
             title={`Champion of Season ${championSeasons.join(", ")}`}
           >
-            <span className="text-[8px] sm:text-[9px]">👑</span>
+            <span className="text-[8px] sm:text-[9px] text-align-center">
+              👑
+            </span>
             <span>
               {isMultiChampion
-                ? `${championSeasons.length}x CHAMP`
-                : `S${championSeasons[0]} CHAMP`}
+                ? `${championSeasons.length}x`
+                : `S${championSeasons[0]}`}
             </span>
           </div>
         )}
 
         {/* Rank Banner (Top Left) */}
         {locked && name !== "???" && name !== "DRAFTING" && (
-          <div className={isChampion ? "mt-4.5" : ""}>
+          <div>
             <RankBadge rank={finalRank} rankClass={rankClass || null} />
           </div>
         )}
@@ -224,19 +227,35 @@ export default function PlayerCard({
 
         {/* Bottom Hero & Player detail card */}
         <div className={styles.detailsContainer}>
-          {/* Player drafted Name (Large font, full-width focus) */}
+          {/* Player ALIAS (Large font, uppercase, primary focus) */}
           <span
             className={`
-              ${styles.playerName}
+              ${styles.playerAlias}
               ${
-                /[\u0E00-\u0E7F]/.test(displayName || name)
-                  ? styles.playerNameThai
-                  : styles.playerNameEnglish
+                /[\u0E00-\u0E7F]/.test(alias || name)
+                  ? styles.playerAliasThai
+                  : styles.playerAliasEnglish
               }
             `}
           >
-            {displayName || name}
+            {alias || name}
           </span>
+
+          {/* Player Display Name (Subtitle, right beneath ALIAS) */}
+          {locked && displayName && name !== "???" && name !== "DRAFTING" && (
+            <span
+              className={`
+                  ${styles.playerDisplayName}
+                  ${
+                    /[\u0E00-\u0E7F]/.test(displayName)
+                      ? styles.displayNameThai
+                      : styles.displayNameEnglish
+                  }
+                `}
+            >
+              {displayName}
+            </span>
+          )}
 
           {/* Player Role / Lane */}
           {role && (
@@ -260,24 +279,6 @@ export default function PlayerCard({
               <span className={styles.heroBadgeName}>{hero}</span>
             </div>
           )}
-
-          {/* Loading Stats Bottom row */}
-          <div className={styles.statsBox}>
-            <div className={styles.statsHeader}>
-              <span className={styles.percentageText}>{percentage}%</span>
-              <span className={styles.loadingLabel}>LOADING</span>
-            </div>
-            <div className={styles.progressBarOuter}>
-              <div
-                className={`${styles.progressBarInner} ${
-                  isBlue
-                    ? styles.progressBarInnerBlue
-                    : styles.progressBarInnerRed
-                }`}
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>

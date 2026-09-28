@@ -20,6 +20,7 @@ import {
   exportAllDataAsBackup,
   downloadBackupFile,
   migrateMatchesToDocumentIds,
+  backfillPlayerAliases,
   MigrationReport,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
@@ -58,9 +59,16 @@ export default function SettingsPage() {
   // Data Migration & Backup States
   const [isMigrating, setIsMigrating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isAuditingAliases, setIsAuditingAliases] = useState(false);
   const [migrationReport, setMigrationReport] =
     useState<MigrationReport | null>(null);
   const [migrationError, setMigrationError] = useState("");
+  const [aliasReport, setAliasReport] = useState<{
+    success: boolean;
+    totalPlayers: number;
+    updatedCount: number;
+    details: string[];
+  } | null>(null);
 
   const loadUsers = async () => {
     setUsersLoading(true);
@@ -320,6 +328,24 @@ export default function SettingsPage() {
       setMigrationError("Migration failed: " + String(err));
     } finally {
       setIsMigrating(false);
+    }
+  };
+
+  const handleBackfillAliases = async () => {
+    setIsAuditingAliases(true);
+    playCoin();
+    try {
+      const res = await backfillPlayerAliases();
+      setAliasReport(res);
+      setSuccess(
+        `AUDITED ${res.totalPlayers} PLAYERS: ${res.updatedCount} ALIASES BACKFILLED IN FIRESTORE!`,
+      );
+      playBeep(523, 0.2, "sine");
+    } catch (err) {
+      console.error("Alias audit failed:", err);
+      setError("ALIAS AUDIT FAILED: " + String(err));
+    } finally {
+      setIsAuditingAliases(false);
     }
   };
 
@@ -959,6 +985,19 @@ export default function SettingsPage() {
                         : "🚀 RUN MATCH MIGRATION TO DOC IDs"}
                     </span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBackfillAliases}
+                    disabled={isAuditingAliases}
+                    className={styles.backupBtn}
+                  >
+                    <span>
+                      {isAuditingAliases
+                        ? "🔍 AUDITING ALIASES..."
+                        : "🏷️ VERIFY & BACKFILL PLAYER ALIASES"}
+                    </span>
+                  </button>
                 </div>
 
                 {/* Status Messages */}
@@ -980,6 +1019,29 @@ export default function SettingsPage() {
                     </div>
                     <div className={styles.migrationLogBox}>
                       {migrationReport.details.map((line, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <span className="text-slate-600 select-none">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Alias Audit Log Console */}
+                {aliasReport && (
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-pixel">
+                      <span>ALIAS AUDIT CONSOLE</span>
+                      <span className="text-neon-cyan">
+                        {aliasReport.updatedCount} UPDATED /{" "}
+                        {aliasReport.totalPlayers} TOTAL
+                      </span>
+                    </div>
+                    <div className={styles.migrationLogBox}>
+                      {aliasReport.details.map((line, idx) => (
                         <div key={idx} className="flex gap-2">
                           <span className="text-slate-600 select-none">
                             {String(idx + 1).padStart(2, "0")}

@@ -2,20 +2,24 @@
 
 import React, { useState, useEffect, use, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CRTOverlay from "@/components/CRTOverlay";
 import DebugBar from "@/components/DebugBar";
+import EditFighterForm from "@/components/EditFighterForm";
 import styles from "./styles.module.css";
 import {
   fetchPlayers,
   fetchAllMatches,
   fetchSeasons,
   fetchSeasonConfig,
+  updatePlayer,
   DbPlayer,
   Match,
   MatchMode,
   Season,
 } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
+import { playBeep, playCoin } from "@/utils/audio";
+import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
 import { UserProfileWinRateChart } from "@/components/Charts";
 
@@ -24,10 +28,13 @@ interface PageProps {
 }
 
 export default function PlayerProfilePage({ params }: PageProps) {
+  const router = useRouter();
+  const { user } = useAuth();
   const resolvedParams = use(params);
   const playerSlug = resolvedParams.alias || resolvedParams.id || "";
 
   const [player, setPlayer] = useState<DbPlayer | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
@@ -87,6 +94,30 @@ export default function PlayerProfilePage({ params }: PageProps) {
 
     loadData();
   }, [playerSlug]);
+
+  const handleSaveEdit = async (
+    name: string,
+    alias: string,
+    avatar: string,
+  ) => {
+    if (!player) return;
+    try {
+      const updated = await updatePlayer(player.id, { name, alias, avatar });
+      playCoin();
+      setPlayer(updated);
+      setIsEditing(false);
+      // If alias changed, navigate smoothly to new canonical alias URL
+      if (
+        updated.alias &&
+        decodeURIComponent(updated.alias).toLowerCase() !==
+          decodeURIComponent(playerSlug).toLowerCase()
+      ) {
+        router.replace(`/players/${encodeURIComponent(updated.alias)}`);
+      }
+    } catch (e) {
+      throw e;
+    }
+  };
 
   // Dynamically compute statistics strictly isolated for the selected mode
   const { overallStats, laneStats, matchHistory } = useMemo(() => {
@@ -352,6 +383,16 @@ export default function PlayerProfilePage({ params }: PageProps) {
   return (
     <CRTOverlay>
       <div className={styles.container}>
+        {/* Editing Modal/Form */}
+        {isEditing && player && (
+          <EditFighterForm
+            key={player.id}
+            player={player}
+            onSubmit={handleSaveEdit}
+            onClose={() => setIsEditing(false)}
+          />
+        )}
+
         {/* Header */}
         <header
           className={`${styles.header} ${
@@ -492,6 +533,27 @@ export default function PlayerProfilePage({ params }: PageProps) {
                     >
                       {player.current_rank.toUpperCase()}
                     </p>
+
+                    {/* Edit Profile Button (Visible only to authenticated users) */}
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playBeep(440, 0.08, "triangle");
+                          setIsEditing(true);
+                        }}
+                        className={styles.editProfileBtn}
+                        title="Edit Fighter Dossier"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5 fill-current"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                        <span>EDIT PROFILE</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 

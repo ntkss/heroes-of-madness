@@ -228,11 +228,16 @@ function TeamRow({
             const player = getPlayer(name);
             const rankClass = getPlayerRankClass(player);
             const champSeasons = getPlayerChampionSeasons(name, player);
+            const playerAlias =
+              player?.alias ||
+              (name !== "???" && name !== "DRAFTING" ? name : undefined);
+            const playerDisplayName = player ? player.name : displayNames[idx];
             return (
               <PlayerCard
                 key={idx}
                 name={name}
-                displayName={player ? player.name : displayNames[idx]}
+                alias={playerAlias}
+                displayName={playerDisplayName}
                 role={lanes?.[idx] || ROLES[idx]}
                 hero={heroes?.[idx]}
                 locked={locked[idx + lockedOffset]}

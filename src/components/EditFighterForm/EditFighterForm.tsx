@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { DbPlayer, validateAlias } from "@/utils/firebase";
+import { DbPlayer } from "@/utils/firebase";
 import styles from "./styles.module.css";
 
 interface EditFighterFormProps {
@@ -71,7 +71,6 @@ export default function EditFighterForm({
   onClose,
 }: EditFighterFormProps) {
   const [name, setName] = useState(player.name || "");
-  const [alias, setAlias] = useState(player.alias || "");
   const avatarVal = player.avatar || player.imageURL || "";
   const [avatarBase64, setAvatarBase64] = useState(avatarVal);
   const [avatarPreview, setAvatarPreview] = useState(avatarVal);
@@ -117,23 +116,16 @@ export default function EditFighterForm({
       return;
     }
 
-    const aliasValidation = validateAlias(alias);
-    if (!aliasValidation.valid) {
-      setError(aliasValidation.error || "INVALID ALIAS!");
-      return;
-    }
-    const cleanAlias = aliasValidation.alias;
-
     setLoading(true);
     try {
       let finalAvatar = avatarBase64;
       if (!finalAvatar) {
         // Fallback to Dicebear pixel art if no image uploaded or removed
-        const seed = cleanAlias.toLowerCase();
+        const seed = player.alias.toLowerCase();
         finalAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${seed}&backgroundColor=1a1a2e`;
       }
 
-      await onSubmit(trimmedName, cleanAlias, finalAvatar);
+      await onSubmit(trimmedName, player.alias, finalAvatar);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "FAILED TO UPDATE FIGHTER!";
@@ -169,17 +161,22 @@ export default function EditFighterForm({
           />
         </div>
 
-        {/* Alias */}
+        {/* Alias - Permanently Locked */}
         <div className={styles.inputGroup}>
-          <label className={styles.label}>ALIAS (REQ, A-Z, 0-9)</label>
+          <label className={styles.label}>
+            <span>PERMALINK SLUG</span>
+            <span className="text-amber-400 ml-1">🔒 LOCKED</span>
+          </label>
           <input
             type="text"
-            placeholder="e.g. nutty"
-            value={alias}
-            onChange={(e) => setAlias(e.target.value)}
-            className={styles.inputField}
-            disabled={loading}
+            value={player.alias}
+            readOnly
+            disabled
+            className={`${styles.inputField} opacity-60 cursor-not-allowed bg-slate-900 border-slate-700 text-slate-400 select-all`}
           />
+          <span className="text-[7.5px] font-pixel text-slate-500 uppercase tracking-tight">
+            URL: /players/{player.alias}
+          </span>
         </div>
 
         {/* Portrait Photo */}

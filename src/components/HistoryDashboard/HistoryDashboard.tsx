@@ -14,6 +14,7 @@ import {
   getRequiredMinMatches,
   togglePlayerFeedback,
   PlayerFeedback,
+  getPlayerReadableSlug,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
 import { playBeep, playWin } from "@/utils/audio";
@@ -152,7 +153,7 @@ function MatchCardComponent({
 
               <div className={styles.playerActions}>
                 <Link
-                  href={`/players/${pKey}`}
+                  href={`/players/${getPlayerReadableSlug(dbPlayer, pKey)}`}
                   onClick={() => playBeep(300, 0.1, "sine")}
                   className={styles.profileLinkBtn}
                 >
@@ -1324,7 +1325,7 @@ export default function HistoryDashboard({
                             {stats.name}
                           </span>
                           <Link
-                            href={`/players/${stats.dbPlayer?.id || stats.dbPlayer?.alias || stats.name.toLowerCase()}`}
+                            href={`/players/${getPlayerReadableSlug(stats.dbPlayer, stats.name)}`}
                             onClick={() => playBeep(300, 0.1, "sine")}
                             className="font-pixel text-[7.5px] border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue px-2 py-0.5 hover:bg-neon-blue/10 transition-all rounded-none uppercase select-none cursor-pointer"
                           >

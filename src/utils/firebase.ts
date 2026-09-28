@@ -521,10 +521,25 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
         const data = docSnap.data();
 
         const avatarVal = data.avatar || data.imageURL || "";
+        const rawAlias = (data.alias || "").trim();
+        const cleanAlias = rawAlias
+          ? rawAlias.toLowerCase()
+          : (data.name || docSnap.id)
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9_]/g, "") || docSnap.id.toLowerCase();
+
+        // Auto-heal missing alias in Firestore in background
+        if (db && !rawAlias) {
+          updateDoc(doc(db, "players", docSnap.id), {
+            alias: cleanAlias,
+          }).catch(() => {});
+        }
+
         list.push({
           id: docSnap.id,
           name: data.name || "",
-          alias: data.alias || "",
+          alias: cleanAlias,
           avatar: avatarVal,
           imageURL: avatarVal,
           winrate: Number(data.winrate) || 0,
@@ -3085,6 +3100,25 @@ export async function uploadBase64Image(
   return downloadUrl;
 }
 
+/**
+ * Returns a clean, human-readable URL slug for a player.
+ * Priority: alias -> name (lowercased) -> id
+ */
+export function getPlayerReadableSlug(
+  player?: { id?: string; name?: string; alias?: string } | null,
+  fallback?: string,
+): string {
+  if (!player)
+    return fallback ? encodeURIComponent(fallback.toLowerCase()) : "";
+  if (player.alias && player.alias.trim()) {
+    return encodeURIComponent(player.alias.trim().toLowerCase());
+  }
+  if (player.name && player.name.trim()) {
+    return encodeURIComponent(player.name.trim().toLowerCase());
+  }
+  return encodeURIComponent(player.id || fallback || "");
+}
+
 // ─── Data Backup & Migration Utilities ─────────────────────────────────────────
 
 export interface DatabaseBackup {
@@ -3385,6 +3419,87 @@ export async function migrateMatchesToDocumentIds(): Promise<MigrationReport> {
     migratedMatches: migratedMatchesCount,
     convertedSlots,
     backupTimestamp: backup.exportedAt,
+    details,
+  };
+}
+
+/**
+ * Scans all registered players in Firestore, validates their `alias`,
+ * and backfills any missing or unformatted aliases so every player
+ * is guaranteed to have a clean, unique URL slug.
+ */
+export async function backfillPlayerAliases(): Promise<{
+  success: boolean;
+  totalPlayers: number;
+  updatedCount: number;
+  details: string[];
+}> {
+  const details: string[] = [];
+  const players = await fetchPlayers();
+  details.push(`Found ${players.length} players to inspect.`);
+
+  let updatedCount = 0;
+  const usedAliases = new Set<string>();
+
+  for (const player of players) {
+    const rawAlias = (player.alias || "").trim().toLowerCase();
+    let targetAlias = rawAlias;
+
+    // If alias is missing or empty, derive from name or id
+    if (!targetAlias) {
+      targetAlias = (player.name || player.id)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9_]/g, "");
+      if (!targetAlias) targetAlias = player.id.toLowerCase();
+    }
+
+    // Ensure uniqueness
+    let finalAlias = targetAlias;
+    let counter = 1;
+    while (usedAliases.has(finalAlias)) {
+      finalAlias = `${targetAlias}${counter++}`;
+    }
+    usedAliases.add(finalAlias);
+
+    if (player.alias !== finalAlias) {
+      details.push(
+        `Player "${player.name}" (${player.id}): updating alias "${player.alias || "<empty>"}" -> "${finalAlias}"`,
+      );
+      player.alias = finalAlias;
+      updatedCount++;
+
+      if (db) {
+        try {
+          const docRef = doc(db, "players", player.id);
+          await updateDoc(docRef, { alias: finalAlias });
+        } catch (e) {
+          details.push(
+            `❌ Failed to update Firestore for ${player.id}: ${String(e)}`,
+          );
+        }
+      }
+    } else {
+      details.push(
+        `Player "${player.name}": already has valid alias "${finalAlias}".`,
+      );
+    }
+  }
+
+  // Update LocalStorage cache
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_PLAYERS_KEY, JSON.stringify(players));
+    details.push("Synced updated player profiles to LocalStorage cache.");
+  }
+
+  details.push(
+    `✅ Audit complete. ${updatedCount} player aliases updated out of ${players.length} total players.`,
+  );
+
+  return {
+    success: true,
+    totalPlayers: players.length,
+    updatedCount,
     details,
   };
 }

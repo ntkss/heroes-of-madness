@@ -539,8 +539,20 @@ export default function Home() {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    const finalTeamA = shuffled.slice(0, 5);
-    const finalTeamB = shuffled.slice(5, 10);
+    const resolveToCanonicalId = (idOrNameOrAlias: string): string => {
+      const key = (idOrNameOrAlias || "").toLowerCase().trim();
+      const found = availablePlayers.find(
+        (p) =>
+          p.id === idOrNameOrAlias ||
+          p.id.toLowerCase() === key ||
+          (p.alias && p.alias.toLowerCase() === key) ||
+          p.name.toLowerCase() === key,
+      );
+      return found ? found.id : idOrNameOrAlias;
+    };
+
+    const finalTeamA = shuffled.slice(0, 5).map(resolveToCanonicalId);
+    const finalTeamB = shuffled.slice(5, 10).map(resolveToCanonicalId);
 
     setTeamA(finalTeamA);
     setTeamB(finalTeamB);

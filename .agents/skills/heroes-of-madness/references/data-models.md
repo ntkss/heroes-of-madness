@@ -70,17 +70,15 @@ export interface SeasonConfig {
 }
 ```
 
----
+## Identity Resolution & Document ID Standard
 
-## Identity Resolution Rules
+### Golden Rule: Document ID as Single Source of Truth
+- **`id` (Firestore Document ID)**: Primary Key and Foreign Key across all `matches` (`teamA`, `teamB`), `feedback`, and seasonal stats. Immutable.
+- **`name` (Display Name)**: Official human-readable identity for mentions (`@Nutty`), UI headers, and URLs.
+- **`alias` (Funny Nickname / Title)**: Decorative moniker (e.g. "หมิงพลังใบ", "จิมมี่จอมพิชิต"). Can be updated freely without affecting match histories or win rates.
 
-A player can be referenced in matches by:
-1. Firestore Document `id`
-2. `alias` (e.g., "nutty")
-3. `name` (e.g., "Nutty")
-
-### Rule: Never rely on direct string comparison (`===`)
-When matching a player from a match log against a player profile, ALWAYS use `matchesPlayer`:
+### Backward-Compatible Matching
+New matches strictly record `player.id`. For legacy historical matches that stored names or aliases, backward compatibility is maintained via `matchesPlayer()`:
 ```typescript
 // From @/utils/winrate
 function matchesPlayer(
@@ -92,11 +90,18 @@ function matchesPlayer(
 Or resolve via squad lookup:
 ```typescript
 const target = squad.find(
-  p => p.id.toLowerCase() === key ||
+  p => p.id === key ||
+       p.id.toLowerCase() === key ||
        (p.alias && p.alias.toLowerCase() === key) ||
        p.name.toLowerCase() === key
 );
 ```
+
+### Data Migration & Backup Utilities
+In `src/utils/firebase.ts` & Settings Page:
+- `exportAllDataAsBackup()`: Full JSON export of matches, players, seasons, and configs.
+- `downloadBackupFile()`: Physical download trigger.
+- `migrateMatchesToDocumentIds()`: Automatically backs up data, scans match history, and resolves any old names/aliases in `teamA`/`teamB` into canonical Document IDs.
 
 ---
 

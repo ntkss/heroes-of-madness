@@ -26,10 +26,11 @@ Before diving into code, consult the domain references:
 1. **Dual Storage Rule (Firebase + LocalStorage)**:
    - The app must function identically offline without Firebase keys.
    - Any function in `src/utils/firebase.ts` modifying or fetching data MUST implement both the Firestore path and the `localStorage` fallback path.
-2. **Player Identity Matching**:
-   - Match records may store a player's Firestore Document ID, Name, or lowercase Alias.
-   - NEVER do naive string comparisons (`playerA === playerB`).
-   - ALWAYS use `matchesPlayer()` from `@/utils/winrate` or query against `p.id`, `p.alias`, and `p.name`.
+2. **Player Identity Standard (Document ID as Primary Key)**:
+   - Match records must strictly store the player's Firestore Document `id` in `teamA` and `teamB`.
+   - `name` is the display identity used in UI, headers, and mentions (`@Name`).
+   - `alias` is the humorous nickname/title badge (can change anytime without impacting match records or stats).
+   - For backward compatibility with unmigrated legacy matches, use `matchesPlayer()` fallback.
 3. **Canonical Lane Normalization**:
    - Always run lane names through `normalizeLane()` (`@/constants/heroes`) or `normalizeLaneName()` (`@/utils/winrate`).
    - The only valid normalized lanes are: `"Exp" | "Jungle" | "Mid" | "Gold" | "Roam"`.

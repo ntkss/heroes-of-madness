@@ -1,6 +1,6 @@
 {
   "name": "heroes-of-madness",
-  "version": "9.1.4",
+  "version": "10.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

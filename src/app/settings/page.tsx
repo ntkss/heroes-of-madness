@@ -17,6 +17,10 @@ import {
   SeasonConfig,
   fetchLineConfig,
   saveLineConfig,
+  exportAllDataAsBackup,
+  downloadBackupFile,
+  migrateMatchesToDocumentIds,
+  MigrationReport,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
@@ -25,7 +29,7 @@ import styles from "./styles.module.css";
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
   const [settingsTab, setSettingsTab] = useState<
-    "ranks" | "users" | "seasons" | "line"
+    "ranks" | "users" | "seasons" | "line" | "migration"
   >("ranks");
   const [users, setUsers] = useState<DbUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -50,6 +54,13 @@ export default function SettingsPage() {
   const [lineSuccess, setLineSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [audioInitialized, setAudioInitialized] = useState(false);
+
+  // Data Migration & Backup States
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [migrationReport, setMigrationReport] =
+    useState<MigrationReport | null>(null);
+  const [migrationError, setMigrationError] = useState("");
 
   const loadUsers = async () => {
     setUsersLoading(true);
@@ -261,6 +272,57 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDownloadBackup = async () => {
+    setIsExporting(true);
+    playCoin();
+    try {
+      const backup = await exportAllDataAsBackup();
+      downloadBackupFile(backup);
+      setSuccess("FULL DATABASE BACKUP GENERATED & DOWNLOADED!");
+      playBeep(440, 0.1, "sine");
+    } catch (err) {
+      console.error("Backup failed:", err);
+      setError("FAILED TO GENERATE BACKUP: " + String(err));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleRunMigration = async () => {
+    const confirmPrompt = window.confirm(
+      "⚠️ MATCH DATA MIGRATION AUDIT\n\n" +
+        "This procedure will:\n" +
+        "1. Automatically download a full pre-migration JSON safety backup to your computer.\n" +
+        "2. Scan all recorded matches in the database.\n" +
+        "3. Replace all player names/aliases in Team A and Team B with immutable Document IDs.\n\n" +
+        "Do you want to proceed?",
+    );
+    if (!confirmPrompt) return;
+
+    setIsMigrating(true);
+    setMigrationError("");
+    setMigrationReport(null);
+    playCoin();
+
+    try {
+      const result = await migrateMatchesToDocumentIds();
+      setMigrationReport(result);
+      if (result.success) {
+        setSuccess(
+          `MIGRATION COMPLETE! ${result.migratedMatches} matches updated (${result.convertedSlots} player slots converted).`,
+        );
+        playBeep(523, 0.2, "sine");
+      } else {
+        setMigrationError("Migration encountered errors. Check report below.");
+      }
+    } catch (err) {
+      console.error("Migration failed:", err);
+      setMigrationError("Migration failed: " + String(err));
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <CRTOverlay>
@@ -400,6 +462,20 @@ export default function SettingsPage() {
               >
                 💬 LINE CHATBOT
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playBeep(330, 0.1, "sawtooth");
+                  setSettingsTab("migration");
+                }}
+                className={`${styles.tabBtn} ${
+                  settingsTab === "migration"
+                    ? styles.tabBtnActive
+                    : styles.tabBtnInactive
+                }`}
+              >
+                💾 DATA & BACKUP
+              </button>
             </div>
 
             {rankConfig === null ? (
@@ -475,8 +551,10 @@ export default function SettingsPage() {
                         disabled={loading}
                       />
                       <span className={styles.inputHelpText}>
-                        Players with total games below this threshold will be
-                        Unranked.
+                        Base minimum matches required. Standing threshold
+                        automatically scales dynamically with season activity
+                        (at least 20% of season matches, capped at 10) to
+                        protect rankings from low-sample distortions.
                       </span>
                     </div>
 
@@ -725,7 +803,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : settingsTab === "line" ? (
               /* LINE Chatbot UI */
               <form onSubmit={handleLineSubmit} className={styles.form}>
                 <div className={styles.formSection}>
@@ -811,6 +889,108 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
+            ) : (
+              /* Data Migration & Backup UI */
+              <div className={styles.seasonEngineContainer}>
+                <div className={styles.seasonEngineDetails}>
+                  <div className={styles.seasonEngineDetailRow}>
+                    <span className={styles.seasonEngineDetailLabel}>
+                      DATA ARCHITECTURE STATUS
+                    </span>
+                    <span className="text-neon-yellow font-bold text-xs uppercase">
+                      IMMUTABLE DOCUMENT ID STANDARD
+                    </span>
+                  </div>
+
+                  <div className={styles.seasonEngineDetailRow}>
+                    <span className={styles.seasonEngineDetailLabel}>
+                      DOCUMENT ID ROLE
+                    </span>
+                    <span className="text-slate-300 text-[10px] font-sans">
+                      Primary Key across Match Logs, Winrates & Stats (Never
+                      Changes)
+                    </span>
+                  </div>
+
+                  <div className={styles.seasonEngineDetailRow}>
+                    <span className={styles.seasonEngineDetailLabel}>
+                      DISPLAY NAME & ALIAS ROLE
+                    </span>
+                    <span className="text-slate-300 text-[10px] font-sans">
+                      Display Name for Identity / Mentions; Alias for Funny
+                      Badges
+                    </span>
+                  </div>
+
+                  <p className={styles.seasonEngineDesc}>
+                    Migrating matches scans all historical records in Team A and
+                    Team B and converts legacy names or aliases to permanent
+                    Firestore Document IDs. This permanently decouples player
+                    nicknames and funny aliases from their statistical records.
+                    A full safety backup is automatically downloaded to your
+                    device before any changes are written.
+                  </p>
+                </div>
+
+                {/* Actions Box */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 border-t border-slate-800 pt-6 mt-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadBackup}
+                    disabled={isExporting || isMigrating}
+                    className={styles.backupBtn}
+                  >
+                    <span>
+                      {isExporting
+                        ? "⏳ EXPORTING..."
+                        : "💾 DOWNLOAD DATABASE BACKUP (JSON)"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRunMigration}
+                    disabled={isMigrating || isExporting}
+                    className={styles.migrateBtn}
+                  >
+                    <span>
+                      {isMigrating
+                        ? "⚡ MIGRATING RECORDS..."
+                        : "🚀 RUN MATCH MIGRATION TO DOC IDs"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Status Messages */}
+                {migrationError && (
+                  <div className={styles.statusError}>
+                    ⚠️ MIGRATION ERROR: {migrationError}
+                  </div>
+                )}
+
+                {/* Detailed Migration Log Console */}
+                {migrationReport && (
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-pixel">
+                      <span>AUDIT LOG CONSOLE</span>
+                      <span className="text-neon-yellow">
+                        {migrationReport.migratedMatches} MATCHES CONVERTED (
+                        {migrationReport.convertedSlots} SLOTS)
+                      </span>
+                    </div>
+                    <div className={styles.migrationLogBox}>
+                      {migrationReport.details.map((line, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <span className="text-slate-600 select-none">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </main>

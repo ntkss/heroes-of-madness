@@ -57,7 +57,7 @@
 }
 
 .rankBadge {
-  @apply absolute top-1 left-1 z-20 px-1.5 py-0.5 border leading-none rounded-sm bg-gradient-to-r whitespace-nowrap;
+  @apply absolute top-0 left-0 z-20 px-1.5 py-0.5 bg-gradient-to-r whitespace-nowrap;
 }
 
 .draftGlow {
@@ -113,57 +113,35 @@
   @apply mt-auto w-full relative z-20 flex flex-col pt-2;
 }
 
-.playerName {
-  @apply text-white text-center block truncate mt-0.5 tracking-tighter;
+.playerAlias {
+  @apply text-white text-center block truncate mt-0.5 tracking-tighter uppercase leading-none;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95));
 }
 
-.playerNameThai {
-  @apply font-thai text-xs sm:text-sm md:text-base lg:text-3xl font-bold;
+.playerAliasThai {
+  @apply font-thai text-xs sm:text-sm md:text-base lg:text-2xl font-bold;
 }
 
-.playerNameEnglish {
+.playerAliasEnglish {
   @apply font-action text-xs sm:text-sm md:text-base lg:text-3xl font-black;
 }
 
+.playerDisplayName {
+  @apply text-center block truncate leading-tight mt-0.5 select-none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
+}
+
+.displayNameThai {
+  @apply font-thai text-[8px] sm:text-[10px] md:text-xs font-bold text-amber-200/90;
+}
+
+.displayNameEnglish {
+  @apply font-tech text-[7.5px] sm:text-[9.5px] md:text-[10.5px] uppercase tracking-wider text-slate-300 font-semibold;
+}
+
 .playerRole {
-  @apply font-pixel text-[5.5px] sm:text-[9.5px] md:text-[10.5px] lg:text-[11.5px] italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase;
+  @apply font-pixel text-[5.5px] sm:text-[8.5px] md:text-[9.5px] lg:text-[10.5px] italic text-amber-400 text-center block tracking-widest leading-none mt-1 uppercase;
   filter: drop-shadow(0 1.5px 3px rgba(0, 0, 0, 0.9));
-}
-
-.statsBox {
-  @apply flex flex-col w-full mt-1.5 p-1 bg-black/60 rounded border border-white/5;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.statsHeader {
-  @apply flex justify-between items-center w-full leading-none mb-1;
-}
-
-.percentageText {
-  @apply font-mono text-[8px] sm:text-[9.5px] font-bold text-white pl-0.5 leading-none;
-}
-
-.loadingLabel {
-  @apply text-[6.5px] sm:text-[7.5px] text-slate-400 font-pixel uppercase tracking-tighter leading-none;
-}
-
-.progressBarOuter {
-  @apply w-full h-1 bg-slate-950 rounded-full overflow-hidden;
-}
-
-.progressBarInner {
-  @apply h-full transition-all duration-150;
-}
-
-.progressBarInnerBlue {
-  @apply bg-cyan-400;
-  box-shadow: 0 0 6px rgba(34, 211, 238, 0.8);
-}
-
-.progressBarInnerRed {
-  @apply bg-rose-500;
-  box-shadow: 0 0 6px rgba(244, 63, 94, 0.8);
 }
 
 .rankBadgeHigh {
@@ -318,7 +296,7 @@
 }
 
 .championBadgeBanner {
-  @apply absolute top-1 right-1 z-30 flex items-center gap-0.5 px-1 py-0.5 rounded-xs select-none border leading-none;
+  @apply absolute top-0 right-0 z-30 flex items-center gap-0.5 px-1 py-0.5 rounded-xs select-none border leading-none;
 }
 
 .championBadgeSingle {

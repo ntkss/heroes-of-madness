@@ -12,6 +12,7 @@ import {
   fetchSeasons,
   fetchPlayers,
   fetchSeasonConfig,
+  getPlayerReadableSlug,
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 
@@ -228,7 +229,11 @@ export default function HallOfFamePage() {
                     {yearGroupedCards[year].map((card) => (
                       <Link
                         key={card.seasonId}
-                        href={`/players/${encodeURIComponent(card.championAlias || card.championId || card.championName)}`}
+                        href={`/players/${getPlayerReadableSlug({
+                          id: card.championId,
+                          name: card.championName,
+                          alias: card.championAlias,
+                        })}`}
                         className={styles.fameCard}
                         onClick={() => playBeep(400, 0.1, "sine")}
                       >

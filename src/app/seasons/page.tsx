@@ -73,10 +73,7 @@ export default function SeasonsPage() {
 
   const minMatches = useMemo(() => {
     const finishedMatches = seasonMatches.filter((m) => !!m.winner).length;
-    return getRequiredMinMatches(
-      finishedMatches,
-      rankConfig?.minMatches ?? 3,
-    );
+    return getRequiredMinMatches(finishedMatches, rankConfig?.minMatches ?? 3);
   }, [seasonMatches, rankConfig?.minMatches]);
 
   const sortedFighterStats = useMemo(() => {

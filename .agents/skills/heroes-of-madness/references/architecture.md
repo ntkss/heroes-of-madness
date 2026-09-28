@@ -1,6 +1,7 @@
 # Architecture & Directory Structure Reference
 
 ## System Overview
+
 **Heroes of Madness** is a Next.js 16 (React 19) web application designed for competitive matchmaking, randomizer generation, live win rate calculations, seasonal leaderboards, fighter directories, and community forums for MOBA games (principally RoV and MLBB).
 
 ```
@@ -25,21 +26,23 @@ heroes-of-madness/
 
 ## Routing Structure (`src/app/`)
 
-| Route | File Path | Description |
-| :--- | :--- | :--- |
-| `/` | `src/app/page.tsx` | Main Matchmaker, Versus Arena, hero randomizer, live win rate predictions, match history logger, screenshot generator. |
-| `/players/[alias]` | `src/app/players/[alias]/page.tsx` | Fighter profile, career statistics, lane distribution, historical season charts (`UserProfileWinRateChart`). |
-| `/seasons` | `src/app/seasons/page.tsx` | Active & historical season leaderboards, podium standings, fighter winrates, rank tier breakdowns. |
-| `/hall-of-fame` | `src/app/hall-of-fame/page.tsx` | Hall of Fame archive of ended seasons, past podium champions, legendary records. |
-| `/forums` | `src/app/forums/page.tsx` | Community forum list, post creation modal, category filter, view counts. |
-| `/forums/[slug]` | `src/app/forums/[slug]/page.tsx` | Detailed forum discussion, markdown content, @mentions, threaded comments, upvotes/likes. |
-| `/settings` | `src/app/settings/page.tsx` | Administration dashboard: Rank tier thresholds, LINE notify settings, season management (end season, seed mock), admin user bootstrap & role assignment. |
-| `/api/line/*` | `src/app/api/line/*/route.ts` | Serverless route handlers for LINE webhook and notify integration. |
+| Route              | File Path                          | Description                                                                                                                                              |
+| :----------------- | :--------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                | `src/app/page.tsx`                 | Main Matchmaker, Versus Arena, hero randomizer, live win rate predictions, match history logger, screenshot generator.                                   |
+| `/players/[alias]` | `src/app/players/[alias]/page.tsx` | Fighter profile, career statistics, lane distribution, historical season charts (`UserProfileWinRateChart`).                                             |
+| `/seasons`         | `src/app/seasons/page.tsx`         | Active & historical season leaderboards, podium standings, fighter winrates, rank tier breakdowns.                                                       |
+| `/hall-of-fame`    | `src/app/hall-of-fame/page.tsx`    | Hall of Fame archive of ended seasons, past podium champions, legendary records.                                                                         |
+| `/forums`          | `src/app/forums/page.tsx`          | Community forum list, post creation modal, category filter, view counts.                                                                                 |
+| `/forums/[slug]`   | `src/app/forums/[slug]/page.tsx`   | Detailed forum discussion, markdown content, @mentions, threaded comments, upvotes/likes.                                                                |
+| `/settings`        | `src/app/settings/page.tsx`        | Administration dashboard: Rank tier thresholds, LINE notify settings, season management (end season, seed mock), admin user bootstrap & role assignment. |
+| `/api/line/*`      | `src/app/api/line/*/route.ts`      | Serverless route handlers for LINE webhook and notify integration.                                                                                       |
 
 ---
 
 ## Component Architecture (`src/components/`)
+
 All major components follow a strict 3-file pattern:
+
 ```
 src/components/<ComponentName>/
 ├── <ComponentName>.tsx    # Core React component logic ("use client" where stateful)
@@ -64,6 +67,7 @@ src/components/<ComponentName>/
 ---
 
 ## State & Data Flow
+
 1. **Initial Load**:
    - `Home` (`src/app/page.tsx`) queries `fetchAllMatches()`, `fetchPlayers()`, `fetchRankConfig()`, `fetchSeasonConfig()`, and `fetchSeasons()` simultaneously via `Promise.all()`.
 2. **Offline Resilience**:

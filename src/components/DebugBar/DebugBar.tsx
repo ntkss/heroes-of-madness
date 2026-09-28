@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { isFirebaseConfigured, seedMockSeasons } from "@/utils/firebase";
+import { isFirebaseConfigured } from "@/utils/firebase";
 import pkg from "../../../package.json";
 import styles from "./styles.module.css";
 
@@ -49,15 +49,24 @@ export default function DebugBar() {
     else if (ua.indexOf("like Mac") !== -1) os = "iOS";
 
     let browser = "Other Browser";
-    if (ua.indexOf("Chrome") !== -1 && ua.indexOf("Edg") === -1) browser = "Chrome";
-    else if (ua.indexOf("Safari") !== -1 && ua.indexOf("Chrome") === -1) browser = "Safari";
+    if (ua.indexOf("Chrome") !== -1 && ua.indexOf("Edg") === -1)
+      browser = "Chrome";
+    else if (ua.indexOf("Safari") !== -1 && ua.indexOf("Chrome") === -1)
+      browser = "Safari";
     else if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
     else if (ua.indexOf("Edg") !== -1) browser = "Edge";
-    else if (ua.indexOf("MSIE") !== -1 || !!(document as Document & { documentMode?: unknown }).documentMode) browser = "IE";
+    else if (
+      ua.indexOf("MSIE") !== -1 ||
+      !!(document as Document & { documentMode?: unknown }).documentMode
+    )
+      browser = "IE";
 
     // 4. Hardware details
-    const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} Cores` : "N/A";
-    const devMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    const cores = navigator.hardwareConcurrency
+      ? `${navigator.hardwareConcurrency} Cores`
+      : "N/A";
+    const devMemory = (navigator as Navigator & { deviceMemory?: number })
+      .deviceMemory;
     const memory = devMemory ? `${devMemory} GB RAM` : "N/A";
 
     // 5. Clock ticker
@@ -84,26 +93,14 @@ export default function DebugBar() {
     };
   }, []);
 
-  const handleSeedMockData = async () => {
-    if (confirm("🌱 SEED MULTI-SEASON DEMO DATA?\nThis will populate mock Season 1, Season 2, and active Season 3 matches for multi-season testing.")) {
-      await seedMockSeasons();
-      window.location.reload();
-    }
-  };
-
-  const handleClearHistory = () => {
-    if (confirm("⚠️ DESTROY DATABASE HISTORY?\nThis will clear LocalStorage match history logs and cached player profiles. Proceed?")) {
-      localStorage.removeItem("mlbb_generator_matches");
-      localStorage.removeItem("mlbb_generator_players");
-      window.location.reload();
-    }
-  };
-
   const nextVersion = pkg.dependencies.next?.replace("^", "") || "16.2.6";
   const reactVersion = pkg.dependencies.react?.replace("^", "") || "19.2.4";
 
   const gitHash = process.env.NEXT_PUBLIC_GIT_COMMIT_HASH || "unknown";
-  const buildVersion = gitHash !== "unknown" ? `${pkg.version || "0.1.0"}-${gitHash}` : `v${pkg.version || "0.1.0"}`;
+  const buildVersion =
+    gitHash !== "unknown"
+      ? `${pkg.version || "0.1.0"}-${gitHash}`
+      : `v${pkg.version || "0.1.0"}`;
 
   return (
     <div className={styles.wrapper}>
@@ -119,7 +116,10 @@ export default function DebugBar() {
               <span className={styles.statusDotActive} />
               <span className={styles.title}>CABINET SYSTEM LOGS</span>
             </div>
-            <button onClick={() => setIsOpen(false)} className={styles.closeBtn}>
+            <button
+              onClick={() => setIsOpen(false)}
+              className={styles.closeBtn}
+            >
               [X]
             </button>
           </div>
@@ -143,13 +143,25 @@ export default function DebugBar() {
             {/* DB Status */}
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>DATABASE</span>
-              {isFirebaseConfigured ? <span className={styles.detailValueDbOnline}>ONLINE (FIRESTORE)</span> : <span className={styles.detailValueDbOffline}>OFFLINE (LOCAL)</span>}
+              {isFirebaseConfigured ? (
+                <span className={styles.detailValueDbOnline}>
+                  ONLINE (FIRESTORE)
+                </span>
+              ) : (
+                <span className={styles.detailValueDbOffline}>
+                  OFFLINE (LOCAL)
+                </span>
+              )}
             </div>
 
             {/* Network status */}
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>NET CONNECTION</span>
-              {isOnline ? <span className={styles.detailValueNetOnline}>ONLINE</span> : <span className={styles.detailValueDbOffline}>OFFLINE</span>}
+              {isOnline ? (
+                <span className={styles.detailValueNetOnline}>ONLINE</span>
+              ) : (
+                <span className={styles.detailValueDbOffline}>OFFLINE</span>
+              )}
             </div>
 
             {/* OS & Browser */}
@@ -193,19 +205,32 @@ export default function DebugBar() {
             {/* Mode */}
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>EXECUTION ENV</span>
-              <span className={styles.detailValueEnv}>{process.env.NODE_ENV}</span>
+              <span className={styles.detailValueEnv}>
+                {process.env.NODE_ENV}
+              </span>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Debug Pill Button */}
-      <button onClick={() => setIsOpen(!isOpen)} className={`${styles.toggleBtn} ${isOpen ? styles.toggleBtnActive : styles.toggleBtnInactive}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`${styles.toggleBtn} ${isOpen ? styles.toggleBtnActive : styles.toggleBtnInactive}`}
+      >
         <span className={styles.btnLabel}>
-          <span className={isFirebaseConfigured ? styles.statusDotYellow : styles.statusDotRed} />
+          <span
+            className={
+              isFirebaseConfigured
+                ? styles.statusDotYellow
+                : styles.statusDotRed
+            }
+          />
           SYSTEM MONITOR {buildVersion}
         </span>
-        <span className={styles.btnSublabel}>{isOpen ? "▼ CLOSE" : "▲ INFO"}</span>
+        <span className={styles.btnSublabel}>
+          {isOpen ? "▼ CLOSE" : "▲ INFO"}
+        </span>
       </button>
     </div>
   );

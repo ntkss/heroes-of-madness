@@ -15,6 +15,7 @@ This skill is the central engineering guide for working with the **Heroes of Mad
 ## 1. Fast Reference Links
 
 Before diving into code, consult the domain references:
+
 - **[Architecture & Routing Reference](./references/architecture.md)**: Page routes (`src/app/`), component directory conventions, and state flow.
 - **[Data Models & Storage Reference](./references/data-models.md)**: `Match`, `DbPlayer`, `RankConfig`, Identity matching rules, and the Dual-Storage pattern.
 - **[Ranking & Win Rate Reference](./references/ranking-and-winrate.md)**: Dynamic minimum match thresholds, Laplace smoothing formulas, and team predictions.

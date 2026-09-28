@@ -3,9 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { DbPlayer } from "@/utils/firebase";
-import { playBeep, playCoin } from "@/utils/audio";
-import EditFighterForm from "@/components/EditFighterForm";
+import { DbPlayer, getPlayerReadableSlug } from "@/utils/firebase";
+import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface FighterDirectoryProps {
@@ -13,7 +12,7 @@ interface FighterDirectoryProps {
   names: string[];
   onTogglePlayer: (player: DbPlayer) => void;
   onDeletePlayer: (playerId: string) => Promise<void>;
-  onUpdatePlayer: (
+  onUpdatePlayer?: (
     oldPlayerId: string,
     name: string,
     alias: string,
@@ -27,11 +26,9 @@ export default function FighterDirectory({
   names,
   onTogglePlayer,
   onDeletePlayer,
-  onUpdatePlayer,
   isAdmin = false,
 }: FighterDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingPlayer, setEditingPlayer] = useState<DbPlayer | null>(null);
   const [deletingPlayer, setDeletingPlayer] = useState<DbPlayer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -54,22 +51,6 @@ export default function FighterDirectory({
       console.error("Delete player failed:", e);
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleSaveEdit = async (
-    name: string,
-    alias: string,
-    avatar: string,
-  ) => {
-    if (!editingPlayer) return;
-    try {
-      await onUpdatePlayer(editingPlayer.id, name, alias, avatar);
-      playCoin(); // retro success chime
-      setEditingPlayer(null);
-    } catch (e) {
-      // Propagation of throw will let EditFighterForm display the error locally
-      throw e;
     }
   };
 
@@ -107,16 +88,6 @@ export default function FighterDirectory({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Editing Modal/Form */}
-      {editingPlayer && (
-        <EditFighterForm
-          key={editingPlayer.id}
-          player={editingPlayer}
-          onSubmit={handleSaveEdit}
-          onClose={() => setEditingPlayer(null)}
-        />
       )}
 
       <div className={styles.header}>
@@ -205,7 +176,7 @@ export default function FighterDirectory({
                       </span>
                     </span>
                     <Link
-                      href={`/players/${player.id}`}
+                      href={`/players/${getPlayerReadableSlug(player)}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         playBeep(300, 0.1, "sine");
@@ -221,27 +192,9 @@ export default function FighterDirectory({
                   )}
                 </button>
 
-                {/* Edit & Delete Action Panel */}
+                {/* Delete Action Panel */}
                 {isAdmin && (
                   <div className={styles.actions}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playBeep(440, 0.08, "triangle");
-                        setEditingPlayer(player);
-                      }}
-                      className={`${styles.actionBtn} ${styles.editBtn}`}
-                      title="Edit Profile"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 fill-current"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                      </svg>
-                    </button>
-
                     <button
                       type="button"
                       onClick={(e) => {

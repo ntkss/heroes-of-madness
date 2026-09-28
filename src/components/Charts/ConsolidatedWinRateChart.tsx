@@ -12,7 +12,13 @@ import {
   Legend,
   BarController,
 } from "chart.js";
-import { Match, MatchMode, DbPlayer, Season } from "@/utils/firebase";
+import {
+  Match,
+  MatchMode,
+  DbPlayer,
+  Season,
+  getPlayerReadableSlug,
+} from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
 import { computeComparativeSeasonProgression } from "@/utils/progression";
 import StockMarketLineChart from "./StockMarketLineChart";
@@ -920,7 +926,7 @@ export default function ConsolidatedWinRateChart({
           {computedPlayerStats.fighters.slice(0, 10).map((f) => (
             <Link
               key={f.id}
-              href={`/players/${encodeURIComponent(f.alias || f.id)}`}
+              href={`/players/${getPlayerReadableSlug(f)}`}
               onClick={() => playBeep(350, 0.08, "sine")}
               className="font-pixel text-[7.5px] bg-black/60 border border-slate-800 hover:border-neon-yellow hover:text-neon-yellow px-2 py-1 text-slate-300 transition-colors uppercase flex items-center gap-1.5"
             >

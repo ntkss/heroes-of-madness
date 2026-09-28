@@ -7,6 +7,7 @@ import {
   fetchMatchById,
   DbPlayer,
   Match,
+  getPlayerReadableSlug,
 } from "@/utils/firebase";
 
 // Custom component to fetch and render player mention badge
@@ -41,7 +42,7 @@ export function PlayerMentionBadge({ playerId }: { playerId: string }) {
 
   return (
     <Link
-      href={`/players/${encodeURIComponent(player?.alias || player?.id || playerId)}`}
+      href={`/players/${getPlayerReadableSlug(player, playerId)}`}
       className={`inline-flex items-center gap-1 bg-sky-500/10 border border-sky-500/30 text-sky-400 px-1.5 py-0.5 rounded-none hover:bg-sky-500 hover:text-black transition-all duration-150 select-none mx-0.5 align-middle ${fontClass}`}
     >
       <span className="text-[10px]">👤</span>

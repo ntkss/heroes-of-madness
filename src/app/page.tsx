@@ -8,6 +8,7 @@ import HistoryDashboard from "@/components/HistoryDashboard";
 import HeroRandomizer from "@/components/HeroRandomizer";
 import SegmentedControl from "@/components/SegmentedControl";
 import DebugBar from "@/components/DebugBar";
+import pkg from "../../package.json";
 import { GameType, HeroLane, HERO_POOLS } from "@/constants/heroes";
 import {
   Match,
@@ -992,7 +993,8 @@ export default function Home() {
           {/* Footer banner */}
           <footer className="border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none">
             <span>
-              HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`
+              HEROES OF MADNESS PRO v{pkg.version} © Geminus-Dev 2026 by nutty
+              dev`~`
             </span>
           </footer>
 
@@ -1001,7 +1003,7 @@ export default function Home() {
 
           {/* Retro Share Toast Notification */}
           {toast && (
-            <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
+            <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)*0.35)] md:bottom-20 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
               <div
                 className={`border-4 px-6 py-3 font-pixel text-[9px] tracking-widest uppercase flex items-center gap-3 shadow-2xl select-none min-w-[280px] justify-center ${
                   toast.type === "success"

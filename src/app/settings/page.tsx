@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import DebugBar from "@/components/DebugBar";
+import pkg from "../../../package.json";
 import {
   RankConfig,
   fetchRankConfig,
@@ -1060,7 +1061,8 @@ export default function SettingsPage() {
         {/* Footer banner */}
         <footer className={styles.footer}>
           <span>
-            HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`
+            HEROES OF MADNESS PRO v{pkg.version} © Geminus-Dev 2026 by nutty
+            dev`~`
           </span>
         </footer>
 

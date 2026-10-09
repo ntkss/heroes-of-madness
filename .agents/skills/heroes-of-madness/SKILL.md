@@ -44,6 +44,14 @@ Before diving into code, consult the domain references:
      - `<ComponentName>.tsx`
      - `styles.module.css` (CSS Module for scoped styling)
      - `index.ts` (re-exporting `<ComponentName>`)
+6. **Readable Codebase for Humans**:
+   - Always write self-documenting code.
+   - Use meaningful variable names.
+   - Keep functions small and focused.
+   - Add comments for complex logic.
+   - Follow the style guide (see below).
+7. **easy to maintain**: the code should be easy to maintain, easy to read, easy to test, and easy to debug.
+8. **Support for PWA (Progressive Web app)**: Support add to Home Screen for Android and iOS.
 
 ---
 

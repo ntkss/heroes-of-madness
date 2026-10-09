@@ -1,0 +1,47 @@
+@reference "../../app/globals.css";
+
+.bottomNav {
+  @apply fixed left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-md;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.glassContainer {
+  @apply flex items-center justify-around px-2 py-2 rounded-2xl;
+  background: rgba(10, 10, 18, 0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 12px 40px -10px rgba(0, 0, 0, 0.8),
+    0 0 1px 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.navItem {
+  @apply flex-1 flex flex-col items-center justify-center py-1.5 px-1 sm:px-2.5 rounded-xl transition-all duration-200 select-none cursor-pointer relative min-h-[44px];
+  color: #94a3b8;
+}
+
+.navItemActive {
+  @apply text-white;
+  background: rgba(0, 210, 255, 0.12);
+  border: 1px solid rgba(0, 210, 255, 0.35);
+  box-shadow: 0 0 16px rgba(0, 210, 255, 0.25);
+}
+
+.activeGlowDot {
+  @apply absolute -bottom-0.5 w-1 h-1 rounded-full bg-neon-blue;
+  box-shadow: 0 0 8px var(--color-neon-blue);
+}
+
+.navIcon {
+  @apply text-base sm:text-lg leading-none transition-transform duration-150 mb-1;
+}
+
+.navItem:active .navIcon {
+  transform: scale(0.9);
+}
+
+.navLabel {
+  @apply text-[7.5px] sm:text-[8px] font-pixel tracking-tighter uppercase transition-colors duration-150 leading-none whitespace-nowrap;
+}

@@ -75,7 +75,7 @@
 }
 
 .main {
-  @apply mx-auto w-full p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300;
+  @apply mx-auto w-full p-2 sm:p-4 md:p-8 flex-grow flex flex-col justify-center items-center transition-all duration-300;
 }
 
 .mainUsers {
@@ -87,7 +87,7 @@
 }
 
 .configPanel {
-  @apply w-full bg-[#161622]/90 border-4 border-slate-700 p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 rounded-md;
+  @apply w-full bg-[#161622]/90 border-2 sm:border-4 border-slate-700 p-3.5 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 sm:gap-5 rounded-md;
   box-shadow:
     0 0 15px rgba(0, 0, 0, 0.8),
     inset 0 0 10px rgba(255, 255, 255, 0.05);

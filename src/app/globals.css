@@ -83,3 +83,59 @@ body {
     0 0 12px rgba(244, 63, 94, 0.45),
     inset 0 0 6px rgba(244, 63, 94, 0.2);
 }
+
+/* ========================================================
+   iOS-STYLE FROSTED GLASS (GLASSMORPHISM) DESIGN TOKENS
+   ======================================================== */
+:root {
+  --glass-bg: rgba(10, 10, 18, 0.78);
+  --glass-bg-elevated: rgba(18, 18, 30, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-light: rgba(255, 255, 255, 0.2);
+  --glass-blur: blur(20px);
+}
+
+/* iOS Floating Glass Bar & Header */
+.glass-nav {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 10px 30px -5px rgba(0, 0, 0, 0.7),
+    0 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Floating Glass Pill / Segmented Tab */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Safe Area Insets for Mobile / PWA / iPhone Notch & Home Indicator */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+.mb-safe {
+  margin-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* iOS Touch optimization */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

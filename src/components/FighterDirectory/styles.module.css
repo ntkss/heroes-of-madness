@@ -16,7 +16,7 @@
 }
 
 .searchInput {
-  @apply w-full sm:w-60 bg-slate-950/80 border border-slate-700 p-1.5 px-3 text-[10px] text-white font-mono placeholder-slate-600 focus:border-neon-blue focus:outline-none transition-all duration-200;
+  @apply w-full sm:w-60 bg-slate-950/80 border border-slate-700 p-2.5 px-3.5 text-xs text-white font-mono placeholder-slate-600 focus:border-neon-blue focus:outline-none transition-all duration-200 rounded-lg min-h-[44px];
 }
 
 .noFighters {
@@ -24,15 +24,15 @@
 }
 
 .grid {
-  @apply flex flex-wrap gap-2 max-h-[240px] overflow-y-auto pr-1;
+  @apply flex flex-wrap gap-2 max-h-[260px] overflow-y-auto pr-1;
 }
 
 .fighterCard {
-  @apply flex items-center justify-between border transition-all duration-200 font-tech text-xs select-none bg-slate-950/60 overflow-hidden;
+  @apply flex items-center justify-between border transition-all duration-200 font-tech text-xs select-none bg-slate-950/60 overflow-hidden min-h-[44px] rounded-lg;
 }
 
 .fighterCardSelected {
-  @apply border-neon-blue bg-neon-blue/5 text-white shadow-[0_0_6px_rgba(0,210,255,0.2)] font-bold scale-[1.01];
+  @apply border-neon-blue bg-neon-blue/10 text-white shadow-[0_0_8px_rgba(0,210,255,0.25)] font-bold scale-[1.01];
 }
 
 .fighterCardUnselected {
@@ -40,7 +40,7 @@
 }
 
 .fighterSelectBtn {
-  @apply flex items-center gap-2.5 p-1.5 pl-3 pr-2 flex-grow cursor-pointer text-left focus:outline-none transition-colors duration-150;
+  @apply flex items-center gap-2.5 p-2 pl-3 pr-2 flex-grow cursor-pointer text-left focus:outline-none transition-colors duration-150 min-h-[44px];
 }
 
 .fighterCardSelected .fighterSelectBtn {
@@ -52,7 +52,7 @@
 }
 
 .avatarContainer {
-  @apply w-5 h-5 relative overflow-hidden rounded-sm border border-slate-700 flex-shrink-0;
+  @apply w-6 h-6 sm:w-7 sm:h-7 relative overflow-hidden rounded border border-slate-700 flex-shrink-0;
 }
 
 .info {

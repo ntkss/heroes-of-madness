@@ -1,0 +1,60 @@
+@reference "../../app/globals.css";
+
+.container {
+  @apply w-full max-w-2xl mx-auto flex flex-col items-center gap-2 select-none;
+}
+
+.selectorWrapper {
+  @apply w-full p-1.5 rounded-2xl flex items-center justify-between gap-1 relative;
+  background: rgba(13, 14, 24, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.tabBtn {
+  @apply flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl font-pixel text-[9px] md:text-[10px] tracking-wider transition-all duration-200 cursor-pointer text-slate-400 relative z-10 min-h-[44px];
+}
+
+.tabBtn:hover {
+  @apply text-slate-200;
+}
+
+.tabBtnActiveTeamLane {
+  @apply text-neon-yellow font-bold;
+  background: rgba(255, 210, 0, 0.15);
+  border: 1px solid rgba(255, 210, 0, 0.4);
+  box-shadow: 0 0 18px rgba(255, 210, 0, 0.25);
+  text-shadow: 0 0 8px var(--color-neon-yellow);
+}
+
+.tabBtnActiveRov {
+  @apply text-neon-red font-bold;
+  background: rgba(255, 42, 95, 0.15);
+  border: 1px solid rgba(255, 42, 95, 0.4);
+  box-shadow: 0 0 18px rgba(255, 42, 95, 0.25);
+  text-shadow: 0 0 8px var(--color-neon-red);
+}
+
+.tabBtnActiveMlbb {
+  @apply text-neon-blue font-bold;
+  background: rgba(0, 210, 255, 0.15);
+  border: 1px solid rgba(0, 210, 255, 0.4);
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.25);
+  text-shadow: 0 0 10px var(--color-neon-blue);
+}
+
+.tabIcon {
+  @apply text-sm leading-none shrink-0;
+}
+
+.labelFull {
+  @apply hidden sm:inline;
+}
+
+.labelShort {
+  @apply inline sm:hidden;
+}

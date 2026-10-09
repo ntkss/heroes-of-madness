@@ -43,11 +43,11 @@
 }
 
 .main {
-  @apply mx-auto w-full max-w-[850px] p-4 md:p-8 flex-grow flex flex-col gap-6;
+  @apply mx-auto w-full max-w-[850px] p-2 sm:p-4 md:p-8 flex-grow flex flex-col gap-4 sm:gap-6;
 }
 
 .emptyCard {
-  @apply w-full bg-[#161622]/90 border-4 border-slate-700 p-8 shadow-2xl rounded-md text-center flex flex-col items-center justify-center py-16 gap-4;
+  @apply w-full bg-[#161622]/90 border-2 sm:border-4 border-slate-700 p-4 sm:p-8 shadow-2xl rounded-md text-center flex flex-col items-center justify-center py-10 sm:py-16 gap-4;
 }
 
 .emptyEmoji {
@@ -72,7 +72,7 @@
 }
 
 .selectorCard {
-  @apply bg-[#161622]/95 border-4 border-slate-700 p-4 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-4 rounded-sm;
+  @apply bg-[#161622]/95 border-2 sm:border-4 border-slate-700 p-3 sm:p-4 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 rounded-sm;
 }
 
 .selectorControls {

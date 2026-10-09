@@ -86,7 +86,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <div className="min-h-full flex flex-col pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-24">
+          <div className="min-h-full flex flex-col pb-[calc(4.75rem+env(safe-area-inset-bottom,0px)*0.35)] md:pb-20">
             {children}
             <GlassNavbar />
           </div>

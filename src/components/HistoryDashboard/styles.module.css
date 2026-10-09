@@ -1,7 +1,7 @@
 @reference "../../app/globals.css";
 
 .container {
-  @apply flex flex-col bg-bg-cabinet border-4 border-slate-700/80 p-6 shadow-2xl relative overflow-hidden mt-8 transition-all duration-300;
+  @apply flex flex-col bg-bg-cabinet border-2 sm:border-4 border-slate-700/80 p-3 sm:p-6 shadow-2xl relative overflow-hidden mt-4 sm:mt-8 transition-all duration-300;
 }
 
 .rivet {

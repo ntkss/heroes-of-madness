@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Teko, Press_Start_2P, Orbitron, Pattaya } from "next/font/google";
 import "./globals.css";
 
@@ -26,6 +26,14 @@ const pattaya = Pattaya({
   variable: "--font-pattaya",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#050508",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "HEROES OF MADNESS - MLBB Random Team Arena",
@@ -41,6 +49,20 @@ export const metadata: Metadata = {
     "Hall of Fame",
     "Esports",
   ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Heroes of Madness",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "HEROES OF MADNESS - MLBB Random Team Arena",
     description:
@@ -50,6 +72,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/utils/AuthContext";
+import GlassNavbar from "@/components/GlassNavbar";
 
 export default function RootLayout({
   children,
@@ -62,7 +85,12 @@ export default function RootLayout({
       className={`${teko.variable} ${pressStart.variable} ${orbitron.variable} ${pattaya.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <div className="min-h-full flex flex-col pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-24">
+            {children}
+            <GlassNavbar />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import PlayerInput from "@/components/PlayerInput";
 import VersesArena from "@/components/VersesArena";
 import HistoryDashboard from "@/components/HistoryDashboard";
 import HeroRandomizer from "@/components/HeroRandomizer";
+import SegmentedControl from "@/components/SegmentedControl";
 import DebugBar from "@/components/DebugBar";
 import { GameType, HeroLane, HERO_POOLS } from "@/constants/heroes";
 import {
@@ -721,7 +721,7 @@ export default function Home() {
           onClick={initAudioFeedback}
         >
           {/* Esports Header */}
-          <header className="border-b-4 border-neon-red bg-slate-950 pt-7 pb-4 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4 relative">
+          <header className="border-b-4 border-neon-red bg-slate-950 pt-4 sm:pt-7 pb-3 sm:pb-4 px-3 sm:px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 relative">
             {/* Decorative neon bottom bar line */}
             <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon-blue via-neon-yellow to-neon-red" />
 
@@ -812,42 +812,6 @@ export default function Home() {
                 </button>
               )}
 
-              {/* Hall of Fame Link */}
-              <Link
-                href="/hall-of-fame"
-                onClick={() => {
-                  playBeep(300, 0.15, "sawtooth");
-                }}
-                className="flex items-center gap-1.5 border-2 border-amber-500 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide shrink-0"
-                title="Browse Hall of Fame Champions"
-              >
-                👑 HALL OF FAME
-              </Link>
-
-              {/* Seasons History Dashboard Link */}
-              <Link
-                href="/seasons"
-                onClick={() => {
-                  playBeep(300, 0.15, "sawtooth");
-                }}
-                className="flex items-center gap-1.5 border-2 border-neon-yellow bg-neon-yellow/10 text-neon-yellow hover:bg-neon-yellow hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-yellow select-none uppercase tracking-wide shrink-0"
-                title="Browse Seasons History"
-              >
-                🏆 SEASONS
-              </Link>
-
-              {/* Forums Board Link */}
-              <Link
-                href="/forums"
-                onClick={() => {
-                  playBeep(300, 0.15, "sawtooth");
-                }}
-                className="flex items-center gap-1.5 border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black px-3.5 py-2 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none uppercase tracking-wide shrink-0"
-                title="Browse Forums Board"
-              >
-                💬 FORUMS
-              </Link>
-
               {/* Announcer Synth Activator */}
               <button
                 onClick={(e) => {
@@ -856,102 +820,31 @@ export default function Home() {
                   playCoin();
                   speakAnnounce("VOICE LOG INITIALIZED");
                 }}
-                className={`w-10 h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 ${
+                className={`w-9 h-9 md:w-10 md:h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 ${
                   audioInitialized
                     ? "border-neon-yellow text-neon-yellow bg-neon-yellow/10 glow-yellow"
                     : "border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300"
                 }`}
                 title="Click to boot cabinet announcer"
               >
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5 fill-current"
+                  viewBox="0 0 24 24"
+                >
                   <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M3 9v6h4l5 5V4L7 9H3z" />
                 </svg>
               </button>
-
-              {/* Rank Config Settings Gear Button */}
-              {rankConfig && isAdmin && (
-                <Link
-                  href="/settings"
-                  onClick={() => {
-                    playBeep(300, 0.15, "sawtooth");
-                  }}
-                  className="w-10 h-10 border-2 border-slate-600 text-slate-500 hover:border-neon-yellow hover:text-neon-yellow hover:bg-neon-yellow/10 hover:glow-yellow rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
-                  title="Configure Ranks Settings"
-                >
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-                  </svg>
-                </Link>
-              )}
             </div>
           </header>
 
           {/* Dashboard Main Area */}
-          <main className="mx-auto w-full p-4 md:p-6 flex-grow flex flex-col gap-4 lg:gap-6 items-center">
-            {/* Retro Arcade Mode Selector Navigation Menu */}
-            <section className="container">
-              <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950/90 border-2 border-slate-700/80 p-3 px-4 shadow-xl select-none">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-pixel text-[11px] text-neon-yellow glow-yellow">
-                    🕹️ SELECT MODE:
-                  </span>
-                  <span className="font-pixel text-[8.5px] text-slate-400 uppercase hidden md:inline">
-                    {activeMode === "TEAM_LANE" && "Team + Lane Match Draft"}
-                    {activeMode === "HERO_ROV" && "Hero Randomizer – ROV"}
-                    {activeMode === "HERO_MLBB" && "Hero Randomizer – MLBB"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Mode 1: Random Team + Lane (Existing Mode) */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playBeep(440, 0.08, "triangle");
-                      setActiveMode("TEAM_LANE");
-                    }}
-                    className={`font-pixel text-[9px] px-3.5 py-2 border-2 transition-all uppercase cursor-pointer select-none tracking-wider ${
-                      activeMode === "TEAM_LANE"
-                        ? "border-neon-yellow bg-neon-yellow/20 text-neon-yellow glow-yellow shadow-[0_0_12px_rgba(255,210,0,0.3)]"
-                        : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-500 hover:text-white"
-                    }`}
-                  >
-                    ⚔️ RANDOM TEAM + LANE
-                  </button>
-
-                  {/* Mode 2: Random Hero + Lane - ROV */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playBeep(440, 0.08, "triangle");
-                      setActiveMode("HERO_ROV");
-                    }}
-                    className={`font-pixel text-[9px] px-3.5 py-2 border-2 transition-all uppercase cursor-pointer select-none tracking-wider ${
-                      activeMode === "HERO_ROV"
-                        ? "border-neon-red bg-neon-red/20 text-neon-red glow-red shadow-[0_0_12px_rgba(255,42,95,0.3)]"
-                        : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-neon-red hover:text-neon-red"
-                    }`}
-                  >
-                    🔥 RANDOM HERO + LANE – ROV
-                  </button>
-
-                  {/* Mode 3: Random Hero + Lane - MLBB */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playBeep(440, 0.08, "triangle");
-                      setActiveMode("HERO_MLBB");
-                    }}
-                    className={`font-pixel text-[9px] px-3.5 py-2 border-2 transition-all uppercase cursor-pointer select-none tracking-wider ${
-                      activeMode === "HERO_MLBB"
-                        ? "border-neon-blue bg-neon-blue/20 text-neon-blue glow-blue shadow-[0_0_12px_rgba(0,210,255,0.3)]"
-                        : "border-slate-700 bg-slate-900/60 text-slate-400 hover:border-neon-blue hover:text-neon-blue"
-                    }`}
-                  >
-                    ⚡ RANDOM HERO + LANE – MLBB
-                  </button>
-                </div>
-              </div>
+          <main className="mx-auto w-full p-2 sm:p-4 md:p-6 flex-grow flex flex-col gap-3 sm:gap-4 lg:gap-6 items-center">
+            {/* iOS Frosted Glass Segmented Mode Selector */}
+            <section className="w-full max-w-2xl px-1 sm:px-2">
+              <SegmentedControl
+                activeMode={activeMode}
+                onChange={setActiveMode}
+              />
             </section>
 
             {/* Top Section: PlayerInput (Select Player option in all modes) */}
@@ -1108,7 +1001,7 @@ export default function Home() {
 
           {/* Retro Share Toast Notification */}
           {toast && (
-            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
+            <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce duration-500 exclude-from-capture">
               <div
                 className={`border-4 px-6 py-3 font-pixel text-[9px] tracking-widest uppercase flex items-center gap-3 shadow-2xl select-none min-w-[280px] justify-center ${
                   toast.type === "success"

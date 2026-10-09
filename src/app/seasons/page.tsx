@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CRTOverlay from "@/components/CRTOverlay";
 import DebugBar from "@/components/DebugBar";
+import pkg from "../../../package.json";
 import PodiumStandings from "@/components/PodiumStandings";
 import styles from "./styles.module.css";
 import {
@@ -403,7 +404,8 @@ export default function SeasonsPage() {
         {/* Footer */}
         <footer className={styles.footer}>
           <span>
-            HEROES OF MADNESS PRO v1.0.0 © Geminus-Dev 2026 by nutty dev`~`
+            HEROES OF MADNESS PRO v{pkg.version} © Geminus-Dev 2026 by nutty
+            dev`~`
           </span>
         </footer>
 

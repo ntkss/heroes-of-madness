@@ -851,27 +851,42 @@ export default function HistoryDashboard({
       return totalMatches >= effectiveMinMatches;
     };
 
+    const rankedPlayers = playerStats.filter((stat) => isPlayerRanked(stat));
+
+    // Last place is only valid if there are qualified ranked players beyond the top 3 podium
+    // (i.e. at least 4 ranked players). If no qualified player exists who lost / outside podium, lastPlace is null.
+    const lastPlaceStat =
+      rankedPlayers.length > 3 ? rankedPlayers[rankedPlayers.length - 1] : null;
+
+    const lastPlaceIndex = lastPlaceStat
+      ? playerStats.indexOf(lastPlaceStat)
+      : -1;
+
     return {
-      firstPlace:
-        playerStats[0] && isPlayerRanked(playerStats[0])
-          ? mapToSeasonPlayerStat(playerStats[0], 0, playerStats)
-          : null,
-      secondPlace:
-        playerStats[1] && isPlayerRanked(playerStats[1])
-          ? mapToSeasonPlayerStat(playerStats[1], 1, playerStats)
-          : null,
-      thirdPlace:
-        playerStats[2] && isPlayerRanked(playerStats[2])
-          ? mapToSeasonPlayerStat(playerStats[2], 2, playerStats)
-          : null,
-      lastPlace:
-        playerStats.length > 3
-          ? mapToSeasonPlayerStat(
-              playerStats[playerStats.length - 1],
-              playerStats.length - 1,
-              playerStats,
-            )
-          : null,
+      firstPlace: rankedPlayers[0]
+        ? mapToSeasonPlayerStat(
+            rankedPlayers[0],
+            playerStats.indexOf(rankedPlayers[0]),
+            playerStats,
+          )
+        : null,
+      secondPlace: rankedPlayers[1]
+        ? mapToSeasonPlayerStat(
+            rankedPlayers[1],
+            playerStats.indexOf(rankedPlayers[1]),
+            playerStats,
+          )
+        : null,
+      thirdPlace: rankedPlayers[2]
+        ? mapToSeasonPlayerStat(
+            rankedPlayers[2],
+            playerStats.indexOf(rankedPlayers[2]),
+            playerStats,
+          )
+        : null,
+      lastPlace: lastPlaceStat
+        ? mapToSeasonPlayerStat(lastPlaceStat, lastPlaceIndex, playerStats)
+        : null,
     };
   }, [playerStats, statsSubTab, effectiveMinMatches]);
 

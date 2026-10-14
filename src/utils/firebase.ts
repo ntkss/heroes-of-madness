@@ -1147,11 +1147,16 @@ export async function endCurrentSeason(): Promise<boolean> {
       };
     });
 
-    // Find Last Place (Worst performer with at least 1 match played)
-    const activePlayers = players.filter((p) => p.total_match_played > 0);
+    // Find Last Place: must have passed rank rules (requiredMinMatches)
+    // and must not already be in the top 3 podium.
+    const podiumIds = new Set(podium.map((p) => p.id));
+    const qualifiedNonPodiumPlayers = players.filter(
+      (p) => p.total_match_played >= requiredMinMatches && !podiumIds.has(p.id),
+    );
     let lastPlace: SeasonPlayerStat | null = null;
-    if (activePlayers.length > 0) {
-      const sortedWorst = [...activePlayers].sort((a, b) => {
+    if (qualifiedNonPodiumPlayers.length > 0) {
+      // Sort ascending by weighted winrate to find the worst qualified fighter
+      const sortedWorst = [...qualifiedNonPodiumPlayers].sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
         const aWeighted = getWeightedWinrate(aWins, a.total_match_played);

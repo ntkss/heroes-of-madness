@@ -447,9 +447,6 @@ export default function VersesArena({
         });
       }, 100);
 
-      const activeDispA = Array(5).fill("???");
-      const activeDispB = Array(5).fill("???");
-
       const rollPool =
         teamA.length || teamB.length
           ? [...teamA, ...teamB].map((idOrName) => {
@@ -458,35 +455,34 @@ export default function VersesArena({
             })
           : SQUAD_NAMES;
 
-      const startRoll = (teamIndex: number, slotIndex: number) => {
-        const intervalId = setInterval(
-          () => {
-            const randIndex = Math.floor(Math.random() * rollPool.length);
-            const randomName = rollPool[randIndex];
-            if (teamIndex === 0) {
-              activeDispA[slotIndex] = randomName;
-              setDispA([...activeDispA]);
-            } else {
-              activeDispB[slotIndex] = randomName;
-              setDispB([...activeDispB]);
-            }
-          },
-          50 + slotIndex * 10,
-        );
-        intervalsRef.current.push(intervalId);
-      };
+      let currentLockedIndex = -1;
 
-      for (let i = 0; i < 5; i++) {
-        startRoll(0, i);
-        startRoll(1, i);
-      }
+      // Single batched interval for rolling names (drastically reduces mobile CPU churn from 200 renders/s to ~13/s)
+      const rollInterval = setInterval(() => {
+        const pickRand = () =>
+          rollPool[Math.floor(Math.random() * rollPool.length)];
+        setDispA((prev) => {
+          const next = [...prev];
+          for (let s = currentLockedIndex + 1; s < 5; s++) {
+            next[s] = pickRand();
+          }
+          return next;
+        });
+        setDispB((prev) => {
+          const next = [...prev];
+          for (let s = currentLockedIndex + 1; s < 5; s++) {
+            next[s] = pickRand();
+          }
+          return next;
+        });
+      }, 80);
+      intervalsRef.current.push(rollInterval);
 
       for (let i = 0; i < 5; i++) {
         const delay = 400 + i * 450;
 
         const timerId = setTimeout(() => {
-          clearInterval(intervalsRef.current[2 * i]);
-          clearInterval(intervalsRef.current[2 * i + 1]);
+          currentLockedIndex = i;
 
           setDispA((prev) => {
             const next = [...prev];
@@ -519,6 +515,7 @@ export default function VersesArena({
           });
 
           if (i === 4) {
+            clearInterval(rollInterval);
             triggerScreenShake();
             playExplosion();
             if (pctIntervalRef.current) {

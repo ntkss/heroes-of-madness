@@ -9,6 +9,7 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["10.3.202.208", "localhost:3000"],
   env: {
     NEXT_PUBLIC_GIT_COMMIT_HASH: gitCommitHash,
   },

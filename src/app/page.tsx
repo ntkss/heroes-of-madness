@@ -189,6 +189,14 @@ export default function Home() {
   };
 
   const triggerScreenShake = useCallback(() => {
+    // Only shake screen on desktop to avoid WebKit GPU memory crash on mobile
+    if (
+      typeof window !== "undefined" &&
+      (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        window.innerWidth < 768)
+    ) {
+      return;
+    }
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 450);
   }, []);

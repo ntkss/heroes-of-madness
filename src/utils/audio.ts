@@ -223,6 +223,13 @@ export function speakAnnounce(text: string) {
   try {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
 
+    // Mobile WebKit (iOS Safari / Chrome on iOS) has a native C++ bug in SpeechSynthesis IPC
+    // that crashes the WebContent process when called in asynchronous timers.
+    const isMobile =
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      (typeof window !== "undefined" && window.innerWidth < 768);
+    if (isMobile) return;
+
     // Cancel any ongoing speaking to avoid queue build-up
     window.speechSynthesis.cancel();
 

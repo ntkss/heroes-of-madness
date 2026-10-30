@@ -227,6 +227,7 @@ export default function Home() {
           }
           return true;
         },
+        pixelRatio: 1, // Cap pixelRatio to 1 to prevent mobile Safari WebKit canvas OOM crash
         cacheBust: true,
         backgroundColor: "#030712",
       });
@@ -433,10 +434,15 @@ export default function Home() {
     seasonId: number,
   ) => {
     try {
+      // 1. Check LINE config FIRST before doing any expensive DOM screenshot capture!
+      const lineConfig = await fetchLineConfig();
+      if (!lineConfig.enabled || !lineConfig.groupId) return;
+
       // Wait for the DOM to settle and images to load
       await new Promise((resolve) => setTimeout(resolve, 800));
       if (!arenaRef.current) return;
 
+      // Keep pixelRatio at 1 to prevent mobile Safari WebKit crash (Jetsam OOM)
       const dataUrl = await toPng(arenaRef.current, {
         filter: (node) => {
           if (node.classList?.contains("exclude-from-capture")) {
@@ -444,6 +450,7 @@ export default function Home() {
           }
           return true;
         },
+        pixelRatio: 1,
         cacheBust: true,
         backgroundColor: "#030712",
       });
@@ -454,9 +461,6 @@ export default function Home() {
       // Get user's ID token if logged in, for authentication bypass
       const { auth } = await import("@/utils/firebase");
       const idToken = auth ? await auth.currentUser?.getIdToken() : undefined;
-
-      const lineConfig = await fetchLineConfig();
-      if (!lineConfig.enabled || !lineConfig.groupId) return;
 
       // Send base64 to notify route which handles server-to-server upload (no CORS!)
       const res = await fetch("/api/line/notify", {
@@ -476,24 +480,12 @@ export default function Home() {
       if (!res.ok) {
         const errData = await res.json();
         console.warn("Background image notify failed:", errData.error);
-        setToast({
-          message: `IMAGE NOTIFICATION FAILED: ${errData.error.toUpperCase()}`,
-          type: "error",
-        });
       }
     } catch (captureError) {
       console.warn(
         "Background matchup capture or upload failed:",
         captureError,
       );
-      const errMsg =
-        captureError instanceof Error
-          ? captureError.message
-          : String(captureError);
-      setToast({
-        message: `IMAGE NOTIFICATION FAILED: ${errMsg.toUpperCase()}`,
-        type: "error",
-      });
     }
   };
 
@@ -647,7 +639,9 @@ export default function Home() {
         );
 
         // Capture screenshot and upload in the background (asynchronously)
-        captureAndUploadDraftImage(saved.id, activeSeasonId);
+        captureAndUploadDraftImage(saved.id, activeSeasonId).catch((err) =>
+          console.warn("Background draft image capture failed:", err),
+        );
       } catch (error) {
         console.error("Failed to log draft match:", error);
       } finally {

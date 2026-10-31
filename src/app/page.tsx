@@ -37,6 +37,8 @@ import { calculateTeamWinRates } from "@/utils/winrate";
 import { FILL_POOL_NAMES } from "@/constants/players";
 import { toBlob, toPng } from "html-to-image";
 import { useAuth } from "@/utils/AuthContext";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { notifyTeamDrafted } from "@/utils/notifications";
 
 export default function Home() {
   const {
@@ -630,6 +632,9 @@ export default function Home() {
 
           const updatedLogs = await fetchAllMatches();
           setMatches(updatedLogs);
+
+          // Native device notification for PWA
+          notifyTeamDrafted(finalTeamA, finalTeamB, isUnderdogDraft);
         } catch (error) {
           console.error("Failed to log hero draft match:", error);
         } finally {
@@ -664,6 +669,9 @@ export default function Home() {
 
         const updatedLogs = await fetchAllMatches();
         setMatches(updatedLogs);
+
+        // Native device notification for PWA
+        notifyTeamDrafted(finalTeamA, finalTeamB, isUnderdogDraft);
 
         // Send text notification immediately
         await triggerLineDraftNotification(
@@ -782,7 +790,10 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
+            <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
+              {/* PWA Installation & Notification Control */}
+              <PWAInstallPrompt senderName={user?.displayName || undefined} />
+
               {/* Google Authentication Control */}
               {loading ? (
                 <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none shrink-0">

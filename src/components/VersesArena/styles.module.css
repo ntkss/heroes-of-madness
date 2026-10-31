@@ -497,8 +497,8 @@
     rgba(185, 28, 28, 0.08) 90%,
     transparent 100%
   );
-  border-top: 2px dashed rgba(249, 115, 22, 0.55);
-  border-bottom: 2px dashed rgba(249, 115, 22, 0.55);
+  /* border-top: 2px dashed rgba(249, 115, 22, 0.55);
+  border-bottom: 2px dashed rgba(249, 115, 22, 0.55); */
   box-shadow:
     0 0 50px rgba(239, 68, 68, 0.25),
     inset 0 0 30px rgba(255, 69, 0, 0.2);

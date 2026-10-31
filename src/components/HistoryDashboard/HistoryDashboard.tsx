@@ -27,7 +27,12 @@ interface HistoryDashboardProps {
   matches: Match[];
   onDeleteMatch: (id: string) => void;
   onDeleteAllMatches: (mode?: MatchMode) => void;
-  onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
+  onUpdateWinner: (
+    id: string,
+    winner: "teamA" | "teamB",
+    underdogMvp?: string | null,
+  ) => void;
+  onUpdateUnderdogMvp?: (id: string, underdogMvp: string | null) => void;
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
   isAdmin?: boolean;
@@ -46,7 +51,12 @@ interface MatchCardProps {
   formatDate: (timestamp: number) => string;
   editingMatchId: string | null;
   setEditingMatchId: (id: string | null) => void;
-  handleWinnerChange: (id: string, winner: "teamA" | "teamB") => void;
+  handleWinnerChange: (
+    id: string,
+    winner: "teamA" | "teamB",
+    underdogMvp?: string | null,
+  ) => void;
+  onUpdateUnderdogMvp?: (id: string, underdogMvp: string | null) => void;
   handleDelete: (id: string) => void;
 }
 
@@ -61,6 +71,7 @@ function MatchCardComponent({
   setEditingMatchId,
   handleWinnerChange,
   handleDelete,
+  onUpdateUnderdogMvp,
 }: MatchCardProps) {
   const { user } = useAuth();
   const [prevFeedback, setPrevFeedback] = useState(match.feedback);
@@ -127,6 +138,17 @@ function MatchCardComponent({
           const isLiked = userVote === "likes";
           const isDisliked = userVote === "dislikes";
 
+          const isUnderdogMvp = Boolean(
+            match.underdogMvp &&
+            (pKey.toLowerCase() === match.underdogMvp.toLowerCase() ||
+              (dbPlayer &&
+                dbPlayer.id.toLowerCase() ===
+                  match.underdogMvp.toLowerCase()) ||
+              (dbPlayer &&
+                dbPlayer.name.toLowerCase() ===
+                  match.underdogMvp.toLowerCase())),
+          );
+
           return (
             <div key={idx} className={styles.rosterRow}>
               <div className={styles.rosterPlayerInfo}>
@@ -141,7 +163,14 @@ function MatchCardComponent({
                   />
                 </div>
                 <div className={styles.playerMeta}>
-                  <span className={styles.playerName}>{name}</span>
+                  <div className="flex items-center gap-1">
+                    <span className={styles.playerName}>{name}</span>
+                    {isUnderdogMvp && (
+                      <span className={styles.playerMvpBadge}>
+                        🔥 MVP สู้ยิบตา
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <span className={styles.playerLaneBadge}>{lane}</span>
                     {hero && (
@@ -225,10 +254,24 @@ function MatchCardComponent({
     }
   };
 
+  const isUnderdog = Boolean(
+    match.isUnderdogMatch ||
+    (match.predictedWinRateDiff !== undefined &&
+      match.predictedWinRateDiff >= 7),
+  );
+  const losingTeamPlayers =
+    match.winner === "teamA"
+      ? match.teamB
+      : match.winner === "teamB"
+        ? match.teamA
+        : [];
+
   const modeBadgeInfo = getModeBadge(match.mode);
 
   return (
-    <div className={styles.matchCardContainer}>
+    <div
+      className={`${styles.matchCardContainer} ${isUnderdog ? styles.underdogMatchCardContainer : ""}`}
+    >
       <div className={styles.matchCard}>
         {/* Match Details */}
         <div className={styles.matchDetails}>
@@ -236,6 +279,12 @@ function MatchCardComponent({
           <div className={styles.matchDetailsHeader}>
             <div className="flex items-center gap-2">
               <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
+              {isUnderdog && (
+                <span className={styles.underdogHeaderTag}>
+                  🔥 สู้ยิบตา • UNDERDOG
+                </span>
+              )}
+
               <span
                 className={`${styles.modeBadge} ${modeBadgeInfo.className}`}
               >
@@ -251,12 +300,18 @@ function MatchCardComponent({
           <div className={styles.rosterGrid}>
             {/* Blue */}
             <div className={styles.rosterCol}>
-              <span className={styles.rosterLabelBlue}>BLUE TEAM</span>
+              <span className={styles.rosterLabelBlue}>
+                BLUE TEAM{" "}
+                {match.underdogTeam === "teamA" ? "🛡️ (ทีมสู้ยิบตา)" : ""}
+              </span>
               {renderRoster(match.teamA, match.teamALanes, match.teamAHeroes)}
             </div>
             {/* Red */}
             <div className={styles.rosterCol}>
-              <span className={styles.rosterLabelRed}>RED TEAM</span>
+              <span className={styles.rosterLabelRed}>
+                RED TEAM{" "}
+                {match.underdogTeam === "teamB" ? "🛡️ (ทีมสู้ยิบตา)" : ""}
+              </span>
               {renderRoster(match.teamB, match.teamBLanes, match.teamBHeroes)}
             </div>
           </div>
@@ -288,6 +343,56 @@ function MatchCardComponent({
                 >
                   ✎ EDIT RESULT
                 </button>
+              )}
+
+              {/* Underdog MVP Section */}
+              {isUnderdog && match.winner && (
+                <div className={styles.underdogMvpSection}>
+                  <span className={styles.underdogMvpHeaderTag}>
+                    🔥 สู้ยิบตา MVP (+0.35 WIN)
+                  </span>
+
+                  {match.underdogMvp ? (
+                    <div className={styles.underdogMvpDisplay}>
+                      <span className={styles.underdogMvpName}>
+                        🎖️ {getPlayerDisplayName(match.underdogMvp)}
+                      </span>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => onUpdateUnderdogMvp?.(match.id, null)}
+                          className={styles.underdogMvpClearBtn}
+                          title="Clear Underdog MVP"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    isAdmin && (
+                      <div className="flex flex-col gap-1 w-full mt-1">
+                        <select
+                          className={styles.underdogMvpSelect}
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              onUpdateUnderdogMvp?.(match.id, e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="" disabled>
+                            🎖️ เลือก MVP ฝ่ายแพ้...
+                          </option>
+                          {losingTeamPlayers.map((pKey) => (
+                            <option key={pKey} value={pKey}>
+                              {getPlayerDisplayName(pKey)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  )}
+                </div>
               )}
             </div>
           ) : (
@@ -353,6 +458,7 @@ export default function HistoryDashboard({
   onDeleteMatch,
   onDeleteAllMatches,
   onUpdateWinner,
+  onUpdateUnderdogMvp,
   availablePlayers,
   rankConfig,
   isAdmin = false,
@@ -1097,6 +1203,7 @@ export default function HistoryDashboard({
                   setEditingMatchId={setEditingMatchId}
                   handleWinnerChange={handleWinnerChange}
                   handleDelete={handleDelete}
+                  onUpdateUnderdogMvp={onUpdateUnderdogMvp}
                 />
               ))}
             </div>

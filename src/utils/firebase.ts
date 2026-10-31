@@ -62,6 +62,10 @@ export interface Match {
   feedback?: {
     [playerKey: string]: PlayerFeedback;
   };
+  isUnderdogMatch?: boolean;
+  underdogMvp?: string;
+  underdogTeam?: "teamA" | "teamB";
+  predictedWinRateDiff?: number;
 }
 
 export interface MatchComment {
@@ -89,6 +93,8 @@ export interface DbPlayer {
   allTimeWins?: number;
   allTimeMatches?: number;
   allTimeWinrate?: number;
+  underdogMvpCount?: number;
+  allTimeUnderdogMvpCount?: number;
 }
 
 export interface SeasonPlayerStat {
@@ -103,6 +109,7 @@ export interface SeasonPlayerStat {
   losses?: number;
   matchesToNextRank?: number;
   nextRankTarget?: number;
+  underdogMvpCount?: number;
 }
 
 export interface Season {
@@ -238,6 +245,13 @@ export async function fetchMatches(): Promise<Match[]> {
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           feedback: data.feedback || {},
+          isUnderdogMatch: data.isUnderdogMatch || false,
+          underdogMvp: data.underdogMvp || undefined,
+          underdogTeam: data.underdogTeam || undefined,
+          predictedWinRateDiff:
+            data.predictedWinRateDiff !== undefined
+              ? Number(data.predictedWinRateDiff)
+              : undefined,
         });
       });
       return list;
@@ -284,6 +298,13 @@ export async function fetchMatchById(matchId: string): Promise<Match | null> {
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           feedback: data.feedback || {},
+          isUnderdogMatch: data.isUnderdogMatch || false,
+          underdogMvp: data.underdogMvp || undefined,
+          underdogTeam: data.underdogTeam || undefined,
+          predictedWinRateDiff:
+            data.predictedWinRateDiff !== undefined
+              ? Number(data.predictedWinRateDiff)
+              : undefined,
         };
       }
     } catch (e) {
@@ -353,6 +374,18 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       if (newMatch.feedback !== undefined) {
         firestoreData.feedback = newMatch.feedback;
       }
+      if (newMatch.isUnderdogMatch !== undefined) {
+        firestoreData.isUnderdogMatch = newMatch.isUnderdogMatch;
+      }
+      if (newMatch.underdogMvp !== undefined) {
+        firestoreData.underdogMvp = newMatch.underdogMvp;
+      }
+      if (newMatch.underdogTeam !== undefined) {
+        firestoreData.underdogTeam = newMatch.underdogTeam;
+      }
+      if (newMatch.predictedWinRateDiff !== undefined) {
+        firestoreData.predictedWinRateDiff = newMatch.predictedWinRateDiff;
+      }
       const docRef = await addDoc(matchesCol, firestoreData);
       newMatch.id = docRef.id;
       return newMatch;
@@ -378,12 +411,17 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
 export async function updateMatchWinner(
   matchId: string,
   winner: "teamA" | "teamB" | null,
+  underdogMvp?: string | null,
 ): Promise<boolean> {
   let success = false;
   if (db && !matchId.startsWith("local_")) {
     try {
       const docRef = doc(db, "matches", matchId);
-      await updateDoc(docRef, { winner });
+      const updatePayload: DocumentData = { winner };
+      if (underdogMvp !== undefined) {
+        updatePayload.underdogMvp = underdogMvp;
+      }
+      await updateDoc(docRef, updatePayload);
       success = true;
     } catch (e) {
       console.error(
@@ -401,6 +439,45 @@ export async function updateMatchWinner(
       const idx = list.findIndex((m) => m.id === matchId);
       if (idx !== -1) {
         list[idx].winner = winner;
+        if (underdogMvp !== undefined) {
+          list[idx].underdogMvp = underdogMvp || undefined;
+        }
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+        success = true;
+      }
+    }
+  }
+
+  if (success) {
+    await recalculateRanks();
+  }
+  return success;
+}
+
+// Update Underdog MVP for a match
+export async function updateMatchUnderdogMvp(
+  matchId: string,
+  underdogMvp: string | null,
+): Promise<boolean> {
+  let success = false;
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "matches", matchId);
+      await updateDoc(docRef, { underdogMvp: underdogMvp || null });
+      success = true;
+    } catch (e) {
+      console.error("Error updating match underdog MVP in Firestore:", e);
+    }
+  }
+
+  // LocalStorage Fallback
+  if (!success && typeof window !== "undefined") {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      const list = JSON.parse(stored) as Match[];
+      const idx = list.findIndex((m) => m.id === matchId);
+      if (idx !== -1) {
+        list[idx].underdogMvp = underdogMvp || undefined;
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
         success = true;
       }
@@ -987,6 +1064,13 @@ export async function fetchAllMatches(): Promise<Match[]> {
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           mode: data.mode || "TEAM_LANE",
           feedback: data.feedback || {},
+          isUnderdogMatch: data.isUnderdogMatch || false,
+          underdogMvp: data.underdogMvp || undefined,
+          underdogTeam: data.underdogTeam || undefined,
+          predictedWinRateDiff:
+            data.predictedWinRateDiff !== undefined
+              ? Number(data.predictedWinRateDiff)
+              : undefined,
         });
       });
       return list;
@@ -1144,6 +1228,7 @@ export async function endCurrentSeason(): Promise<boolean> {
         current_rank: p.current_rank,
         wins,
         losses,
+        underdogMvpCount: p.underdogMvpCount || 0,
       };
     });
 
@@ -1314,9 +1399,12 @@ export async function recalculateRanks(
     // We will build stats map for BOTH current season and all-time
     const currentSeasonStats: Record<
       string,
-      { wins: number; matches: number }
+      { wins: number; matches: number; underdogMvpCount?: number }
     > = {};
-    const allTimeStats: Record<string, { wins: number; matches: number }> = {};
+    const allTimeStats: Record<
+      string,
+      { wins: number; matches: number; underdogMvpCount?: number }
+    > = {};
 
     matches.forEach((match) => {
       if (!match.winner) return;
@@ -1348,14 +1436,19 @@ export async function recalculateRanks(
         const key = getPlayerKey(playerNameOrId);
 
         // All-Time
-        if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
+        if (!allTimeStats[key])
+          allTimeStats[key] = { wins: 0, matches: 0, underdogMvpCount: 0 };
         allTimeStats[key].wins += 1;
         allTimeStats[key].matches += 1;
 
         // Current Season
         if (isCurrentSeason) {
           if (!currentSeasonStats[key])
-            currentSeasonStats[key] = { wins: 0, matches: 0 };
+            currentSeasonStats[key] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+            };
           currentSeasonStats[key].wins += 1;
           currentSeasonStats[key].matches += 1;
         }
@@ -1365,16 +1458,42 @@ export async function recalculateRanks(
         const key = getPlayerKey(playerNameOrId);
 
         // All-Time
-        if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
+        if (!allTimeStats[key])
+          allTimeStats[key] = { wins: 0, matches: 0, underdogMvpCount: 0 };
         allTimeStats[key].matches += 1;
 
         // Current Season
         if (isCurrentSeason) {
           if (!currentSeasonStats[key])
-            currentSeasonStats[key] = { wins: 0, matches: 0 };
+            currentSeasonStats[key] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+            };
           currentSeasonStats[key].matches += 1;
         }
       });
+
+      // Tally Underdog MVP (สู้ยิบตา)
+      if (match.underdogMvp) {
+        const mvpKey = getPlayerKey(match.underdogMvp);
+        if (!allTimeStats[mvpKey])
+          allTimeStats[mvpKey] = { wins: 0, matches: 0, underdogMvpCount: 0 };
+        allTimeStats[mvpKey].underdogMvpCount =
+          (allTimeStats[mvpKey].underdogMvpCount || 0) + 1;
+
+        if (isCurrentSeason) {
+          if (!currentSeasonStats[mvpKey]) {
+            currentSeasonStats[mvpKey] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+            };
+          }
+          currentSeasonStats[mvpKey].underdogMvpCount =
+            (currentSeasonStats[mvpKey].underdogMvpCount || 0) + 1;
+        }
+      }
     });
 
     const seasonMatches = matches.filter(
@@ -1395,8 +1514,12 @@ export async function recalculateRanks(
 
         // Current Season Stats
         const totalMatches = sStats.matches;
+        const underdogMvpCount = sStats.underdogMvpCount || 0;
+        const effectiveWins = sStats.wins + underdogMvpCount * 0.35;
         const winrate =
-          totalMatches > 0 ? Math.round((sStats.wins / totalMatches) * 100) : 0;
+          totalMatches > 0
+            ? Math.min(100, Math.round((effectiveWins / totalMatches) * 100))
+            : 0;
 
         let newRank = "Unranked";
         if (totalMatches >= requiredMinMatches) {
@@ -1420,9 +1543,14 @@ export async function recalculateRanks(
 
         // All-Time Stats
         const allTimeMatches = atStats.matches;
+        const allTimeUnderdogCount = atStats.underdogMvpCount || 0;
+        const allTimeEffectiveWins = atStats.wins + allTimeUnderdogCount * 0.35;
         const allTimeWinrate =
           allTimeMatches > 0
-            ? Math.round((atStats.wins / allTimeMatches) * 100)
+            ? Math.min(
+                100,
+                Math.round((allTimeEffectiveWins / allTimeMatches) * 100),
+              )
             : 0;
 
         const hasChanged =
@@ -1432,7 +1560,9 @@ export async function recalculateRanks(
           player.highest_rank !== newHighestRank ||
           player.allTimeWins !== atStats.wins ||
           player.allTimeMatches !== allTimeMatches ||
-          player.allTimeWinrate !== allTimeWinrate;
+          player.allTimeWinrate !== allTimeWinrate ||
+          player.underdogMvpCount !== underdogMvpCount ||
+          player.allTimeUnderdogMvpCount !== allTimeUnderdogCount;
 
         if (hasChanged) {
           const updatedFields = {
@@ -1443,6 +1573,8 @@ export async function recalculateRanks(
             allTimeWins: atStats.wins,
             allTimeMatches: allTimeMatches,
             allTimeWinrate: allTimeWinrate,
+            underdogMvpCount: underdogMvpCount,
+            allTimeUnderdogMvpCount: allTimeUnderdogCount,
           };
 
           const updatedPlayer: DbPlayer = {
@@ -2106,10 +2238,13 @@ export function getWeightedWinrate(
   wins: number,
   totalMatches: number,
   C: number = 10,
+  underdogMvpCount: number = 0,
+  weight: number = 0.35,
 ): number {
   if (totalMatches === 0) return 0;
+  const effectiveWins = wins + (underdogMvpCount || 0) * weight;
   const prior = 0.5;
-  return ((wins + C * prior) / (totalMatches + C)) * 100;
+  return ((effectiveWins + C * prior) / (totalMatches + C)) * 100;
 }
 
 // Toggle player feedback (Likes/Dislikes) in a match for an authenticated user

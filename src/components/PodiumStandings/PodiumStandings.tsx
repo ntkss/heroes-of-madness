@@ -61,6 +61,12 @@ export default function PodiumStandings({
             <span className={styles.podiumSub}>
               {secondPlace.winrate}% WR ({secondPlace.total_match_played}M)
             </span>
+            {secondPlace.underdogMvpCount !== undefined &&
+              secondPlace.underdogMvpCount > 0 && (
+                <span className="text-[7.5px] text-orange-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  🔥 สู้ยิบตา x{secondPlace.underdogMvpCount}
+                </span>
+              )}
             {secondPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
                 Needs {secondPlace.matchesToNextRank} win
@@ -115,6 +121,12 @@ export default function PodiumStandings({
             <span className={styles.championSub}>
               {firstPlace.winrate}% WR ({firstPlace.total_match_played}M)
             </span>
+            {firstPlace.underdogMvpCount !== undefined &&
+              firstPlace.underdogMvpCount > 0 && (
+                <span className="text-[7.5px] text-orange-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  🔥 สู้ยิบตา x{firstPlace.underdogMvpCount}
+                </span>
+              )}
           </div>
         )}
         <div className={styles.firstPlacePedestal}>
@@ -151,6 +163,12 @@ export default function PodiumStandings({
             <span className={styles.podiumSub}>
               {thirdPlace.winrate}% WR ({thirdPlace.total_match_played}M)
             </span>
+            {thirdPlace.underdogMvpCount !== undefined &&
+              thirdPlace.underdogMvpCount > 0 && (
+                <span className="text-[7.5px] text-orange-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  🔥 สู้ยิบตา x{thirdPlace.underdogMvpCount}
+                </span>
+              )}
             {thirdPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
                 Needs {thirdPlace.matchesToNextRank} win

@@ -18,6 +18,7 @@ import {
   fetchAllMatches,
   saveMatch,
   updateMatchWinner,
+  updateMatchUnderdogMvp,
   deleteMatch,
   deleteAllMatches,
   fetchPlayers,
@@ -32,6 +33,7 @@ import {
   fetchSeasons,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
+import { calculateTeamWinRates } from "@/utils/winrate";
 import { FILL_POOL_NAMES } from "@/constants/players";
 import { toBlob, toPng } from "html-to-image";
 import { useAuth } from "@/utils/AuthContext";
@@ -558,6 +560,24 @@ export default function Home() {
     setTeamA(finalTeamA);
     setTeamB(finalTeamB);
 
+    // Calculate predicted win rates for Underdog mode evaluation (threshold: 7%)
+    const draftPredictions = calculateTeamWinRates(
+      finalTeamA,
+      finalTeamB,
+      matches,
+      availablePlayers,
+      activeMode,
+    );
+    const draftDiff = Math.abs(
+      draftPredictions.teamAWinRate - draftPredictions.teamBWinRate,
+    );
+    const isUnderdogDraft = draftDiff >= 7;
+    const underdogTeamSide = isUnderdogDraft
+      ? draftPredictions.teamAWinRate < draftPredictions.teamBWinRate
+        ? "teamA"
+        : "teamB"
+      : undefined;
+
     if (activeMode === "HERO_ROV" || activeMode === "HERO_MLBB") {
       const currentGame: GameType = activeMode === "HERO_ROV" ? "ROV" : "MLBB";
       const baseLanes: HeroLane[] = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
@@ -602,6 +622,9 @@ export default function Home() {
             createdAt: Date.now(),
             seasonId: activeSeasonId,
             mode: activeMode === "HERO_ROV" ? "HERO_ROV" : "HERO_MLBB",
+            isUnderdogMatch: isUnderdogDraft,
+            underdogTeam: underdogTeamSide,
+            predictedWinRateDiff: draftDiff,
           });
           setActiveMatchId(saved.id);
 
@@ -633,6 +656,9 @@ export default function Home() {
           createdAt: Date.now(),
           seasonId: activeSeasonId,
           mode: "TEAM_LANE",
+          isUnderdogMatch: isUnderdogDraft,
+          underdogTeam: underdogTeamSide,
+          predictedWinRateDiff: draftDiff,
         });
         setActiveMatchId(saved.id);
 
@@ -675,6 +701,25 @@ export default function Home() {
     ]);
     setMatches(updatedLogs);
     setAvailablePlayers(updatedPlayers);
+  };
+
+  const handleUpdateUnderdogMvp = async (
+    matchId: string,
+    underdogMvp: string | null,
+  ) => {
+    await updateMatchUnderdogMvp(matchId, underdogMvp);
+    const [updatedLogs, updatedPlayers] = await Promise.all([
+      fetchAllMatches(),
+      fetchPlayers(),
+    ]);
+    setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
+    setToast({
+      message: underdogMvp
+        ? "UNDERDOG MVP RECORDED! 🔥"
+        : "UNDERDOG MVP CLEARED!",
+      type: "success",
+    });
   };
 
   const handleDeleteMatch = async (matchId: string) => {
@@ -981,6 +1026,7 @@ export default function Home() {
                 onDeleteMatch={handleDeleteMatch}
                 onDeleteAllMatches={handleDeleteAllMatches}
                 onUpdateWinner={handleUpdatePastWinner}
+                onUpdateUnderdogMvp={handleUpdateUnderdogMvp}
                 availablePlayers={availablePlayers}
                 rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
                 isAdmin={isAdmin}

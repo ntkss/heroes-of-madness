@@ -62,6 +62,7 @@ export interface PlayerCardProps {
   rankClass?: "high" | "normal" | "low" | null;
   laneWinRate?: number;
   championSeasons?: number[];
+  underdogMvpCount?: number;
 }
 
 export default function PlayerCard({
@@ -79,6 +80,7 @@ export default function PlayerCard({
   rankClass,
   laneWinRate,
   championSeasons,
+  underdogMvpCount,
 }: PlayerCardProps) {
   const isBlue = team === "A";
   const rolling = !locked;
@@ -208,6 +210,16 @@ export default function PlayerCard({
                 ? `${championSeasons.length}x`
                 : `S${championSeasons[0]}`}
             </span>
+          </div>
+        )}
+
+        {/* Underdog / สู้ยิบตา Badge */}
+        {underdogMvpCount !== undefined && underdogMvpCount > 0 && (
+          <div
+            className={styles.underdogBadgeBanner}
+            title={`สู้ยิบตา (Underdog MVP) ${underdogMvpCount} ครั้ง (+ ${(underdogMvpCount * 0.35).toFixed(2)} Wins)`}
+          >
+            <span>🔥 สู้ยิบตา x{underdogMvpCount}</span>
           </div>
         )}
 

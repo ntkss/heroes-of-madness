@@ -327,3 +327,9 @@
   @apply font-pixel text-[6px] sm:text-[8px] md:text-[9.5px] text-white uppercase tracking-wider leading-none font-bold truncate max-w-[85px] sm:max-w-[115px];
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
 }
+
+.underdogBadgeBanner {
+  @apply absolute top-5 right-0 z-20 flex items-center gap-0.5 px-1 py-0.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-pixel text-[6px] sm:text-[7.5px] font-bold uppercase tracking-tight shadow-md border-l border-y border-amber-300;
+  box-shadow: 0 0 8px rgba(255, 69, 0, 0.7);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+}

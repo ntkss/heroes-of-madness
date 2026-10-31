@@ -381,3 +381,36 @@ export function calculateTeamWinRates(
     favoredTeam,
   };
 }
+
+/**
+ * Underdog Mode (สู้ยิบตา) Configuration
+ * - Trigger: Predicted team win rate difference >= 7%
+ * - Reward: Losing Team MVP gains 0.35 effective wins
+ */
+export const UNDERDOG_WINRATE_DIFF_THRESHOLD = 7;
+export const UNDERDOG_MVP_WEIGHT = 0.35;
+
+/**
+ * Checks if a matchup qualifies for Underdog Mode (สู้ยิบตา)
+ */
+export function isUnderdogMatch(
+  teamAWinRate: number,
+  teamBWinRate: number,
+  threshold: number = UNDERDOG_WINRATE_DIFF_THRESHOLD,
+): boolean {
+  return Math.abs(teamAWinRate - teamBWinRate) >= threshold;
+}
+
+/**
+ * Returns which team is the underdog ('teamA' | 'teamB' | null)
+ */
+export function getUnderdogTeam(
+  teamAWinRate: number,
+  teamBWinRate: number,
+  threshold: number = UNDERDOG_WINRATE_DIFF_THRESHOLD,
+): "teamA" | "teamB" | null {
+  if (!isUnderdogMatch(teamAWinRate, teamBWinRate, threshold)) return null;
+  if (teamAWinRate < teamBWinRate) return "teamA";
+  if (teamBWinRate < teamAWinRate) return "teamB";
+  return null;
+}

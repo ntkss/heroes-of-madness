@@ -21,7 +21,12 @@ import {
   MatchMode,
   Season,
 } from "@/utils/firebase";
-import { calculateTeamWinRates, PlayerOverallStats } from "@/utils/winrate";
+import {
+  calculateTeamWinRates,
+  PlayerOverallStats,
+  isUnderdogMatch,
+  getUnderdogTeam,
+} from "@/utils/winrate";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
@@ -63,6 +68,7 @@ interface TeamRowProps {
   laneStats: PlayerOverallStats[];
   showShine: boolean;
   playerChampionMap: Record<string, number[]>;
+  isUnderdogTeam?: boolean;
 }
 
 function findSquadPlayer(
@@ -98,6 +104,7 @@ function TeamRow({
   laneStats,
   showShine,
   playerChampionMap,
+  isUnderdogTeam,
 }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
@@ -160,6 +167,12 @@ function TeamRow({
           >
             {label}
           </span>
+
+          {isUnderdogTeam && (
+            <span className={styles.underdogTeamBadge}>
+              🔥 สู้ยิบตา (UNDERDOG)
+            </span>
+          )}
           <span
             className={`${styles.teamBadge} ${
               isBlue ? styles.teamBadgeBlue : styles.teamBadgeRed
@@ -250,6 +263,7 @@ function TeamRow({
                 rankClass={rankClass}
                 laneWinRate={laneStats?.[idx]?.laneWinRate}
                 championSeasons={champSeasons}
+                underdogMvpCount={player?.underdogMvpCount}
               />
             );
           })}
@@ -373,6 +387,16 @@ export default function VersesArena({
     }
     return calculateTeamWinRates(teamA, teamB, matches || [], squad, mode);
   }, [teamA, teamB, matches, squad, mode]);
+
+  const winRateDiff = Math.abs(
+    winRateSummary.teamAWinRate - winRateSummary.teamBWinRate,
+  );
+  const isUnderdog =
+    !isGenerating &&
+    isUnderdogMatch(winRateSummary.teamAWinRate, winRateSummary.teamBWinRate);
+  const underdogSide = isUnderdog
+    ? getUnderdogTeam(winRateSummary.teamAWinRate, winRateSummary.teamBWinRate)
+    : null;
 
   // Synchronize or reset animation win rates
   useEffect(() => {
@@ -587,7 +611,38 @@ export default function VersesArena({
         laneStats={winRateSummary.teamALaneStats}
         showShine={showShine}
         playerChampionMap={playerChampionMap}
+        isUnderdogTeam={underdogSide === "teamA"}
       />
+
+      {/* Underdog Mode Dramatic Alert Banner */}
+      {isUnderdog && (
+        <div className={styles.underdogArenaBanner}>
+          <div className={styles.underdogFlameIcon}>🔥</div>
+          <div className={styles.underdogBannerContent}>
+            <div className={styles.underdogBannerTitle}>
+              <span className={styles.underdogBadgeTag}>UNDERDOG BATTLE</span>
+              <span>แมตช์สู้ยิบตาเปิดใช้งาน! (แต้มต่าง {winRateDiff}%)</span>
+            </div>
+            <p className={styles.underdogBannerDesc}>
+              🛡️ ทีมที่เป็นรอง:{" "}
+              <strong
+                className={
+                  underdogSide === "teamA"
+                    ? styles.underdogTeamNameBlue
+                    : styles.underdogTeamNameRed
+                }
+              >
+                {underdogSide === "teamA"
+                  ? "TEAM BLUE DRAGON"
+                  : "TEAM RED TIGER"}
+              </strong>{" "}
+              — หากทีมรองพ่ายแพ้ ผู้คว้า <strong>MVP ฝ่ายแพ้</strong>{" "}
+              จะได้รับโบนัส <strong>+0.35 WIN เสมือน</strong> ช่วยกู้คืนอันดับ!
+            </p>
+          </div>
+          <div className={styles.underdogFlameIcon}>🔥</div>
+        </div>
+      )}
 
       {/* VS Banner & Win Rate Prediction Section */}
       <div className={styles.vsContainer}>
@@ -680,6 +735,7 @@ export default function VersesArena({
         laneStats={winRateSummary.teamBLaneStats}
         showShine={showShine}
         playerChampionMap={playerChampionMap}
+        isUnderdogTeam={underdogSide === "teamB"}
       />
 
       {/* Loading screen tips at the bottom */}

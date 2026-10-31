@@ -82,3 +82,32 @@ Visual styling:
 - High Tier: Gold / Cyan glow (`#00f3ff`, `#ffd700`)
 - Normal Tier: Silver / Blue (`#3b82f6`)
 - Low Tier: Red / Orange warning (`#ef4444`)
+
+---
+
+## 5. Underdog Mode (สู้ยิบตา) & Effective Wins
+
+To prevent defeatism, griefing, and match throwing when randomized teams have uneven predicted win rates, the system implements **Underdog Mode ("สู้ยิบตา")**.
+
+### 1. Trigger Criteria
+
+A match is designated as an Underdog Match if the predicted team win rate difference is $ge 7\%$:
+$$\Delta = |\text{TeamA\%} - \text{TeamB\%}| \ge 7\%$$
+
+- **Favored Team**: Higher predicted win rate.
+- **Underdog Team ("ทีมสู้ยิบตา")**: Lower predicted win rate.
+
+### 2. Underdog MVP Reward (Fractional Win)
+
+If the Underdog Team loses, the player selected as **Losing Team MVP ("MVP ฝ่ายแพ้")** receives an **Effective Win Bonus**:
+$$\text{Effective Wins} = \text{Actual Wins} + (\text{Underdog MVP Count} \times 0.35)$$
+
+Each Underdog MVP award is worth **+0.35 Win** towards both raw win rate and Laplace weighted win rate:
+$$\text{Weighted Winrate} = \left( \frac{\text{Effective Wins} + C \times 0.5}{\text{Total Matches} + C} \right) \times 100$$
+$$\text{Raw Winrate} = \min\left(100, \text{round}\left(\frac{\text{Effective Wins}}{\text{Total Matches}} \times 100\right)\right)$$
+
+### 3. Backward Compatibility & Data Safety
+
+- Past matches without an `underdogMvp` record default to $0$, yielding $\text{Effective Wins} = \text{Wins}$.
+- Archived historical seasons (`seasons` collection) maintain their original frozen stats and rankings without retroactive distortion.
+- If a player throws or gives up, their Underdog MVP count remains $0$, causing their rank to plummet compared to players who fought hard to earn the Underdog MVP.

@@ -553,3 +553,46 @@
 .playerHeroBadge {
   @apply text-[8px] text-emerald-400 font-pixel uppercase tracking-wide mt-0.5;
 }
+
+/* Underdog Mode Styles */
+.underdogMatchCardContainer {
+  @apply border-2 border-orange-500/80 bg-gradient-to-r from-red-950/20 via-black to-orange-950/20 mb-3 rounded-none relative overflow-hidden;
+  box-shadow: 0 0 16px rgba(255, 69, 0, 0.35);
+}
+
+.underdogHeaderTag {
+  @apply font-pixel text-[8px] text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 px-2 py-0.5 border border-amber-300 font-bold uppercase animate-pulse;
+  box-shadow: 0 0 8px rgba(255, 69, 0, 0.6);
+}
+
+.underdogMvpSection {
+  @apply mt-2 w-full flex flex-col items-center bg-black/60 border border-orange-500/50 p-1.5 rounded;
+  box-shadow: 0 0 8px rgba(255, 69, 0, 0.2);
+}
+
+.underdogMvpHeaderTag {
+  @apply font-pixel text-[7px] sm:text-[7.5px] text-orange-400 font-bold uppercase tracking-wider mb-1;
+  text-shadow: 0 0 6px rgba(255, 69, 0, 0.7);
+}
+
+.underdogMvpDisplay {
+  @apply flex items-center justify-between gap-1.5 px-2 py-1 bg-gradient-to-r from-red-950/90 to-orange-950/90 border border-orange-400 w-full;
+}
+
+.underdogMvpName {
+  @apply font-pixel text-[8.5px] text-yellow-300 font-bold truncate;
+  text-shadow: 0 0 8px rgba(253, 224, 71, 0.8);
+}
+
+.underdogMvpClearBtn {
+  @apply text-red-400 hover:text-white font-bold text-xs px-1 cursor-pointer;
+}
+
+.underdogMvpSelect {
+  @apply bg-slate-950 border border-orange-500 text-amber-200 font-pixel text-[7.5px] px-1.5 py-1 focus:outline-none focus:border-yellow-400 w-full cursor-pointer uppercase;
+}
+
+.playerMvpBadge {
+  @apply ml-1.5 px-1 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6px] sm:text-[7px] font-bold rounded uppercase;
+  box-shadow: 0 0 6px rgba(255, 69, 0, 0.7);
+}

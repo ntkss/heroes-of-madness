@@ -145,6 +145,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
           hero?: string;
           outcome: "WIN" | "LOSS" | "PENDING";
           feedback: { likes: number; dislikes: number };
+          isUnderdogMatch?: boolean;
+          underdogMvp?: string;
         }>,
       };
     }
@@ -177,6 +179,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
       hero?: string;
       outcome: "WIN" | "LOSS" | "PENDING";
       feedback: { likes: number; dislikes: number };
+      isUnderdogMatch?: boolean;
+      underdogMvp?: string;
     }> = [];
 
     modeMatches.forEach((match) => {
@@ -261,6 +265,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
         hero,
         outcome,
         feedback,
+        isUnderdogMatch: match.isUnderdogMatch,
+        underdogMvp: match.underdogMvp,
       });
     });
 
@@ -363,6 +369,26 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const seasonMatchHistory = React.useMemo(() => {
     return matchHistory.filter((m) => m.seasonId === effectiveSeasonId);
   }, [matchHistory, effectiveSeasonId]);
+  // Calculate Underdog MVP counts (Season & All-time)
+  const underdogMvpSeasonCount = React.useMemo(() => {
+    return seasonMatchHistory.filter((m) => {
+      const mvp = (m.underdogMvp || "").toLowerCase();
+      const pId = (player?.id || playerSlug).toLowerCase();
+      const pName = (player?.name || "").toLowerCase();
+      const pAlias = (player?.alias || "").toLowerCase();
+      return mvp === pId || mvp === pName || mvp === pAlias;
+    }).length;
+  }, [seasonMatchHistory, player, playerSlug]);
+
+  const underdogMvpAllTimeCount = React.useMemo(() => {
+    return matchHistory.filter((m) => {
+      const mvp = (m.underdogMvp || "").toLowerCase();
+      const pId = (player?.id || playerSlug).toLowerCase();
+      const pName = (player?.name || "").toLowerCase();
+      const pAlias = (player?.alias || "").toLowerCase();
+      return mvp === pId || mvp === pName || mvp === pAlias;
+    }).length;
+  }, [matchHistory, player, playerSlug]);
 
   if (loading) {
     return (
@@ -525,6 +551,12 @@ export default function PlayerProfilePage({ params }: PageProps) {
                       {player.name}
                     </h2>
                     <p className={styles.playerAlias}>{player.alias}</p>
+
+                    {underdogMvpSeasonCount > 0 && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-1.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-pixel text-[9px] font-bold uppercase rounded border border-amber-300 shadow-[0_0_10px_rgba(255,69,0,0.6)]">
+                        <span>🔥 สู้ยิบตา x{underdogMvpSeasonCount}</span>
+                      </div>
+                    )}
                     <p
                       className={`${styles.playerRank} ${
                         isChampion
@@ -618,6 +650,32 @@ export default function PlayerProfilePage({ params }: PageProps) {
                     <span className={styles.statValueYellow}>
                       {overallStats.winRate}%
                     </span>
+                  </div>
+
+                  {/* Underdog Combat Bonus Box */}
+                  <div className="col-span-2 sm:col-span-4 bg-gradient-to-r from-red-950/60 via-orange-950/50 to-red-950/60 border border-orange-500/70 p-2.5 flex items-center justify-between rounded shadow-[0_0_12px_rgba(255,69,0,0.25)] mt-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl sm:text-2xl animate-bounce">
+                        🔥
+                      </span>
+                      <div>
+                        <span className="font-pixel text-[8.5px] sm:text-[9.5px] text-orange-400 block uppercase tracking-wider font-bold">
+                          สู้ยิบตา (UNDERDOG MVP)
+                        </span>
+                        <span className="text-[10px] text-amber-200/90 font-mono">
+                          {underdogMvpSeasonCount} ครั้งในซีซันนี้ (
+                          {underdogMvpAllTimeCount} ครั้งทั้งหมด)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-action text-base sm:text-lg font-black text-neon-yellow">
+                        +{(underdogMvpSeasonCount * 0.35).toFixed(2)} WIN
+                      </span>
+                      <span className="text-[7.5px] text-slate-400 block uppercase font-mono">
+                        EFFECTIVE WIN BONUS
+                      </span>
+                    </div>
                   </div>
                 </div>
 

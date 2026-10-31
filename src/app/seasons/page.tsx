@@ -91,8 +91,18 @@ export default function SeasonsPage() {
 
       const aWins = Math.round((a.winrate / 100) * a.total_match_played);
       const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-      const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-      const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+      const aWeighted = getWeightedWinrate(
+        aWins,
+        a.total_match_played,
+        10,
+        a.underdogMvpCount || 0,
+      );
+      const bWeighted = getWeightedWinrate(
+        bWins,
+        b.total_match_played,
+        10,
+        b.underdogMvpCount || 0,
+      );
 
       if (bWeighted !== aWeighted) {
         return bWeighted - aWeighted;
@@ -308,6 +318,15 @@ export default function SeasonsPage() {
                                   <span className={styles.fighterCellName}>
                                     {stat.name}
                                   </span>
+                                  {stat.underdogMvpCount !== undefined &&
+                                    stat.underdogMvpCount > 0 && (
+                                      <span
+                                        className="ml-1.5 px-1 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6.5px] rounded uppercase font-bold"
+                                        title={`สู้ยิบตา Underdog MVP ${stat.underdogMvpCount} ครั้ง`}
+                                      >
+                                        🔥 x{stat.underdogMvpCount}
+                                      </span>
+                                    )}
                                 </td>
                                 <td className={styles.matchesCell}>
                                   {stat.total_match_played} M

@@ -34,7 +34,6 @@
   font-size: 11px;
   color: var(--color-neon-blue);
   margin: 0;
-  text-shadow: 0 0 5px rgba(0, 210, 255, 0.4);
 }
 
 .closeBtn {

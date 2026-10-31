@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import CRTOverlay from "@/components/CRTOverlay";
+
 import styles from "./styles.module.css";
 import { useAuth } from "@/utils/AuthContext";
 import { fetchPosts, ForumPost } from "@/utils/firebase";
@@ -57,7 +57,7 @@ export default function ForumsPage() {
 
   return (
     <>
-      <CRTOverlay>
+      <div className={styles.forumsPage}>
         <div className={styles.container}>
           {/* Navigation Breadcrumb */}
           <Link
@@ -175,7 +175,7 @@ export default function ForumsPage() {
             />
           </div>
         </div>
-      </CRTOverlay>
+      </div>
 
       {/* POST CREATION MODAL */}
       {isModalOpen && (

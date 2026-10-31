@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, use, useRef } from "react";
 import Link from "next/link";
-import CRTOverlay from "@/components/CRTOverlay";
 import styles from "../styles.module.css";
 import { useAuth } from "@/utils/AuthContext";
 import {
@@ -205,7 +204,8 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
       let imageUrlToSave = editImageBase64 || undefined;
       if (editImageBase64 && editImageBase64.startsWith("data:")) {
-        const storagePath = `forums/${post.id}-${Date.now()}.jpg`;
+        const filePrefix = user.uid || post.authorId || post.id;
+        const storagePath = `forums/${filePrefix}-${Date.now()}.jpg`;
         imageUrlToSave = await uploadBase64Image(editImageBase64, storagePath);
       }
 
@@ -431,19 +431,19 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
   if (loading) {
     return (
-      <CRTOverlay>
+      <div className={styles.forumsPage}>
         <div className={styles.container}>
           <div className="text-center font-pixel text-xs text-[#a0a0c0] py-24 select-none animate-pulse">
             LOADING DATA PACKET...
           </div>
         </div>
-      </CRTOverlay>
+      </div>
     );
   }
 
   if (!post) {
     return (
-      <CRTOverlay>
+      <div className={styles.forumsPage}>
         <div className={styles.container}>
           <Link
             href="/forums"
@@ -453,7 +453,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
             ◀ FORUMS
           </Link>
           <div className="text-center py-20 border border-dashed border-red-500/30">
-            <h2 className="text-neon-red font-pixel text-sm glow-red uppercase select-none">
+            <h2 className="text-neon-red font-pixel text-sm uppercase select-none">
               ⚠️ TARGET FILE DELETED OR INVALID SLUG
             </h2>
             <p className="text-slate-500 font-mono text-xs mt-2">
@@ -461,7 +461,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
             </p>
           </div>
         </div>
-      </CRTOverlay>
+      </div>
     );
   }
 
@@ -470,7 +470,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
   return (
     <>
-      <CRTOverlay>
+      <div className={styles.forumsPage}>
         <div className={styles.container}>
           {/* Back Link */}
           <Link
@@ -495,7 +495,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
                 {/* Title */}
                 <h1
-                  className={`${styles.detailTitle} ${post.type === "news" ? "text-neon-red glow-red" : "text-white"}`}
+                  className={`${styles.detailTitle} ${post.type === "news" ? styles.detailTitleNews : ""}`}
                 >
                   {post.title}
                 </h1>
@@ -536,13 +536,17 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                   )}
                 </div>
 
-                {/* Post Image */}
+                {/* Post Image (Full natural size, uncropped) */}
                 {post.imageUrl && (
-                  <img
-                    src={post.imageUrl}
-                    className={`${styles.postMainImage} ${post.type === "news" ? styles.postMainImageNews : ""}`}
-                    alt="post attach"
-                  />
+                  <div
+                    className={`${styles.postMainImageWrapper} ${post.type === "news" ? styles.postMainImageWrapperNews : ""}`}
+                  >
+                    <img
+                      src={post.imageUrl}
+                      className={styles.postMainImage}
+                      alt={post.title}
+                    />
+                  </div>
                 )}
 
                 {/* YouTube Video Player Embed */}
@@ -731,7 +735,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
             </div>
           </div>
         </div>
-      </CRTOverlay>
+      </div>
 
       {/* EDIT POST MODAL */}
       {isEditModalOpen && (

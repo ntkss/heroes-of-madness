@@ -395,9 +395,6 @@ export default function VersesArena({
     return calculateTeamWinRates(teamA, teamB, matches || [], squad, mode);
   }, [teamA, teamB, matches, squad, mode]);
 
-  const winRateDiff = Math.abs(
-    winRateSummary.teamAWinRate - winRateSummary.teamBWinRate,
-  );
   const isUnderdog =
     !isGenerating &&
     isUnderdogMatch(winRateSummary.teamAWinRate, winRateSummary.teamBWinRate);
@@ -599,9 +596,32 @@ export default function VersesArena({
       <div className={styles.ambientRed} />
       <div className={styles.ambientYellow} />
 
+      {/* Dramatic 45-degree Z-Axis Underdog Background Overlay */}
+      {isUnderdog && (
+        <div className={styles.underdogWatermarkOverlay} aria-hidden="true">
+          <div className={styles.underdogWatermarkBand}>
+            <div className={styles.underdogHazardStrip}>
+              <span>
+                ⚡ HIGH RISK • HIGH BOUNTY • UNDERDOG REBELLION • COMEBACK OR
+                DIE ⚡
+              </span>
+            </div>
+            <div className={styles.underdogWatermarkTitle}>
+              🔥 UNDERDOG BATTLE 🔥
+            </div>
+            <div className={styles.underdogHazardStrip}>
+              <span>
+                ⚡ HIGH RISK • HIGH BOUNTY • UNDERDOG REBELLION • COMEBACK OR
+                DIE ⚡
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Team A (Top Row) */}
       <TeamRow
-        label="TEAM BLUE DRAGON"
+        label="BLUE"
         side="A"
         finalNames={teamA.length >= 5 ? teamA : Array(5).fill("DRAFTING")}
         displayNames={dispA}
@@ -622,50 +642,6 @@ export default function VersesArena({
         badgeConfig={badgeConfig}
       />
 
-      {/* Underdog Mode Dramatic Alert Banner */}
-      {isUnderdog && (
-        <div className={styles.underdogArenaBanner}>
-          <div className={styles.underdogFlameIcon}>
-            {badgeConfig.underdogMatch.icon}
-          </div>
-          <div className={styles.underdogBannerContent}>
-            <div className={styles.underdogBannerTitle}>
-              <span className={styles.underdogBadgeTag}>UNDERDOG BATTLE</span>
-              <span>
-                {badgeConfig.underdogMatch.name}เปิดใช้งาน! (ผลต่างโอกาสชนะ{" "}
-                {winRateDiff.toFixed(1)}%)
-              </span>
-            </div>
-            <p className={styles.underdogBannerDesc}>
-              🛡️ ทีมที่เป็นรอง:{" "}
-              <strong
-                className={
-                  underdogSide === "teamA"
-                    ? styles.underdogTeamNameBlue
-                    : styles.underdogTeamNameRed
-                }
-              >
-                {underdogSide === "teamA"
-                  ? "TEAM BLUE DRAGON"
-                  : "TEAM RED TIGER"}
-              </strong>{" "}
-              — หากพลิกชนะรับโบนัส{" "}
-              <strong>
-                {badgeConfig.underdogComeback.name} +0.20 WIN ยกทีม!
-              </strong>{" "}
-              แต่หากแพ้ ผู้คว้า{" "}
-              <strong>
-                {badgeConfig.underdogLosingMvp.name} (MVP ฝ่ายแพ้)
-              </strong>{" "}
-              จะได้รับโบนัส <strong>+0.35 WIN</strong> ช่วยกู้คืนอันดับ!
-            </p>
-          </div>
-          <div className={styles.underdogFlameIcon}>
-            {badgeConfig.underdogMatch.icon}
-          </div>
-        </div>
-      )}
-
       {/* VS Banner & Win Rate Prediction Section */}
       <div className={styles.vsContainer}>
         {/* VS emblem and dividing lines */}
@@ -682,65 +658,11 @@ export default function VersesArena({
           </div>
           <div className={styles.vsLineRed} />
         </div>
-
-        {/* Win Rate Comparison Prediction Banner */}
-        <div className={styles.predictionContainer}>
-          <div className={styles.predictionHeader}>
-            <span className={styles.predTeamBlue}>
-              🔵 BLUE: {animatedWinRateA}%
-            </span>
-            <span className={styles.predFavoredTag}>
-              {isGenerating
-                ? "⚡ ANALYZING OVERALL WIN RATES..."
-                : winRateSummary.favoredTeam === "teamA"
-                  ? "👑 BLUE DRAGON FAVORED TO WIN"
-                  : winRateSummary.favoredTeam === "teamB"
-                    ? "👑 RED TIGER FAVORED TO WIN"
-                    : "⚖️ EVEN MATCHUP (50/50)"}
-            </span>
-            <span className={styles.predTeamRed}>
-              🔴 RED: {animatedWinRateB}%
-            </span>
-          </div>
-
-          {/* Visual Dual-Colored Split Win Rate Progress Bar */}
-          <div className={styles.predictionBarOuter}>
-            <div
-              className={styles.predictionBarBlue}
-              style={{
-                width: `${
-                  animatedWinRateA + animatedWinRateB > 0
-                    ? Math.round(
-                        (animatedWinRateA /
-                          (animatedWinRateA + animatedWinRateB)) *
-                          100,
-                      )
-                    : 50
-                }%`,
-              }}
-            />
-            <div
-              className={styles.predictionBarRed}
-              style={{
-                width: `${
-                  animatedWinRateA + animatedWinRateB > 0
-                    ? 100 -
-                      Math.round(
-                        (animatedWinRateA /
-                          (animatedWinRateA + animatedWinRateB)) *
-                          100,
-                      )
-                    : 50
-                }%`,
-              }}
-            />
-          </div>
-        </div>
       </div>
 
       {/* Team B (Bottom Row) */}
       <TeamRow
-        label="TEAM RED TIGER"
+        label="RED"
         side="B"
         finalNames={teamB.length >= 5 ? teamB : Array(5).fill("DRAFTING")}
         displayNames={dispB}

@@ -27,6 +27,8 @@ import {
   DEFAULT_BADGE_CONFIG,
   fetchBadgeConfig,
   saveBadgeConfig,
+  seedMockData,
+  clearMockData,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
@@ -80,6 +82,7 @@ export default function SettingsPage() {
     updatedCount: number;
     details: string[];
   } | null>(null);
+  const [isSeedingMock, setIsSeedingMock] = useState(false);
 
   const loadUsers = async () => {
     setUsersLoading(true);
@@ -394,6 +397,45 @@ export default function SettingsPage() {
       setError("ALIAS AUDIT FAILED: " + String(err));
     } finally {
       setIsAuditingAliases(false);
+    }
+  };
+
+  const handleSeedMockData = async () => {
+    setIsSeedingMock(true);
+    playCoin();
+    try {
+      const ok = await seedMockData();
+      if (ok) {
+        setSuccess(
+          "MOCK DATA SEEDED! ทั้งแมตช์สู้ยิบตา, MVP ฝันร้ายราชา, ข้อมูลผู้เล่น และสถิติซีซั่นพร้อมตรวจสอบ",
+        );
+        playBeep(523, 0.2, "sine");
+      } else {
+        setError("FAILED TO SEED MOCK DATA");
+      }
+    } catch (err) {
+      console.error("Seed mock failed:", err);
+      setError("SEED MOCK DATA FAILED: " + String(err));
+    } finally {
+      setIsSeedingMock(false);
+    }
+  };
+
+  const handleClearMockData = async () => {
+    if (!window.confirm("คุณต้องการล้างข้อมูลจำลองทั้งหมดหรือไม่?")) return;
+    setIsSeedingMock(true);
+    playBeep(220, 0.2, "sawtooth");
+    try {
+      const ok = await clearMockData();
+      if (ok) {
+        setSuccess("CLEARED MOCK DATA SUCCESSFULLY! ล้างข้อมูลจำลองเรียบร้อย");
+        playBeep(330, 0.2, "sine");
+      }
+    } catch (err) {
+      console.error("Clear mock failed:", err);
+      setError("CLEAR MOCK DATA FAILED: " + String(err));
+    } finally {
+      setIsSeedingMock(false);
     }
   };
 
@@ -1114,6 +1156,49 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Mock & UI Testing Suite */}
+                <div className="border-t border-slate-800 pt-6 mt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold text-emerald-400 font-pixel tracking-wider">
+                      🧪 UI TESTING & MOCK DATA SUITE (โหมดทดสอบข้อมูลจำลอง)
+                    </span>
+                    <span className="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-500/50 px-2 py-0.5 rounded font-pixel">
+                      READY FOR AUDIT
+                    </span>
+                  </div>
+                  <p className="text-slate-400 text-xs font-sans leading-relaxed mb-4">
+                    สร้างข้อมูลจำลองครบทุกสถานการณ์เพื่อตรวจสอบ UI: 1)
+                    โหมดสู้ยิบตาพลิกชนะ (Underdog Comeback +0.20 Win ยกทีม) 2)
+                    โหมดสู้ยิบตาแพ้เลือก MVP ฝันร้ายราชา (+0.35 Win) 3)
+                    แมตช์ที่รอเลือก MVP เพื่อทดสอบ Interactive Dropdown 4)
+                    แมตช์ปกติสูสี (Regular Balanced Match) 5) ข้อมูลผู้เล่น 11
+                    คนพร้อม Badge และสถิติคำนวณจริง 6) โพเดียมซีซั่นเก่า (Season
+                    1 & 2) พร้อมเหรียญเกียรติยศ
+                  </p>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={handleSeedMockData}
+                      disabled={isSeedingMock}
+                      className={styles.seedMockBtn}
+                    >
+                      <span>
+                        {isSeedingMock
+                          ? "⏳ SEEDING TEST DATA..."
+                          : "🧪 SEED MOCK DATA (โหลดข้อมูลจำลอง)"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearMockData}
+                      disabled={isSeedingMock}
+                      className={styles.clearMockBtn}
+                    >
+                      <span>🗑️ CLEAR MOCK DATA (ล้างข้อมูลจำลอง)</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : settingsTab === "badges" ? (
               <form onSubmit={handleSaveBadges} className={styles.form}>

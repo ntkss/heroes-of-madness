@@ -1,5 +1,15 @@
 @reference "../../app/globals.css";
 
 .versionBadge {
-  @apply fixed bottom-1.5 right-2 sm:bottom-2 sm:right-3 z-30 font-pixel text-[7px] sm:text-[8px] text-slate-600/70 tracking-widest uppercase select-none pointer-events-none;
+  @apply fixed bottom-1.5 right-2 sm:bottom-2 sm:right-3 z-30 font-pixel text-[7px] sm:text-[8px] text-slate-500/80 tracking-widest uppercase select-none flex items-center gap-2;
+}
+
+.seedBtn {
+  @apply pointer-events-auto bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 px-1.5 py-0.5 rounded font-pixel transition-all hover:scale-105 active:scale-95 cursor-pointer;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.25);
+}
+
+.clearBtn {
+  @apply pointer-events-auto bg-rose-950/80 hover:bg-rose-900 border border-rose-500/60 text-rose-300 px-1.5 py-0.5 rounded font-pixel transition-all hover:scale-105 active:scale-95 cursor-pointer;
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.25);
 }

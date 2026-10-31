@@ -333,13 +333,13 @@
 }
 
 .underdogBadgeBanner {
-  @apply flex items-center gap-0.5 px-1 py-0.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-pixel text-[5.5px] sm:text-[7px] font-bold uppercase tracking-tight shadow-md border-l border-y border-amber-300;
+  @apply flex items-center gap-0.5 px-1 py-0.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-pixel text-[10px] sm:text-[12px] font-bold uppercase tracking-tight shadow-md border-l border-y border-amber-300;
   box-shadow: 0 0 8px rgba(255, 69, 0, 0.7);
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
 }
 
 .kingsNightmareBadgeBanner {
-  @apply flex items-center gap-0.5 px-1 py-0.5 bg-gradient-to-r from-purple-900 via-indigo-800 to-slate-900 text-purple-200 font-pixel text-[5.5px] sm:text-[7px] font-bold uppercase tracking-tight shadow-md border-l border-y border-purple-400;
+  @apply flex items-center gap-0.5 px-1 py-0.5 bg-gradient-to-r from-purple-900 via-indigo-800 to-slate-900 text-purple-200 font-pixel text-[10px] sm:text-[12px] font-bold uppercase tracking-tight shadow-md border-l border-y border-purple-400;
   box-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
 }

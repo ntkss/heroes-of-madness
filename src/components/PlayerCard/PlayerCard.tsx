@@ -231,8 +231,9 @@ export default function PlayerCard({
                   title={`${badgeConfig.underdogComeback.name} ${underdogComebackCount} ครั้ง (+ ${(underdogComebackCount * 0.2).toFixed(2)} Wins)`}
                 >
                   <span>
-                    {badgeConfig.underdogComeback.icon}{" "}
-                    {badgeConfig.underdogComeback.name} x{underdogComebackCount}
+                    {/* {badgeConfig.underdogComeback.icon}{" "} */}
+                    {badgeConfig.underdogComeback.name}
+                    {/* x{underdogComebackCount} */}
                   </span>
                 </div>
               )}
@@ -243,8 +244,9 @@ export default function PlayerCard({
                 title={`${badgeConfig.underdogLosingMvp.name} ${underdogMvpCount} ครั้ง (+ ${(underdogMvpCount * 0.35).toFixed(2)} Wins)`}
               >
                 <span>
-                  {badgeConfig.underdogLosingMvp.icon}{" "}
-                  {badgeConfig.underdogLosingMvp.name} x{underdogMvpCount}
+                  {/* {badgeConfig.underdogLosingMvp.icon}{" "} */}
+                  {badgeConfig.underdogLosingMvp.name}
+                  {/* x{underdogMvpCount} */}
                 </span>
               </div>
             )}

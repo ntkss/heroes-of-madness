@@ -629,9 +629,7 @@ export default function Home() {
             predictedWinRateDiff: draftDiff,
           });
           setActiveMatchId(saved.id);
-
-          const updatedLogs = await fetchAllMatches();
-          setMatches(updatedLogs);
+          setMatches((prev) => [saved, ...prev.filter((m) => m.id !== saved.id)]);
 
           // Native device notification for PWA
           notifyTeamDrafted(finalTeamA, finalTeamB, isUnderdogDraft);
@@ -666,9 +664,7 @@ export default function Home() {
           predictedWinRateDiff: draftDiff,
         });
         setActiveMatchId(saved.id);
-
-        const updatedLogs = await fetchAllMatches();
-        setMatches(updatedLogs);
+        setMatches((prev) => [saved, ...prev.filter((m) => m.id !== saved.id)]);
 
         // Native device notification for PWA
         notifyTeamDrafted(finalTeamA, finalTeamB, isUnderdogDraft);

@@ -3,6 +3,9 @@ import { SQUAD } from "@/constants/players";
 import { normalizeLane } from "@/constants/heroes";
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection,
   addDoc,
   setDoc,
@@ -269,7 +272,22 @@ if (isFirebaseConfigured) {
     // Prevent double-initialization in Next.js Hot Module Replacement (HMR)
     const app =
       getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    db = getFirestore(app);
+
+    // Enable IndexedDB offline persistence in browser environments for blazing speed & zero-cost read quota preservation
+    if (typeof window !== "undefined") {
+      try {
+        db = initializeFirestore(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        });
+      } catch {
+        db = getFirestore(app);
+      }
+    } else {
+      db = getFirestore(app);
+    }
+
     auth = getAuth(app);
     storage = getStorage(app);
     console.log("🔥 Firebase, Auth & Storage initialized successfully!");

@@ -919,8 +919,38 @@ export default function HistoryDashboard({
         return aRanked ? -1 : 1;
       }
 
-      const aWeighted = getWeightedWinrate(aWins, aMatches);
-      const bWeighted = getWeightedWinrate(bWins, bMatches);
+      const aUnderdogMvp = isSeason
+        ? a.dbPlayer?.underdogMvpCount || 0
+        : a.dbPlayer?.allTimeUnderdogMvpCount || 0;
+      const aUnderdogComeback = isSeason
+        ? a.dbPlayer?.underdogComebackCount || 0
+        : a.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
+      const bUnderdogMvp = isSeason
+        ? b.dbPlayer?.underdogMvpCount || 0
+        : b.dbPlayer?.allTimeUnderdogMvpCount || 0;
+      const bUnderdogComeback = isSeason
+        ? b.dbPlayer?.underdogComebackCount || 0
+        : b.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
+      const aWeighted = getWeightedWinrate(
+        aWins,
+        aMatches,
+        10,
+        aUnderdogMvp,
+        0.35,
+        aUnderdogComeback,
+        0.2,
+      );
+      const bWeighted = getWeightedWinrate(
+        bWins,
+        bMatches,
+        10,
+        bUnderdogMvp,
+        0.35,
+        bUnderdogComeback,
+        0.2,
+      );
 
       if (bWeighted !== aWeighted) {
         return bWeighted - aWeighted;
@@ -1437,9 +1467,32 @@ export default function HistoryDashboard({
                       statsSubTab === "season"
                         ? targetStat.matches
                         : targetStat.allTimeMatches;
+                    const targetMvp =
+                      statsSubTab === "season"
+                        ? targetStat.dbPlayer?.underdogMvpCount || 0
+                        : targetStat.dbPlayer?.allTimeUnderdogMvpCount || 0;
+                    const targetComeback =
+                      statsSubTab === "season"
+                        ? targetStat.dbPlayer?.underdogComebackCount || 0
+                        : targetStat.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
+                    const curMvp =
+                      statsSubTab === "season"
+                        ? stats.dbPlayer?.underdogMvpCount || 0
+                        : stats.dbPlayer?.allTimeUnderdogMvpCount || 0;
+                    const curComeback =
+                      statsSubTab === "season"
+                        ? stats.dbPlayer?.underdogComebackCount || 0
+                        : stats.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
                     const targetScore = getWeightedWinrate(
                       targetWins,
                       targetMatches,
+                      10,
+                      targetMvp,
+                      0.35,
+                      targetComeback,
+                      0.2,
                     );
 
                     let extraWins = 1;
@@ -1447,6 +1500,11 @@ export default function HistoryDashboard({
                       const score = getWeightedWinrate(
                         displayWins + extraWins,
                         displayMatches + extraWins,
+                        10,
+                        curMvp,
+                        0.35,
+                        curComeback,
+                        0.2,
                       );
                       if (score > targetScore) break;
                       extraWins++;

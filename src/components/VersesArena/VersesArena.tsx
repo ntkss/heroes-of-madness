@@ -341,17 +341,6 @@ export default function VersesArena({
       });
     }
 
-    // Fallback mock champion seasons mapping if DB has no archived seasons yet
-    // Expanded for easy localhost visual testing of champion shimmer effects
-    if (Object.keys(map).length === 0) {
-      map["nutty"] = [1, 3]; // Multi-season champion (2x) — prismatic glow
-      map["bas"] = [2];
-      map["jajou"] = [3];
-      map["jimmy"] = [1];
-      map["moonshadow"] = [2];
-      map["beer"] = [1];
-    }
-
     return map;
   }, [seasons]);
 

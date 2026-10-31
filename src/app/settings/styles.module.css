@@ -419,16 +419,6 @@
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
 }
 
-.seedMockBtn {
-  @apply font-pixel text-[9px] text-black bg-emerald-400 hover:bg-emerald-300 border border-white px-5 py-2.5 cursor-pointer transition-all duration-150 select-none uppercase font-bold disabled:opacity-50 flex items-center gap-2;
-  box-shadow: 0 0 12px rgba(52, 211, 153, 0.35);
-}
-
-.clearMockBtn {
-  @apply font-pixel text-[9px] text-white bg-rose-950/80 hover:bg-rose-900 border border-rose-500/60 px-4 py-2.5 cursor-pointer transition-all duration-150 select-none uppercase font-bold disabled:opacity-50 flex items-center gap-2;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.2);
-}
-
 .migrationLogBox {
   @apply bg-black/90 p-3 border border-slate-800 rounded font-mono text-[10px] text-slate-300 max-h-56 overflow-y-auto flex flex-col gap-1;
 }

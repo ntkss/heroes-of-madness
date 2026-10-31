@@ -20,7 +20,7 @@ async function handleMusterCron(request: Request) {
       if (providedSecret !== cronSecret) {
         return NextResponse.json(
           { error: "Unauthorized: Invalid or missing cron secret" },
-          { status: 401 }
+          { status: 401 },
         );
       }
     }
@@ -110,7 +110,7 @@ async function handleMusterCron(request: Request) {
     console.error("Cron muster error:", error);
     return NextResponse.json(
       { error: "Cron execution failed: " + String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

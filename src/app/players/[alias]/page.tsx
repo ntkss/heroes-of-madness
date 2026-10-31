@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use, useMemo } from "react";
+import React, { useState, useEffect, use, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CRTOverlay from "@/components/CRTOverlay";
@@ -44,8 +44,56 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const [selectedMode, setSelectedMode] = useState<MatchMode>("TEAM_LANE");
   const [loading, setLoading] = useState(true);
 
+  const loadData = useCallback(async () => {
+    try {
+      const [players, matches, archiveSeasons, seasonCfg] = await Promise.all([
+        fetchPlayers(),
+        fetchAllMatches(),
+        fetchSeasons(),
+        fetchSeasonConfig(),
+      ]);
+
+      setSeasons(archiveSeasons);
+      if (seasonCfg?.activeSeasonId) {
+        setActiveSeasonId(seasonCfg.activeSeasonId);
+      }
+
+      const key = playerSlug.toLowerCase().trim();
+      let foundPlayer = players.find(
+        (p) =>
+          p.id.toLowerCase() === key ||
+          p.id === playerSlug.trim() ||
+          (p.alias && p.alias.toLowerCase() === key) ||
+          p.name.toLowerCase() === key,
+      );
+
+      if (!foundPlayer) {
+        foundPlayer = {
+          id: key,
+          name: playerSlug,
+          alias: playerSlug,
+          avatar: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${key}&backgroundColor=1a1a2e`,
+          current_rank: "Unranked",
+          highest_rank: "Unranked",
+          role: "ALL-ROUNDER",
+          winrate: 0,
+          total_match_played: 0,
+          imageURL: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${key}&backgroundColor=1a1a2e`,
+        };
+      }
+      setPlayer(foundPlayer);
+
+      setAllMatches(matches);
+    } catch (err) {
+      console.error("Failed to load player profile:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [playerSlug]);
+
   useEffect(() => {
-    const loadData = async () => {
+    let isMounted = true;
+    const initData = async () => {
       try {
         const [players, matches, archiveSeasons, seasonCfg] = await Promise.all(
           [
@@ -55,6 +103,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
             fetchSeasonConfig(),
           ],
         );
+
+        if (!isMounted) return;
 
         setSeasons(archiveSeasons);
         if (seasonCfg?.activeSeasonId) {
@@ -85,17 +135,39 @@ export default function PlayerProfilePage({ params }: PageProps) {
           };
         }
         setPlayer(foundPlayer);
-
         setAllMatches(matches);
       } catch (err) {
         console.error("Failed to load player profile:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
-
-    loadData();
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, [playerSlug]);
+
+  // Focus and visibility revalidation
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [loadData]);
 
   const handleSaveEdit = async (
     name: string,

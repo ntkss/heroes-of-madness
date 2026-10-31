@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import CRTOverlay from "@/components/CRTOverlay";
 import DebugBar from "@/components/DebugBar";
@@ -38,8 +38,27 @@ export default function HallOfFamePage() {
   const [activeSeasonId, setActiveSeasonId] = useState<number>(3);
   const [loading, setLoading] = useState(true);
 
+  const loadData = useCallback(async () => {
+    try {
+      const [archiveSeasons, playerList, seasonCfg] = await Promise.all([
+        fetchSeasons(),
+        fetchPlayers(),
+        fetchSeasonConfig(),
+      ]);
+
+      setSeasons(archiveSeasons);
+      setPlayers(playerList);
+      setActiveSeasonId(seasonCfg.activeSeasonId);
+    } catch (err) {
+      console.error("Failed to load Hall of Fame data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadData = async () => {
+    let isMounted = true;
+    const initData = async () => {
       try {
         const [archiveSeasons, playerList, seasonCfg] = await Promise.all([
           fetchSeasons(),
@@ -47,17 +66,43 @@ export default function HallOfFamePage() {
           fetchSeasonConfig(),
         ]);
 
-        setSeasons(archiveSeasons);
-        setPlayers(playerList);
-        setActiveSeasonId(seasonCfg.activeSeasonId);
+        if (isMounted) {
+          setSeasons(archiveSeasons);
+          setPlayers(playerList);
+          setActiveSeasonId(seasonCfg.activeSeasonId);
+        }
       } catch (err) {
         console.error("Failed to load Hall of Fame data:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
-    loadData();
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Focus and visibility revalidation
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [loadData]);
 
   // Compute Hall of Fame cards grouped by Year
   const yearGroupedCards = React.useMemo(() => {

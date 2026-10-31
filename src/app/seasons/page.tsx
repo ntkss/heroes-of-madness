@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import CRTOverlay from "@/components/CRTOverlay";
@@ -33,31 +33,86 @@ export default function SeasonsPage() {
   );
   const [audioInitialized, setAudioInitialized] = useState(false);
 
+  const loadData = useCallback(async () => {
+    try {
+      const [archive, allMatches, rConfig] = await Promise.all([
+        fetchSeasons(),
+        fetchAllMatches(),
+        fetchRankConfig(),
+      ]);
+      setSeasons(archive);
+      setMatches(allMatches);
+      setRankConfig(rConfig);
+
+      if (archive.length > 0) {
+        setSelectedSeasonId((prev) => {
+          if (prev !== null && archive.some((s) => s.id === prev)) return prev;
+          const sorted = [...archive].sort((a, b) => b.id - a.id);
+          return sorted[0].id;
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load seasons history:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadData = async () => {
+    let isMounted = true;
+    const initData = async () => {
       try {
         const [archive, allMatches, rConfig] = await Promise.all([
           fetchSeasons(),
           fetchAllMatches(),
           fetchRankConfig(),
         ]);
-        setSeasons(archive);
-        setMatches(allMatches);
-        setRankConfig(rConfig);
+        if (isMounted) {
+          setSeasons(archive);
+          setMatches(allMatches);
+          setRankConfig(rConfig);
 
-        if (archive.length > 0) {
-          // Select the latest archived season by default
-          const sorted = [...archive].sort((a, b) => b.id - a.id);
-          setSelectedSeasonId(sorted[0].id);
+          if (archive.length > 0) {
+            setSelectedSeasonId((prev) => {
+              if (prev !== null && archive.some((s) => s.id === prev))
+                return prev;
+              const sorted = [...archive].sort((a, b) => b.id - a.id);
+              return sorted[0].id;
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to load seasons history:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
-    loadData();
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Focus and visibility revalidation
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [loadData]);
 
   const initAudioFeedback = () => {
     if (!audioInitialized) {

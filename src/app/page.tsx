@@ -94,8 +94,8 @@ export default function Home() {
     }
   }, [isGenerating]);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = useCallback(async () => {
+    try {
       const [logs, players, config, seasonCfg, archiveSeasons] =
         await Promise.all([
           fetchAllMatches(),
@@ -109,9 +109,80 @@ export default function Home() {
       setRankConfig(config);
       setActiveSeasonId(seasonCfg.activeSeasonId);
       setSeasons(archiveSeasons);
-    };
-    loadData();
+    } catch (err) {
+      console.error("Error refreshing application data:", err);
+    }
   }, []);
+
+  // Initial mount
+  useEffect(() => {
+    let isMounted = true;
+    const initData = async () => {
+      try {
+        const [logs, players, config, seasonCfg, archiveSeasons] =
+          await Promise.all([
+            fetchAllMatches(),
+            fetchPlayers(),
+            fetchRankConfig(),
+            fetchSeasonConfig(),
+            fetchSeasons(),
+          ]);
+        if (isMounted) {
+          setMatches(logs);
+          setAvailablePlayers(players);
+          setRankConfig(config);
+          setActiveSeasonId(seasonCfg.activeSeasonId);
+          setSeasons(archiveSeasons);
+        }
+      } catch (err) {
+        console.error("Error loading application data:", err);
+      }
+    };
+    initData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Freshness guarantee: Auto-revalidate on window focus & tab visibility change
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      // Throttle revalidation to avoid spamming Firestore (at most once every 5 seconds)
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    // Multi-tab sync: if another tab updates any store, sync immediately
+    const handleStorageChange = (e: StorageEvent) => {
+      if (
+        e.key === "mlbb_generator_matches" ||
+        e.key === "mlbb_generator_players" ||
+        e.key === "mlbb_generator_seasons" ||
+        e.key === "mlbb_rank_config" ||
+        e.key === "mlbb_badge_config" ||
+        e.key === "mlbb_generator_season_config"
+      ) {
+        loadData();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [loadData]);
 
   const handleAddPlayer = async (newPlayer: Omit<DbPlayer, "id">) => {
     const saved = await savePlayer(newPlayer);

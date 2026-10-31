@@ -342,6 +342,25 @@ export async function fetchMatches(): Promise<Match[]> {
               : undefined,
         });
       });
+
+      // Keep LocalStorage cache fresh by merging incoming matches
+      if (typeof window !== "undefined" && list.length > 0) {
+        try {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const existingList: Match[] = stored ? JSON.parse(stored) : [];
+          const idMap = new Map<string, Match>(
+            existingList.map((m) => [m.id, m]),
+          );
+          list.forEach((m) => idMap.set(m.id, m));
+          const merged = Array.from(idMap.values()).sort(
+            (a, b) => b.createdAt - a.createdAt,
+          );
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+        } catch (e) {
+          console.warn("Could not cache matches to LocalStorage:", e);
+        }
+      }
+
       return list;
     } catch (e) {
       console.error(
@@ -359,6 +378,17 @@ export async function fetchMatches(): Promise<Match[]> {
     const list = JSON.parse(stored) as Match[];
     // Sort descending by date
     return list.sort((a, b) => b.createdAt - a.createdAt);
+  } catch {
+    return [];
+  }
+}
+
+// Synchronous getter for matches (for instant 0ms render / SWR)
+export function getMatchesSync(): Match[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as Match[]) : [];
   } catch {
     return [];
   }
@@ -476,6 +506,20 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       }
       const docRef = await addDoc(matchesCol, firestoreData);
       newMatch.id = docRef.id;
+
+      // Always synchronize to LocalStorage so cache is immediately fresh and identical
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const list = stored ? (JSON.parse(stored) as Match[]) : [];
+          const filtered = list.filter((m) => m.id !== newMatch.id);
+          filtered.unshift(newMatch);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+        } catch (e) {
+          console.warn("Could not sync match to LocalStorage:", e);
+        }
+      }
+
       return newMatch;
     } catch (e) {
       console.error(
@@ -487,10 +531,15 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
 
   // LocalStorage Fallback
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const list = stored ? (JSON.parse(stored) as Match[]) : [];
-    list.push(newMatch);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const list = stored ? (JSON.parse(stored) as Match[]) : [];
+      const filtered = list.filter((m) => m.id !== newMatch.id);
+      filtered.unshift(newMatch);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+    } catch (e) {
+      console.warn("Could not save match to LocalStorage:", e);
+    }
   }
   return newMatch;
 }
@@ -519,20 +568,24 @@ export async function updateMatchWinner(
     }
   }
 
-  // LocalStorage Fallback
-  if (!success && typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) {
-      const list = JSON.parse(stored) as Match[];
-      const idx = list.findIndex((m) => m.id === matchId);
-      if (idx !== -1) {
-        list[idx].winner = winner;
-        if (underdogMvp !== undefined) {
-          list[idx].underdogMvp = underdogMvp || undefined;
+  // Always sync to LocalStorage to keep cache 100% fresh and accurate
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const list = JSON.parse(stored) as Match[];
+        const idx = list.findIndex((m) => m.id === matchId);
+        if (idx !== -1) {
+          list[idx].winner = winner;
+          if (underdogMvp !== undefined) {
+            list[idx].underdogMvp = underdogMvp || undefined;
+          }
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          if (!db) success = true;
         }
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-        success = true;
       }
+    } catch (e) {
+      console.warn("Could not sync updated match winner to LocalStorage:", e);
     }
   }
 
@@ -558,17 +611,21 @@ export async function updateMatchUnderdogMvp(
     }
   }
 
-  // LocalStorage Fallback
-  if (!success && typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) {
-      const list = JSON.parse(stored) as Match[];
-      const idx = list.findIndex((m) => m.id === matchId);
-      if (idx !== -1) {
-        list[idx].underdogMvp = underdogMvp || undefined;
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-        success = true;
+  // Always sync to LocalStorage to prevent stale underdog badges
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const list = JSON.parse(stored) as Match[];
+        const idx = list.findIndex((m) => m.id === matchId);
+        if (idx !== -1) {
+          list[idx].underdogMvp = underdogMvp || undefined;
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          if (!db) success = true;
+        }
       }
+    } catch (e) {
+      console.warn("Could not sync underdog MVP to LocalStorage:", e);
     }
   }
 
@@ -594,17 +651,21 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
     }
   }
 
-  // LocalStorage Fallback
-  if (!success && typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) {
-      let list = JSON.parse(stored) as Match[];
-      const originalLen = list.length;
-      list = list.filter((m) => m.id !== matchId);
-      if (list.length < originalLen) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-        success = true;
+  // Always sync deletion to LocalStorage to remove stale match records
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        let list = JSON.parse(stored) as Match[];
+        const originalLen = list.length;
+        list = list.filter((m) => m.id !== matchId);
+        if (list.length < originalLen) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          if (!db) success = true;
+        }
       }
+    } catch (e) {
+      console.warn("Could not sync match deletion to LocalStorage:", e);
     }
   }
 
@@ -839,6 +900,17 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
   return [];
 }
 
+// Synchronous getter for players (for instant 0ms render / SWR)
+export function getPlayersSync(): DbPlayer[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
+    return stored ? (JSON.parse(stored) as DbPlayer[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Strict validation rule for ALIAS:
  * - Must be strictly English letters or numbers only (alphanumeric: /^[a-zA-Z0-9]+$/).
@@ -1048,6 +1120,17 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
     return true;
   }
   return false;
+}
+
+// Synchronous getter for rank configuration (for instant 0ms render / SWR)
+export function getRankConfigSync(): RankConfig {
+  if (typeof window === "undefined") return DEFAULT_RANK_CONFIG;
+  try {
+    const stored = localStorage.getItem(LOCAL_CONFIG_KEY);
+    return stored ? (JSON.parse(stored) as RankConfig) : DEFAULT_RANK_CONFIG;
+  } catch {
+    return DEFAULT_RANK_CONFIG;
+  }
 }
 
 const LOCAL_BADGE_CONFIG_KEY = "mlbb_badge_config";
@@ -1329,6 +1412,13 @@ export async function fetchAllMatches(): Promise<Match[]> {
               : undefined,
         });
       });
+      if (typeof window !== "undefined" && list.length > 0) {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {
+          console.warn("Could not cache all matches to LocalStorage:", e);
+        }
+      }
       return list;
     } catch (e) {
       console.error("Error fetching all matches from Firestore:", e);
@@ -1366,12 +1456,29 @@ export async function fetchSeasonConfig(): Promise<SeasonConfig> {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        return {
+        const cfg: SeasonConfig = {
           activeSeasonId: Number(data.activeSeasonId) || 1,
           seasonStart: Number(data.seasonStart) || Date.now(),
         };
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              "mlbb_generator_season_config",
+              JSON.stringify(cfg),
+            );
+          } catch {}
+        }
+        return cfg;
       } else {
         await setDoc(docRef, defaultConfig);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              "mlbb_generator_season_config",
+              JSON.stringify(defaultConfig),
+            );
+          } catch {}
+        }
         return defaultConfig;
       }
     } catch (e) {
@@ -1395,6 +1502,21 @@ export async function fetchSeasonConfig(): Promise<SeasonConfig> {
   return defaultConfig;
 }
 
+// Synchronous getter for season config (for instant 0ms render / SWR)
+export function getSeasonConfigSync(): SeasonConfig {
+  const defaultConfig: SeasonConfig = {
+    activeSeasonId: 1,
+    seasonStart: Date.now(),
+  };
+  if (typeof window === "undefined") return defaultConfig;
+  try {
+    const stored = localStorage.getItem("mlbb_generator_season_config");
+    return stored ? (JSON.parse(stored) as SeasonConfig) : defaultConfig;
+  } catch {
+    return defaultConfig;
+  }
+}
+
 // Fetch all archived seasons
 export async function fetchSeasons(): Promise<Season[]> {
   if (db) {
@@ -1415,6 +1537,12 @@ export async function fetchSeasons(): Promise<Season[]> {
           fighterStats: data.fighterStats || [],
         });
       });
+
+      if (typeof window !== "undefined" && list.length > 0) {
+        try {
+          localStorage.setItem(LOCAL_SEASONS_KEY, JSON.stringify(list));
+        } catch {}
+      }
       return list;
     } catch (e) {
       console.error("Error fetching seasons from Firestore:", e);
@@ -1431,6 +1559,17 @@ export async function fetchSeasons(): Promise<Season[]> {
     }
   }
   return [];
+}
+
+// Synchronous getter for archived seasons (for instant 0ms render / SWR)
+export function getSeasonsSync(): Season[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LOCAL_SEASONS_KEY);
+    return stored ? (JSON.parse(stored) as Season[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 // End current season, archive stats, and start a new one
@@ -1602,15 +1741,23 @@ export async function endCurrentSeason(): Promise<boolean> {
       };
       const configRef = doc(db, "config", "seasonConfig");
       await setDoc(configRef, nextSeasonConfig);
-    } else {
-      // LocalStorage Season archive
-      if (typeof window !== "undefined") {
+    }
+
+    // Always synchronize Season archive and Season config to LocalStorage
+    if (typeof window !== "undefined") {
+      try {
         const storedSeasons = localStorage.getItem(LOCAL_SEASONS_KEY);
         const seasonsList = storedSeasons
           ? (JSON.parse(storedSeasons) as Season[])
           : [];
-        seasonsList.push(archivedSeason);
-        localStorage.setItem(LOCAL_SEASONS_KEY, JSON.stringify(seasonsList));
+        const filteredSeasons = seasonsList.filter(
+          (s) => s.id !== archivedSeason.id,
+        );
+        filteredSeasons.push(archivedSeason);
+        localStorage.setItem(
+          LOCAL_SEASONS_KEY,
+          JSON.stringify(filteredSeasons),
+        );
 
         const nextSeasonConfig: SeasonConfig = {
           activeSeasonId: activeSeasonId + 1,
@@ -1620,6 +1767,8 @@ export async function endCurrentSeason(): Promise<boolean> {
           "mlbb_generator_season_config",
           JSON.stringify(nextSeasonConfig),
         );
+      } catch (e) {
+        console.warn("Could not sync season archive to LocalStorage:", e);
       }
     }
 

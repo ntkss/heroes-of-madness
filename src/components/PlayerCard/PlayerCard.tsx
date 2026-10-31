@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { useBadgeConfig, BadgeConfig } from "@/utils/badgeConfig";
 import styles from "./styles.module.css";
 
 // ─── Rank Badge component ──────────────────────────────────────────────
@@ -63,6 +64,8 @@ export interface PlayerCardProps {
   laneWinRate?: number;
   championSeasons?: number[];
   underdogMvpCount?: number;
+  underdogComebackCount?: number;
+  badgeConfig?: BadgeConfig;
 }
 
 export default function PlayerCard({
@@ -81,7 +84,11 @@ export default function PlayerCard({
   laneWinRate,
   championSeasons,
   underdogMvpCount,
+  underdogComebackCount,
+  badgeConfig: passedBadgeConfig,
 }: PlayerCardProps) {
+  const globalBadgeConfig = useBadgeConfig();
+  const badgeConfig = passedBadgeConfig || globalBadgeConfig;
   const isBlue = team === "A";
   const rolling = !locked;
 
@@ -213,13 +220,34 @@ export default function PlayerCard({
           </div>
         )}
 
-        {/* Underdog / สู้ยิบตา Badge */}
-        {underdogMvpCount !== undefined && underdogMvpCount > 0 && (
-          <div
-            className={styles.underdogBadgeBanner}
-            title={`สู้ยิบตา (Underdog MVP) ${underdogMvpCount} ครั้ง (+ ${(underdogMvpCount * 0.35).toFixed(2)} Wins)`}
-          >
-            <span>🔥 สู้ยิบตา x{underdogMvpCount}</span>
+        {/* Badges Cluster: Underdog Comeback (สู้ยิบตา) & Losing MVP (ฝันร้ายราชา) */}
+        {((underdogComebackCount !== undefined && underdogComebackCount > 0) ||
+          (underdogMvpCount !== undefined && underdogMvpCount > 0)) && (
+          <div className={styles.underdogBadgeCluster}>
+            {underdogComebackCount !== undefined &&
+              underdogComebackCount > 0 && (
+                <div
+                  className={styles.underdogBadgeBanner}
+                  title={`${badgeConfig.underdogComeback.name} ${underdogComebackCount} ครั้ง (+ ${(underdogComebackCount * 0.2).toFixed(2)} Wins)`}
+                >
+                  <span>
+                    {badgeConfig.underdogComeback.icon}{" "}
+                    {badgeConfig.underdogComeback.name} x{underdogComebackCount}
+                  </span>
+                </div>
+              )}
+
+            {underdogMvpCount !== undefined && underdogMvpCount > 0 && (
+              <div
+                className={styles.kingsNightmareBadgeBanner}
+                title={`${badgeConfig.underdogLosingMvp.name} ${underdogMvpCount} ครั้ง (+ ${(underdogMvpCount * 0.35).toFixed(2)} Wins)`}
+              >
+                <span>
+                  {badgeConfig.underdogLosingMvp.icon}{" "}
+                  {badgeConfig.underdogLosingMvp.name} x{underdogMvpCount}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

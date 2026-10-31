@@ -27,6 +27,7 @@ import {
   isUnderdogMatch,
   getUnderdogTeam,
 } from "@/utils/winrate";
+import { useBadgeConfig, BadgeConfig } from "@/utils/badgeConfig";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
@@ -69,6 +70,7 @@ interface TeamRowProps {
   showShine: boolean;
   playerChampionMap: Record<string, number[]>;
   isUnderdogTeam?: boolean;
+  badgeConfig?: BadgeConfig;
 }
 
 function findSquadPlayer(
@@ -105,6 +107,7 @@ function TeamRow({
   showShine,
   playerChampionMap,
   isUnderdogTeam,
+  badgeConfig,
 }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
@@ -170,7 +173,8 @@ function TeamRow({
 
           {isUnderdogTeam && (
             <span className={styles.underdogTeamBadge}>
-              🔥 สู้ยิบตา (UNDERDOG)
+              {badgeConfig?.underdogMatch.icon || "🔥"}{" "}
+              {badgeConfig?.underdogMatch.name || "สู้ยิบตา"} (UNDERDOG)
             </span>
           )}
           <span
@@ -264,6 +268,8 @@ function TeamRow({
                 laneWinRate={laneStats?.[idx]?.laneWinRate}
                 championSeasons={champSeasons}
                 underdogMvpCount={player?.underdogMvpCount}
+                underdogComebackCount={player?.underdogComebackCount}
+                badgeConfig={badgeConfig}
               />
             );
           })}
@@ -306,6 +312,7 @@ export default function VersesArena({
   const [lockedSlots, setLockedSlots] = useState<boolean[]>(
     Array(10).fill(true),
   );
+  const badgeConfig = useBadgeConfig();
 
   // Compute map of player -> list of season IDs won (e.g. { "nutty": [1], "bas": [2] })
   const playerChampionMap = useMemo(() => {
@@ -612,16 +619,22 @@ export default function VersesArena({
         showShine={showShine}
         playerChampionMap={playerChampionMap}
         isUnderdogTeam={underdogSide === "teamA"}
+        badgeConfig={badgeConfig}
       />
 
       {/* Underdog Mode Dramatic Alert Banner */}
       {isUnderdog && (
         <div className={styles.underdogArenaBanner}>
-          <div className={styles.underdogFlameIcon}>🔥</div>
+          <div className={styles.underdogFlameIcon}>
+            {badgeConfig.underdogMatch.icon}
+          </div>
           <div className={styles.underdogBannerContent}>
             <div className={styles.underdogBannerTitle}>
               <span className={styles.underdogBadgeTag}>UNDERDOG BATTLE</span>
-              <span>แมตช์สู้ยิบตาเปิดใช้งาน! (แต้มต่าง {winRateDiff}%)</span>
+              <span>
+                {badgeConfig.underdogMatch.name}เปิดใช้งาน! (ผลต่างโอกาสชนะ{" "}
+                {winRateDiff.toFixed(1)}%)
+              </span>
             </div>
             <p className={styles.underdogBannerDesc}>
               🛡️ ทีมที่เป็นรอง:{" "}
@@ -636,11 +649,20 @@ export default function VersesArena({
                   ? "TEAM BLUE DRAGON"
                   : "TEAM RED TIGER"}
               </strong>{" "}
-              — หากทีมรองพ่ายแพ้ ผู้คว้า <strong>MVP ฝ่ายแพ้</strong>{" "}
-              จะได้รับโบนัส <strong>+0.35 WIN เสมือน</strong> ช่วยกู้คืนอันดับ!
+              — หากพลิกชนะรับโบนัส{" "}
+              <strong>
+                {badgeConfig.underdogComeback.name} +0.20 WIN ยกทีม!
+              </strong>{" "}
+              แต่หากแพ้ ผู้คว้า{" "}
+              <strong>
+                {badgeConfig.underdogLosingMvp.name} (MVP ฝ่ายแพ้)
+              </strong>{" "}
+              จะได้รับโบนัส <strong>+0.35 WIN</strong> ช่วยกู้คืนอันดับ!
             </p>
           </div>
-          <div className={styles.underdogFlameIcon}>🔥</div>
+          <div className={styles.underdogFlameIcon}>
+            {badgeConfig.underdogMatch.icon}
+          </div>
         </div>
       )}
 
@@ -736,6 +758,7 @@ export default function VersesArena({
         showShine={showShine}
         playerChampionMap={playerChampionMap}
         isUnderdogTeam={underdogSide === "teamB"}
+        badgeConfig={badgeConfig}
       />
 
       {/* Loading screen tips at the bottom */}

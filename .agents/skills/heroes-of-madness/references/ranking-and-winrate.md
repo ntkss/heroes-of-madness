@@ -97,17 +97,39 @@ $$\Delta = |\text{TeamA\%} - \text{TeamB\%}| \ge 7\%$$
 - **Favored Team**: Higher predicted win rate.
 - **Underdog Team ("ทีมสู้ยิบตา")**: Lower predicted win rate.
 
-### 2. Underdog MVP Reward (Fractional Win)
+### 2. Rewards: Underdog Comeback Team & Losing MVP (Effective Wins)
 
-If the Underdog Team loses, the player selected as **Losing Team MVP ("MVP ฝ่ายแพ้")** receives an **Effective Win Bonus**:
-$$\text{Effective Wins} = \text{Actual Wins} + (\text{Underdog MVP Count} \times 0.35)$$
+Underdog Mode provides asymmetric rewards to eliminate defeatism and match-throwing:
 
-Each Underdog MVP award is worth **+0.35 Win** towards both raw win rate and Laplace weighted win rate:
+1. **Underdog Comeback Victory (ทีมสู้ยิบตา 🔥)**:
+   - When the underdog team overcomes the odds and wins the match, **all 5 players** on the winning underdog team receive **+0.20 Effective Wins** each!
+   - Badge: `🔥 สู้ยิบตา xN` (name & icon configurable in `/settings`)
+
+2. **Underdog Losing MVP (ฝันร้ายราชา 🗡️)**:
+   - If the underdog team loses, the player chosen as the **Losing Team MVP ("MVP ฝ่ายแพ้")** receives **+0.35 Effective Wins**.
+   - Badge: `🗡️ ฝันร้ายราชา xN` (name & icon configurable in `/settings`)
+
+$$\text{Effective Wins} = \text{Actual Wins} + (\text{Losing MVP Count} \times 0.35) + (\text{Comeback Win Count} \times 0.20)$$
+
+Each Underdog bonus contributes directly towards both raw win rate and Laplace weighted win rate:
 $$\text{Weighted Winrate} = \left( \frac{\text{Effective Wins} + C \times 0.5}{\text{Total Matches} + C} \right) \times 100$$
 $$\text{Raw Winrate} = \min\left(100, \text{round}\left(\frac{\text{Effective Wins}}{\text{Total Matches}} \times 100\right)\right)$$
 
-### 3. Backward Compatibility & Data Safety
+### 3. Customizable Badges in Settings
 
-- Past matches without an `underdogMvp` record default to $0$, yielding $\text{Effective Wins} = \text{Wins}$.
+Administrators can navigate to `/settings` -> **🏅 BADGES** to customize the icon and display name of every badge in the application:
+
+- `underdogComeback`: Default `🔥 สู้ยิบตา` (+0.20 Win)
+- `underdogLosingMvp`: Default `🗡️ ฝันร้ายราชา` (+0.35 Win)
+- `seasonChampion`: Default `👑 แชมเปี้ยน`
+- `underdogMatch`: Default `🔥 โหมดสู้ยิบตา`
+- `upsetVictory`: Default `⚡ ล้มยักษ์สำเร็จ`
+- Podiums: `🥇 อันดับ 1`, `🥈 อันดับ 2`, `🥉 อันดับ 3`, `💩 อันดับสุดท้าย`
+
+Settings are saved with dual-storage (Firestore `config/badgeSystem` + LocalStorage `mlbb_badge_config`) and synchronize across components in real-time.
+
+### 4. Backward Compatibility & Data Safety
+
+- Past matches without underdog records default to $0$, yielding $\text{Effective Wins} = \text{Wins}$.
 - Archived historical seasons (`seasons` collection) maintain their original frozen stats and rankings without retroactive distortion.
-- If a player throws or gives up, their Underdog MVP count remains $0$, causing their rank to plummet compared to players who fought hard to earn the Underdog MVP.
+- If a player throws or gives up, their Underdog counts remain $0$, causing their rank to drop compared to players who fought hard to earn Comeback or MVP rewards.

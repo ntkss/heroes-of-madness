@@ -385,10 +385,12 @@ export function calculateTeamWinRates(
 /**
  * Underdog Mode (สู้ยิบตา) Configuration
  * - Trigger: Predicted team win rate difference >= 7%
- * - Reward: Losing Team MVP gains 0.35 effective wins
+ * - Reward (Losing MVP): Losing Team Underdog MVP gains 0.35 effective wins (🗡️ ฝันร้ายราชา)
+ * - Reward (Comeback Win): Winning Underdog Team members gain 0.20 effective wins each (🔥 สู้ยิบตา)
  */
 export const UNDERDOG_WINRATE_DIFF_THRESHOLD = 7;
 export const UNDERDOG_MVP_WEIGHT = 0.35;
+export const UNDERDOG_COMEBACK_WIN_WEIGHT = 0.2;
 
 /**
  * Checks if a matchup qualifies for Underdog Mode (สู้ยิบตา)
@@ -413,4 +415,20 @@ export function getUnderdogTeam(
   if (teamAWinRate < teamBWinRate) return "teamA";
   if (teamBWinRate < teamAWinRate) return "teamB";
   return null;
+}
+
+/**
+ * Checks if an underdog match resulted in a comeback victory for the underdog team
+ */
+export function isUnderdogComeback(match: {
+  isUnderdogMatch?: boolean;
+  underdogTeam?: "teamA" | "teamB";
+  winner?: "teamA" | "teamB" | null;
+}): boolean {
+  return Boolean(
+    match.isUnderdogMatch &&
+    match.underdogTeam &&
+    match.winner &&
+    match.winner === match.underdogTeam,
+  );
 }

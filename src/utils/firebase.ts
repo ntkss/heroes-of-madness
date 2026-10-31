@@ -95,6 +95,8 @@ export interface DbPlayer {
   allTimeWinrate?: number;
   underdogMvpCount?: number;
   allTimeUnderdogMvpCount?: number;
+  underdogComebackCount?: number;
+  allTimeUnderdogComebackCount?: number;
 }
 
 export interface SeasonPlayerStat {
@@ -110,6 +112,7 @@ export interface SeasonPlayerStat {
   matchesToNextRank?: number;
   nextRankTarget?: number;
   underdogMvpCount?: number;
+  underdogComebackCount?: number;
 }
 
 export interface Season {
@@ -137,6 +140,72 @@ export interface RankConfig {
     low: string;
   };
 }
+
+export interface BadgeItemConfig {
+  name: string;
+  icon: string;
+  description?: string;
+}
+
+export interface BadgeConfig {
+  underdogLosingMvp: BadgeItemConfig;
+  underdogComeback: BadgeItemConfig;
+  seasonChampion: BadgeItemConfig;
+  underdogMatch: BadgeItemConfig;
+  upsetVictory: BadgeItemConfig;
+  firstPlace: BadgeItemConfig;
+  secondPlace: BadgeItemConfig;
+  thirdPlace: BadgeItemConfig;
+  lastPlace: BadgeItemConfig;
+}
+
+export const DEFAULT_BADGE_CONFIG: BadgeConfig = {
+  underdogLosingMvp: {
+    name: "ฝันร้ายราชา",
+    icon: "🗡️",
+    description: "MVP ฝ่ายแพ้ในโหมดสู้ยิบตา (+0.35 Wins)",
+  },
+  underdogComeback: {
+    name: "สู้ยิบตา",
+    icon: "🔥",
+    description: "ทีมรองที่พลิกกลับมาชนะทีมต่อได้ (+0.20 Wins ยกทีม)",
+  },
+  seasonChampion: {
+    name: "แชมเปี้ยน",
+    icon: "👑",
+    description: "แชมป์ประจำซีซัน (Season Champion)",
+  },
+  underdogMatch: {
+    name: "โหมดสู้ยิบตา",
+    icon: "🔥",
+    description: "แท็กแมตช์ที่ผลต่างอัตราชนะ >= 7%",
+  },
+  upsetVictory: {
+    name: "ล้มยักษ์สำเร็จ",
+    icon: "⚡",
+    description: "ชัยชนะพลิกล็อกของทีมรอง (Comeback Victory)",
+  },
+  firstPlace: {
+    name: "อันดับ 1",
+    icon: "🥇",
+    description: "ผู้ชนะอันดับ 1 บนโพเดียม",
+  },
+  secondPlace: {
+    name: "อันดับ 2",
+    icon: "🥈",
+    description: "รองชนะเลิศอันดับ 1",
+  },
+  thirdPlace: {
+    name: "อันดับ 3",
+    icon: "🥉",
+    description: "รองชนะเลิศอันดับ 2",
+  },
+  lastPlace: {
+    name: "อันดับสุดท้าย",
+    icon: "💩",
+    description: "อันดับสุดท้ายของซีซัน",
+  },
+};
 
 export const DEFAULT_RANK_CONFIG: RankConfig = {
   minMatches: 3,
@@ -628,6 +697,11 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           allTimeWins: Number(data.allTimeWins) || 0,
           allTimeMatches: Number(data.allTimeMatches) || 0,
           allTimeWinrate: Number(data.allTimeWinrate) || 0,
+          underdogMvpCount: Number(data.underdogMvpCount) || 0,
+          allTimeUnderdogMvpCount: Number(data.allTimeUnderdogMvpCount) || 0,
+          underdogComebackCount: Number(data.underdogComebackCount) || 0,
+          allTimeUnderdogComebackCount:
+            Number(data.allTimeUnderdogComebackCount) || 0,
         });
       });
 
@@ -661,6 +735,10 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           allTimeWins: 0,
           allTimeMatches: 0,
           allTimeWinrate: 0,
+          underdogMvpCount: 0,
+          allTimeUnderdogMvpCount: 0,
+          underdogComebackCount: 0,
+          allTimeUnderdogComebackCount: 0,
         };
       });
 
@@ -679,6 +757,10 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           allTimeWins: player.allTimeWins,
           allTimeMatches: player.allTimeMatches,
           allTimeWinrate: player.allTimeWinrate,
+          underdogMvpCount: 0,
+          allTimeUnderdogMvpCount: 0,
+          underdogComebackCount: 0,
+          allTimeUnderdogComebackCount: 0,
         });
       }
 
@@ -949,6 +1031,161 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
   return false;
 }
 
+const LOCAL_BADGE_CONFIG_KEY = "mlbb_badge_config";
+
+// Synchronous getter for Badge configuration (for initial render / SSR hydration)
+export function getBadgeConfigSync(): BadgeConfig {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_BADGE_CONFIG_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          ...DEFAULT_BADGE_CONFIG,
+          ...parsed,
+          underdogLosingMvp: {
+            ...DEFAULT_BADGE_CONFIG.underdogLosingMvp,
+            ...(parsed.underdogLosingMvp || {}),
+          },
+          underdogComeback: {
+            ...DEFAULT_BADGE_CONFIG.underdogComeback,
+            ...(parsed.underdogComeback || {}),
+          },
+          seasonChampion: {
+            ...DEFAULT_BADGE_CONFIG.seasonChampion,
+            ...(parsed.seasonChampion || {}),
+          },
+          underdogMatch: {
+            ...DEFAULT_BADGE_CONFIG.underdogMatch,
+            ...(parsed.underdogMatch || {}),
+          },
+          upsetVictory: {
+            ...DEFAULT_BADGE_CONFIG.upsetVictory,
+            ...(parsed.upsetVictory || {}),
+          },
+          firstPlace: {
+            ...DEFAULT_BADGE_CONFIG.firstPlace,
+            ...(parsed.firstPlace || {}),
+          },
+          secondPlace: {
+            ...DEFAULT_BADGE_CONFIG.secondPlace,
+            ...(parsed.secondPlace || {}),
+          },
+          thirdPlace: {
+            ...DEFAULT_BADGE_CONFIG.thirdPlace,
+            ...(parsed.thirdPlace || {}),
+          },
+          lastPlace: {
+            ...DEFAULT_BADGE_CONFIG.lastPlace,
+            ...(parsed.lastPlace || {}),
+          },
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return DEFAULT_BADGE_CONFIG;
+}
+
+// Fetch badge configuration rules
+export async function fetchBadgeConfig(): Promise<BadgeConfig> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "badgeSystem");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const merged: BadgeConfig = {
+          underdogLosingMvp: {
+            ...DEFAULT_BADGE_CONFIG.underdogLosingMvp,
+            ...(data.underdogLosingMvp || {}),
+          },
+          underdogComeback: {
+            ...DEFAULT_BADGE_CONFIG.underdogComeback,
+            ...(data.underdogComeback || {}),
+          },
+          seasonChampion: {
+            ...DEFAULT_BADGE_CONFIG.seasonChampion,
+            ...(data.seasonChampion || {}),
+          },
+          underdogMatch: {
+            ...DEFAULT_BADGE_CONFIG.underdogMatch,
+            ...(data.underdogMatch || {}),
+          },
+          upsetVictory: {
+            ...DEFAULT_BADGE_CONFIG.upsetVictory,
+            ...(data.upsetVictory || {}),
+          },
+          firstPlace: {
+            ...DEFAULT_BADGE_CONFIG.firstPlace,
+            ...(data.firstPlace || {}),
+          },
+          secondPlace: {
+            ...DEFAULT_BADGE_CONFIG.secondPlace,
+            ...(data.secondPlace || {}),
+          },
+          thirdPlace: {
+            ...DEFAULT_BADGE_CONFIG.thirdPlace,
+            ...(data.thirdPlace || {}),
+          },
+          lastPlace: {
+            ...DEFAULT_BADGE_CONFIG.lastPlace,
+            ...(data.lastPlace || {}),
+          },
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_BADGE_CONFIG_KEY, JSON.stringify(merged));
+        }
+        return merged;
+      } else {
+        await setDoc(configRef, DEFAULT_BADGE_CONFIG);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            LOCAL_BADGE_CONFIG_KEY,
+            JSON.stringify(DEFAULT_BADGE_CONFIG),
+          );
+        }
+        return DEFAULT_BADGE_CONFIG;
+      }
+    } catch (e) {
+      console.error(
+        "Error fetching badge config from Firestore, fallback to LocalStorage:",
+        e,
+      );
+    }
+  }
+  return getBadgeConfigSync();
+}
+
+// Save custom badge configuration rules
+export async function saveBadgeConfig(config: BadgeConfig): Promise<boolean> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "badgeSystem");
+      await setDoc(configRef, config);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_BADGE_CONFIG_KEY, JSON.stringify(config));
+        window.dispatchEvent(new Event("badge-config-updated"));
+      }
+      return true;
+    } catch (e) {
+      console.error(
+        "Error saving badge config to Firestore, saving to LocalStorage instead:",
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_BADGE_CONFIG_KEY, JSON.stringify(config));
+    window.dispatchEvent(new Event("badge-config-updated"));
+    return true;
+  }
+  return false;
+}
+
 // Fetch LINE configuration rules
 export async function fetchLineConfig(): Promise<LineConfig> {
   if (db) {
@@ -1205,8 +1442,24 @@ export async function endCurrentSeason(): Promise<boolean> {
       .sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-        const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-        const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+        const aWeighted = getWeightedWinrate(
+          aWins,
+          a.total_match_played,
+          10,
+          a.underdogMvpCount || 0,
+          0.35,
+          a.underdogComebackCount || 0,
+          0.2,
+        );
+        const bWeighted = getWeightedWinrate(
+          bWins,
+          b.total_match_played,
+          10,
+          b.underdogMvpCount || 0,
+          0.35,
+          b.underdogComebackCount || 0,
+          0.2,
+        );
 
         if (bWeighted !== aWeighted) {
           return bWeighted - aWeighted;
@@ -1229,6 +1482,7 @@ export async function endCurrentSeason(): Promise<boolean> {
         wins,
         losses,
         underdogMvpCount: p.underdogMvpCount || 0,
+        underdogComebackCount: p.underdogComebackCount || 0,
       };
     });
 
@@ -1244,8 +1498,24 @@ export async function endCurrentSeason(): Promise<boolean> {
       const sortedWorst = [...qualifiedNonPodiumPlayers].sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-        const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-        const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+        const aWeighted = getWeightedWinrate(
+          aWins,
+          a.total_match_played,
+          10,
+          a.underdogMvpCount || 0,
+          0.35,
+          a.underdogComebackCount || 0,
+          0.2,
+        );
+        const bWeighted = getWeightedWinrate(
+          bWins,
+          b.total_match_played,
+          10,
+          b.underdogMvpCount || 0,
+          0.35,
+          b.underdogComebackCount || 0,
+          0.2,
+        );
 
         if (aWeighted !== bWeighted) {
           return aWeighted - bWeighted;
@@ -1267,6 +1537,8 @@ export async function endCurrentSeason(): Promise<boolean> {
         current_rank: worstPlayer.current_rank,
         wins,
         losses,
+        underdogMvpCount: worstPlayer.underdogMvpCount || 0,
+        underdogComebackCount: worstPlayer.underdogComebackCount || 0,
       };
     }
 
@@ -1284,6 +1556,8 @@ export async function endCurrentSeason(): Promise<boolean> {
         current_rank: p.current_rank,
         wins,
         losses,
+        underdogMvpCount: p.underdogMvpCount || 0,
+        underdogComebackCount: p.underdogComebackCount || 0,
       };
     });
 
@@ -1399,11 +1673,21 @@ export async function recalculateRanks(
     // We will build stats map for BOTH current season and all-time
     const currentSeasonStats: Record<
       string,
-      { wins: number; matches: number; underdogMvpCount?: number }
+      {
+        wins: number;
+        matches: number;
+        underdogMvpCount?: number;
+        underdogComebackCount?: number;
+      }
     > = {};
     const allTimeStats: Record<
       string,
-      { wins: number; matches: number; underdogMvpCount?: number }
+      {
+        wins: number;
+        matches: number;
+        underdogMvpCount?: number;
+        underdogComebackCount?: number;
+      }
     > = {};
 
     matches.forEach((match) => {
@@ -1437,7 +1721,12 @@ export async function recalculateRanks(
 
         // All-Time
         if (!allTimeStats[key])
-          allTimeStats[key] = { wins: 0, matches: 0, underdogMvpCount: 0 };
+          allTimeStats[key] = {
+            wins: 0,
+            matches: 0,
+            underdogMvpCount: 0,
+            underdogComebackCount: 0,
+          };
         allTimeStats[key].wins += 1;
         allTimeStats[key].matches += 1;
 
@@ -1448,6 +1737,7 @@ export async function recalculateRanks(
               wins: 0,
               matches: 0,
               underdogMvpCount: 0,
+              underdogComebackCount: 0,
             };
           currentSeasonStats[key].wins += 1;
           currentSeasonStats[key].matches += 1;
@@ -1459,7 +1749,12 @@ export async function recalculateRanks(
 
         // All-Time
         if (!allTimeStats[key])
-          allTimeStats[key] = { wins: 0, matches: 0, underdogMvpCount: 0 };
+          allTimeStats[key] = {
+            wins: 0,
+            matches: 0,
+            underdogMvpCount: 0,
+            underdogComebackCount: 0,
+          };
         allTimeStats[key].matches += 1;
 
         // Current Season
@@ -1469,16 +1764,55 @@ export async function recalculateRanks(
               wins: 0,
               matches: 0,
               underdogMvpCount: 0,
+              underdogComebackCount: 0,
             };
           currentSeasonStats[key].matches += 1;
         }
       });
 
-      // Tally Underdog MVP (สู้ยิบตา)
+      // Underdog Comeback Team Bonus (สู้ยิบตา - เมื่อทีมรองพลิกชนะทีมต่อได้ รับโบนัสยกทีม)
+      const isUnderdogComeback =
+        Boolean(match.isUnderdogMatch) &&
+        Boolean(match.underdogTeam) &&
+        match.winner === match.underdogTeam;
+
+      if (isUnderdogComeback) {
+        winningTeam.forEach((playerNameOrId) => {
+          const key = getPlayerKey(playerNameOrId);
+          if (!allTimeStats[key])
+            allTimeStats[key] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+              underdogComebackCount: 0,
+            };
+          allTimeStats[key].underdogComebackCount =
+            (allTimeStats[key].underdogComebackCount || 0) + 1;
+
+          if (isCurrentSeason) {
+            if (!currentSeasonStats[key])
+              currentSeasonStats[key] = {
+                wins: 0,
+                matches: 0,
+                underdogMvpCount: 0,
+                underdogComebackCount: 0,
+              };
+            currentSeasonStats[key].underdogComebackCount =
+              (currentSeasonStats[key].underdogComebackCount || 0) + 1;
+          }
+        });
+      }
+
+      // Tally Underdog MVP (ฝันร้ายราชา)
       if (match.underdogMvp) {
         const mvpKey = getPlayerKey(match.underdogMvp);
         if (!allTimeStats[mvpKey])
-          allTimeStats[mvpKey] = { wins: 0, matches: 0, underdogMvpCount: 0 };
+          allTimeStats[mvpKey] = {
+            wins: 0,
+            matches: 0,
+            underdogMvpCount: 0,
+            underdogComebackCount: 0,
+          };
         allTimeStats[mvpKey].underdogMvpCount =
           (allTimeStats[mvpKey].underdogMvpCount || 0) + 1;
 
@@ -1488,6 +1822,7 @@ export async function recalculateRanks(
               wins: 0,
               matches: 0,
               underdogMvpCount: 0,
+              underdogComebackCount: 0,
             };
           }
           currentSeasonStats[mvpKey].underdogMvpCount =
@@ -1515,7 +1850,9 @@ export async function recalculateRanks(
         // Current Season Stats
         const totalMatches = sStats.matches;
         const underdogMvpCount = sStats.underdogMvpCount || 0;
-        const effectiveWins = sStats.wins + underdogMvpCount * 0.35;
+        const underdogComebackCount = sStats.underdogComebackCount || 0;
+        const effectiveWins =
+          sStats.wins + underdogMvpCount * 0.35 + underdogComebackCount * 0.2;
         const winrate =
           totalMatches > 0
             ? Math.min(100, Math.round((effectiveWins / totalMatches) * 100))
@@ -1544,7 +1881,11 @@ export async function recalculateRanks(
         // All-Time Stats
         const allTimeMatches = atStats.matches;
         const allTimeUnderdogCount = atStats.underdogMvpCount || 0;
-        const allTimeEffectiveWins = atStats.wins + allTimeUnderdogCount * 0.35;
+        const allTimeComebackCount = atStats.underdogComebackCount || 0;
+        const allTimeEffectiveWins =
+          atStats.wins +
+          allTimeUnderdogCount * 0.35 +
+          allTimeComebackCount * 0.2;
         const allTimeWinrate =
           allTimeMatches > 0
             ? Math.min(
@@ -1562,7 +1903,9 @@ export async function recalculateRanks(
           player.allTimeMatches !== allTimeMatches ||
           player.allTimeWinrate !== allTimeWinrate ||
           player.underdogMvpCount !== underdogMvpCount ||
-          player.allTimeUnderdogMvpCount !== allTimeUnderdogCount;
+          player.allTimeUnderdogMvpCount !== allTimeUnderdogCount ||
+          player.underdogComebackCount !== underdogComebackCount ||
+          player.allTimeUnderdogComebackCount !== allTimeComebackCount;
 
         if (hasChanged) {
           const updatedFields = {
@@ -1575,6 +1918,8 @@ export async function recalculateRanks(
             allTimeWinrate: allTimeWinrate,
             underdogMvpCount: underdogMvpCount,
             allTimeUnderdogMvpCount: allTimeUnderdogCount,
+            underdogComebackCount: underdogComebackCount,
+            allTimeUnderdogComebackCount: allTimeComebackCount,
           };
 
           const updatedPlayer: DbPlayer = {
@@ -2240,9 +2585,14 @@ export function getWeightedWinrate(
   C: number = 10,
   underdogMvpCount: number = 0,
   weight: number = 0.35,
+  underdogComebackCount: number = 0,
+  comebackWeight: number = 0.2,
 ): number {
   if (totalMatches === 0) return 0;
-  const effectiveWins = wins + (underdogMvpCount || 0) * weight;
+  const effectiveWins =
+    wins +
+    (underdogMvpCount || 0) * weight +
+    (underdogComebackCount || 0) * comebackWeight;
   const prior = 0.5;
   return ((effectiveWins + C * prior) / (totalMatches + C)) * 100;
 }
@@ -3274,6 +3624,7 @@ export interface DatabaseBackup {
   rankConfig: RankConfig;
   seasonConfig: SeasonConfig;
   lineConfig: LineConfig;
+  badgeConfig?: BadgeConfig;
 }
 
 export interface MigrationReport {
@@ -3289,15 +3640,23 @@ export interface MigrationReport {
  * Creates a comprehensive snapshot of all collections and configurations in the system.
  */
 export async function exportAllDataAsBackup(): Promise<DatabaseBackup> {
-  const [matches, players, seasons, rankConfig, seasonConfig, lineConfig] =
-    await Promise.all([
-      fetchAllMatches(),
-      fetchPlayers(),
-      fetchSeasons(),
-      fetchRankConfig(),
-      fetchSeasonConfig(),
-      fetchLineConfig(),
-    ]);
+  const [
+    matches,
+    players,
+    seasons,
+    rankConfig,
+    seasonConfig,
+    lineConfig,
+    badgeConfig,
+  ] = await Promise.all([
+    fetchAllMatches(),
+    fetchPlayers(),
+    fetchSeasons(),
+    fetchRankConfig(),
+    fetchSeasonConfig(),
+    fetchLineConfig(),
+    fetchBadgeConfig(),
+  ]);
 
   const timestamp = Date.now();
   return {
@@ -3313,6 +3672,7 @@ export async function exportAllDataAsBackup(): Promise<DatabaseBackup> {
     rankConfig,
     seasonConfig,
     lineConfig,
+    badgeConfig,
   };
 }
 

@@ -19,8 +19,10 @@ import {
   getRequiredMinMatches,
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
+import { useBadgeConfig } from "@/utils/badgeConfig";
 
 export default function SeasonsPage() {
+  const badgeConfig = useBadgeConfig();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
@@ -96,12 +98,18 @@ export default function SeasonsPage() {
         a.total_match_played,
         10,
         a.underdogMvpCount || 0,
+        0.35,
+        a.underdogComebackCount || 0,
+        0.2,
       );
       const bWeighted = getWeightedWinrate(
         bWins,
         b.total_match_played,
         10,
         b.underdogMvpCount || 0,
+        0.35,
+        b.underdogComebackCount || 0,
+        0.2,
       );
 
       if (bWeighted !== aWeighted) {
@@ -318,13 +326,24 @@ export default function SeasonsPage() {
                                   <span className={styles.fighterCellName}>
                                     {stat.name}
                                   </span>
+                                  {stat.underdogComebackCount !== undefined &&
+                                    stat.underdogComebackCount > 0 && (
+                                      <span
+                                        className="ml-1.5 px-1 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6.5px] rounded uppercase font-bold"
+                                        title={`${badgeConfig.underdogComeback.name} ${stat.underdogComebackCount} ครั้ง`}
+                                      >
+                                        {badgeConfig.underdogComeback.icon} x
+                                        {stat.underdogComebackCount}
+                                      </span>
+                                    )}
                                   {stat.underdogMvpCount !== undefined &&
                                     stat.underdogMvpCount > 0 && (
                                       <span
-                                        className="ml-1.5 px-1 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6.5px] rounded uppercase font-bold"
-                                        title={`สู้ยิบตา Underdog MVP ${stat.underdogMvpCount} ครั้ง`}
+                                        className="ml-1 px-1 py-0.5 bg-gradient-to-r from-purple-900 to-indigo-900 text-purple-200 font-pixel text-[6.5px] rounded uppercase font-bold border border-purple-400/60"
+                                        title={`${badgeConfig.underdogLosingMvp.name} ${stat.underdogMvpCount} ครั้ง`}
                                       >
-                                        🔥 x{stat.underdogMvpCount}
+                                        {badgeConfig.underdogLosingMvp.icon} x
+                                        {stat.underdogMvpCount}
                                       </span>
                                     )}
                                 </td>

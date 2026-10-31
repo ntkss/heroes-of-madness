@@ -22,6 +22,8 @@ import PodiumStandings from "@/components/PodiumStandings";
 import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
 import { ConsolidatedWinRateChart } from "@/components/Charts";
+import { useBadgeConfig } from "@/utils/badgeConfig";
+import { isUnderdogComeback } from "@/utils/winrate";
 
 interface HistoryDashboardProps {
   matches: Match[];
@@ -115,10 +117,19 @@ function MatchCardComponent({
     }
   };
 
+  const badgeConfig = useBadgeConfig();
+  const isUnderdog = Boolean(
+    match.isUnderdogMatch ||
+    (match.predictedWinRateDiff !== undefined &&
+      match.predictedWinRateDiff >= 7),
+  );
+  const isComeback = isUnderdogComeback(match);
+
   const renderRoster = (
     team: string[],
     lanes: string[] | undefined,
     heroes: string[] | undefined,
+    side: "teamA" | "teamB",
   ) => {
     const defaultLanes = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
     return (
@@ -137,6 +148,12 @@ function MatchCardComponent({
             user && feedback.userVotes ? feedback.userVotes[user.uid] : null;
           const isLiked = userVote === "likes";
           const isDisliked = userVote === "dislikes";
+
+          const isWinningUnderdogPlayer = Boolean(
+            isComeback &&
+            ((side === "teamA" && match.winner === "teamA") ||
+              (side === "teamB" && match.winner === "teamB")),
+          );
 
           const isUnderdogMvp = Boolean(
             match.underdogMvp &&
@@ -165,9 +182,16 @@ function MatchCardComponent({
                 <div className={styles.playerMeta}>
                   <div className="flex items-center gap-1">
                     <span className={styles.playerName}>{name}</span>
+                    {isWinningUnderdogPlayer && (
+                      <span className={styles.playerComebackBadge}>
+                        {badgeConfig.underdogComeback.icon}{" "}
+                        {badgeConfig.underdogComeback.name}
+                      </span>
+                    )}
                     {isUnderdogMvp && (
                       <span className={styles.playerMvpBadge}>
-                        🔥 MVP สู้ยิบตา
+                        {badgeConfig.underdogLosingMvp.icon}{" "}
+                        {badgeConfig.underdogLosingMvp.name}
                       </span>
                     )}
                   </div>
@@ -254,11 +278,6 @@ function MatchCardComponent({
     }
   };
 
-  const isUnderdog = Boolean(
-    match.isUnderdogMatch ||
-    (match.predictedWinRateDiff !== undefined &&
-      match.predictedWinRateDiff >= 7),
-  );
   const losingTeamPlayers =
     match.winner === "teamA"
       ? match.teamB
@@ -281,7 +300,8 @@ function MatchCardComponent({
               <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
               {isUnderdog && (
                 <span className={styles.underdogHeaderTag}>
-                  🔥 สู้ยิบตา • UNDERDOG
+                  {badgeConfig.underdogMatch.icon}{" "}
+                  {badgeConfig.underdogMatch.name.toUpperCase()} • UNDERDOG
                 </span>
               )}
 
@@ -302,17 +322,31 @@ function MatchCardComponent({
             <div className={styles.rosterCol}>
               <span className={styles.rosterLabelBlue}>
                 BLUE TEAM{" "}
-                {match.underdogTeam === "teamA" ? "🛡️ (ทีมสู้ยิบตา)" : ""}
+                {match.underdogTeam === "teamA"
+                  ? `🛡️ (ทีม${badgeConfig.underdogComeback.name})`
+                  : ""}
               </span>
-              {renderRoster(match.teamA, match.teamALanes, match.teamAHeroes)}
+              {renderRoster(
+                match.teamA,
+                match.teamALanes,
+                match.teamAHeroes,
+                "teamA",
+              )}
             </div>
             {/* Red */}
             <div className={styles.rosterCol}>
               <span className={styles.rosterLabelRed}>
                 RED TEAM{" "}
-                {match.underdogTeam === "teamB" ? "🛡️ (ทีมสู้ยิบตา)" : ""}
+                {match.underdogTeam === "teamB"
+                  ? `🛡️ (ทีม${badgeConfig.underdogComeback.name})`
+                  : ""}
               </span>
-              {renderRoster(match.teamB, match.teamBLanes, match.teamBHeroes)}
+              {renderRoster(
+                match.teamB,
+                match.teamBLanes,
+                match.teamBHeroes,
+                "teamB",
+              )}
             </div>
           </div>
         </div>
@@ -345,11 +379,26 @@ function MatchCardComponent({
                 </button>
               )}
 
-              {/* Underdog MVP Section */}
-              {isUnderdog && match.winner && (
+              {/* Underdog Comeback (Upset Victory) Section */}
+              {isUnderdog && match.winner && isComeback && (
+                <div className={styles.upsetVictorySection}>
+                  <span className={styles.upsetVictoryHeaderTag}>
+                    {badgeConfig.upsetVictory.icon}{" "}
+                    {badgeConfig.upsetVictory.name.toUpperCase()}!
+                  </span>
+                  <span className={styles.upsetVictoryDesc}>
+                    {badgeConfig.underdogComeback.icon}{" "}
+                    {badgeConfig.underdogComeback.name} +0.20 WIN ยกทีม!
+                  </span>
+                </div>
+              )}
+
+              {/* Underdog Losing MVP Section - only shown when underdog team loses */}
+              {isUnderdog && match.winner && !isComeback && (
                 <div className={styles.underdogMvpSection}>
                   <span className={styles.underdogMvpHeaderTag}>
-                    🔥 สู้ยิบตา MVP (+0.35 WIN)
+                    {badgeConfig.underdogLosingMvp.icon}{" "}
+                    {badgeConfig.underdogLosingMvp.name} (+0.35 WIN)
                   </span>
 
                   {match.underdogMvp ? (
@@ -381,7 +430,7 @@ function MatchCardComponent({
                           }}
                         >
                           <option value="" disabled>
-                            🎖️ เลือก MVP ฝ่ายแพ้...
+                            🎖️ เลือก {badgeConfig.underdogLosingMvp.name}...
                           </option>
                           {losingTeamPlayers.map((pKey) => (
                             <option key={pKey} value={pKey}>
@@ -947,6 +996,12 @@ export default function HistoryDashboard({
         losses,
         matchesToNextRank,
         nextRankTarget,
+        underdogMvpCount: isSeason
+          ? stat.dbPlayer?.underdogMvpCount || 0
+          : stat.dbPlayer?.allTimeUnderdogMvpCount || 0,
+        underdogComebackCount: isSeason
+          ? stat.dbPlayer?.underdogComebackCount || 0
+          : stat.dbPlayer?.allTimeUnderdogComebackCount || 0,
       };
     };
 

@@ -1,66 +1,97 @@
 .postCard {
-  background: var(--color-bg-panel);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-left: 4px solid var(--color-neon-blue);
+  background: var(--color-bg-panel, #0f121d);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--color-neon-blue, #00d2ff);
   padding: 1.25rem;
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  border-radius: 8px;
   display: flex;
+  flex-direction: column;
   gap: 1.25rem;
+  text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .postCard {
+    flex-direction: row;
+    align-items: stretch;
+  }
 }
 
 .postCard:hover {
-  border-color: var(--color-neon-blue);
+  border-color: rgba(0, 210, 255, 0.5);
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 210, 255, 0.05);
+  box-shadow: 0 6px 24px rgba(0, 210, 255, 0.08);
 }
 
 .postCardNews {
-  border-left-color: var(--color-neon-red);
+  border-left-color: var(--color-neon-red, #ff2a5f);
 }
 
 .postCardNews:hover {
-  border-color: var(--color-neon-red);
-  box-shadow: 0 4px 20px rgba(255, 42, 95, 0.05);
+  border-color: rgba(255, 42, 95, 0.5);
+  box-shadow: 0 6px 24px rgba(255, 42, 95, 0.08);
 }
 
 .postCardContent {
-  flex-grow: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .postTitle {
-  font-family: var(--font-tech);
+  font-family:
+    var(--font-tech),
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-size: 1.25rem;
   font-weight: 700;
+  line-height: 1.35;
   margin: 0 0 0.5rem 0;
   transition: color 0.2s;
-  color: #fff;
+  color: #f8fafc;
+  word-break: break-word;
 }
 
 .postCard:hover .postTitle {
-  color: var(--color-neon-blue);
+  color: var(--color-neon-blue, #00d2ff);
 }
 
 .postCardNews:hover .postTitle {
-  color: var(--color-neon-red);
+  color: var(--color-neon-red, #ff2a5f);
 }
 
 .postExcerpt {
-  font-size: 0.85rem;
-  color: #a0a0c0;
-  line-height: 1.4;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.55;
   margin-bottom: 1rem;
+  word-break: break-word;
 }
 
 .postMeta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  font-family: var(--font-tech);
+  gap: 0.85rem;
+  font-family: var(--font-tech), system-ui, sans-serif;
   font-size: 11px;
-  color: #606078;
+  color: #64748b;
+  margin-top: auto;
 }
 
 .postAuthor {
@@ -70,11 +101,11 @@
 }
 
 .authorAvatar {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .metaItem {
@@ -84,38 +115,53 @@
 }
 
 .badgeType {
-  font-family: var(--font-pixel);
+  font-family: var(--font-pixel, monospace);
   font-size: 8px;
-  padding: 0.2rem 0.5rem;
-  background: rgba(0, 210, 255, 0.1);
-  color: var(--color-neon-blue);
-  border: 1px solid rgba(0, 210, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 210, 255, 0.12);
+  color: var(--color-neon-blue, #00d2ff);
+  border: 1px solid rgba(0, 210, 255, 0.3);
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  border-radius: 2px;
 }
 
 .badgeTypeNews {
-  background: rgba(255, 42, 95, 0.1);
-  color: var(--color-neon-red);
-  border-color: rgba(255, 42, 95, 0.2);
+  background: rgba(255, 42, 95, 0.12);
+  color: var(--color-neon-red, #ff2a5f);
+  border-color: rgba(255, 42, 95, 0.3);
 }
 
+/* Large image presentation for forums feed */
 .postCardThumb {
-  width: 100px;
-  height: 75px;
+  width: 100%;
+  height: 190px;
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: #090a12;
+}
+
+@media (min-width: 640px) {
+  .postCardThumb {
+    width: 240px;
+    height: 150px;
+  }
 }
 
 .thumbImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.postCard:hover .thumbImg {
+  transform: scale(1.03);
 }
 
 .postTags {
@@ -126,10 +172,11 @@
 }
 
 .tagBadge {
-  font-family: var(--font-tech);
+  font-family: var(--font-tech), system-ui, sans-serif;
   font-size: 10px;
-  padding: 0.15rem 0.45rem;
-  background: rgba(255, 255, 255, 0.05);
-  color: #808098;
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }

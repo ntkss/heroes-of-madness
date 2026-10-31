@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use, useMemo } from "react";
+import React, { useState, useEffect, use, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CRTOverlay from "@/components/CRTOverlay";
@@ -23,6 +23,7 @@ import { playBeep, playCoin } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
 import { UserProfileWinRateChart } from "@/components/Charts";
+import { useBadgeConfig } from "@/utils/badgeConfig";
 
 interface PageProps {
   params: Promise<{ alias?: string; id?: string }>;
@@ -43,8 +44,56 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const [selectedMode, setSelectedMode] = useState<MatchMode>("TEAM_LANE");
   const [loading, setLoading] = useState(true);
 
+  const loadData = useCallback(async () => {
+    try {
+      const [players, matches, archiveSeasons, seasonCfg] = await Promise.all([
+        fetchPlayers(),
+        fetchAllMatches(),
+        fetchSeasons(),
+        fetchSeasonConfig(),
+      ]);
+
+      setSeasons(archiveSeasons);
+      if (seasonCfg?.activeSeasonId) {
+        setActiveSeasonId(seasonCfg.activeSeasonId);
+      }
+
+      const key = playerSlug.toLowerCase().trim();
+      let foundPlayer = players.find(
+        (p) =>
+          p.id.toLowerCase() === key ||
+          p.id === playerSlug.trim() ||
+          (p.alias && p.alias.toLowerCase() === key) ||
+          p.name.toLowerCase() === key,
+      );
+
+      if (!foundPlayer) {
+        foundPlayer = {
+          id: key,
+          name: playerSlug,
+          alias: playerSlug,
+          avatar: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${key}&backgroundColor=1a1a2e`,
+          current_rank: "Unranked",
+          highest_rank: "Unranked",
+          role: "ALL-ROUNDER",
+          winrate: 0,
+          total_match_played: 0,
+          imageURL: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${key}&backgroundColor=1a1a2e`,
+        };
+      }
+      setPlayer(foundPlayer);
+
+      setAllMatches(matches);
+    } catch (err) {
+      console.error("Failed to load player profile:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [playerSlug]);
+
   useEffect(() => {
-    const loadData = async () => {
+    let isMounted = true;
+    const initData = async () => {
       try {
         const [players, matches, archiveSeasons, seasonCfg] = await Promise.all(
           [
@@ -54,6 +103,8 @@ export default function PlayerProfilePage({ params }: PageProps) {
             fetchSeasonConfig(),
           ],
         );
+
+        if (!isMounted) return;
 
         setSeasons(archiveSeasons);
         if (seasonCfg?.activeSeasonId) {
@@ -84,17 +135,39 @@ export default function PlayerProfilePage({ params }: PageProps) {
           };
         }
         setPlayer(foundPlayer);
-
         setAllMatches(matches);
       } catch (err) {
         console.error("Failed to load player profile:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
-
-    loadData();
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, [playerSlug]);
+
+  // Focus and visibility revalidation
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [loadData]);
 
   const handleSaveEdit = async (
     name: string,
@@ -145,6 +218,9 @@ export default function PlayerProfilePage({ params }: PageProps) {
           hero?: string;
           outcome: "WIN" | "LOSS" | "PENDING";
           feedback: { likes: number; dislikes: number };
+          isUnderdogMatch?: boolean;
+          underdogMvp?: string;
+          underdogTeam?: string;
         }>,
       };
     }
@@ -177,6 +253,9 @@ export default function PlayerProfilePage({ params }: PageProps) {
       hero?: string;
       outcome: "WIN" | "LOSS" | "PENDING";
       feedback: { likes: number; dislikes: number };
+      isUnderdogMatch?: boolean;
+      underdogMvp?: string;
+      underdogTeam?: string;
     }> = [];
 
     modeMatches.forEach((match) => {
@@ -261,6 +340,9 @@ export default function PlayerProfilePage({ params }: PageProps) {
         hero,
         outcome,
         feedback,
+        isUnderdogMatch: match.isUnderdogMatch,
+        underdogMvp: match.underdogMvp,
+        underdogTeam: match.underdogTeam,
       });
     });
 
@@ -363,6 +445,54 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const seasonMatchHistory = React.useMemo(() => {
     return matchHistory.filter((m) => m.seasonId === effectiveSeasonId);
   }, [matchHistory, effectiveSeasonId]);
+
+  const badgeConfig = useBadgeConfig();
+
+  // Calculate Underdog MVP counts (Season & All-time)
+  const underdogMvpSeasonCount = React.useMemo(() => {
+    return seasonMatchHistory.filter((m) => {
+      const mvp = (m.underdogMvp || "").toLowerCase();
+      const pId = (player?.id || playerSlug).toLowerCase();
+      const pName = (player?.name || "").toLowerCase();
+      const pAlias = (player?.alias || "").toLowerCase();
+      return mvp === pId || mvp === pName || mvp === pAlias;
+    }).length;
+  }, [seasonMatchHistory, player, playerSlug]);
+
+  const underdogMvpAllTimeCount = React.useMemo(() => {
+    return matchHistory.filter((m) => {
+      const mvp = (m.underdogMvp || "").toLowerCase();
+      const pId = (player?.id || playerSlug).toLowerCase();
+      const pName = (player?.name || "").toLowerCase();
+      const pAlias = (player?.alias || "").toLowerCase();
+      return mvp === pId || mvp === pName || mvp === pAlias;
+    }).length;
+  }, [matchHistory, player, playerSlug]);
+
+  // Calculate Underdog Comeback counts (Season & All-time)
+  const underdogComebackSeasonCount = React.useMemo(() => {
+    return seasonMatchHistory.filter((m) => {
+      const isPlayerTeamA = m.team === "Blue Team";
+      const isUnderdog =
+        m.isUnderdogMatch &&
+        m.underdogTeam &&
+        ((isPlayerTeamA && m.underdogTeam === "teamA") ||
+          (!isPlayerTeamA && m.underdogTeam === "teamB"));
+      return isUnderdog && m.outcome === "WIN";
+    }).length;
+  }, [seasonMatchHistory]);
+
+  const underdogComebackAllTimeCount = React.useMemo(() => {
+    return matchHistory.filter((m) => {
+      const isPlayerTeamA = m.team === "Blue Team";
+      const isUnderdog =
+        m.isUnderdogMatch &&
+        m.underdogTeam &&
+        ((isPlayerTeamA && m.underdogTeam === "teamA") ||
+          (!isPlayerTeamA && m.underdogTeam === "teamB"));
+      return isUnderdog && m.outcome === "WIN";
+    }).length;
+  }, [matchHistory]);
 
   if (loading) {
     return (
@@ -525,6 +655,27 @@ export default function PlayerProfilePage({ params }: PageProps) {
                       {player.name}
                     </h2>
                     <p className={styles.playerAlias}>{player.alias}</p>
+
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      {underdogComebackSeasonCount > 0 && (
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-pixel text-[9px] font-bold uppercase rounded border border-amber-300 shadow-[0_0_10px_rgba(255,69,0,0.6)]">
+                          <span>
+                            {badgeConfig.underdogComeback.icon}{" "}
+                            {badgeConfig.underdogComeback.name} x
+                            {underdogComebackSeasonCount}
+                          </span>
+                        </div>
+                      )}
+                      {underdogMvpSeasonCount > 0 && (
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-purple-900 via-indigo-800 to-slate-900 text-purple-200 font-pixel text-[9px] font-bold uppercase rounded border border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.6)]">
+                          <span>
+                            {badgeConfig.underdogLosingMvp.icon}{" "}
+                            {badgeConfig.underdogLosingMvp.name} x
+                            {underdogMvpSeasonCount}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <p
                       className={`${styles.playerRank} ${
                         isChampion
@@ -618,6 +769,59 @@ export default function PlayerProfilePage({ params }: PageProps) {
                     <span className={styles.statValueYellow}>
                       {overallStats.winRate}%
                     </span>
+                  </div>
+
+                  {/* Underdog Comeback Bonus Box (สู้ยิบตา) */}
+                  <div className="col-span-2 sm:col-span-4 bg-gradient-to-r from-red-950/60 via-orange-950/50 to-red-950/60 border border-orange-500/70 p-2.5 flex items-center justify-between rounded shadow-[0_0_12px_rgba(255,69,0,0.25)] mt-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl sm:text-2xl animate-bounce">
+                        {badgeConfig.underdogComeback.icon}
+                      </span>
+                      <div>
+                        <span className="font-pixel text-[8.5px] sm:text-[9.5px] text-orange-400 block uppercase tracking-wider font-bold">
+                          {badgeConfig.underdogComeback.name} (UNDERDOG
+                          COMEBACK)
+                        </span>
+                        <span className="text-[10px] text-amber-200/90 font-mono">
+                          {underdogComebackSeasonCount} ครั้งในซีซันนี้ (
+                          {underdogComebackAllTimeCount} ครั้งทั้งหมด)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-action text-base sm:text-lg font-black text-neon-yellow">
+                        +{(underdogComebackSeasonCount * 0.2).toFixed(2)} WIN
+                      </span>
+                      <span className="text-[7.5px] text-slate-400 block uppercase font-mono">
+                        TEAM COMEBACK BONUS
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Underdog Losing MVP Bonus Box (ฝันร้ายราชา) */}
+                  <div className="col-span-2 sm:col-span-4 bg-gradient-to-r from-purple-950/60 via-indigo-950/50 to-slate-950/60 border border-purple-500/70 p-2.5 flex items-center justify-between rounded shadow-[0_0_12px_rgba(168,85,247,0.25)] mt-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl sm:text-2xl">
+                        {badgeConfig.underdogLosingMvp.icon}
+                      </span>
+                      <div>
+                        <span className="font-pixel text-[8.5px] sm:text-[9.5px] text-purple-300 block uppercase tracking-wider font-bold">
+                          {badgeConfig.underdogLosingMvp.name} (LOSING MVP)
+                        </span>
+                        <span className="text-[10px] text-purple-200/90 font-mono">
+                          {underdogMvpSeasonCount} ครั้งในซีซันนี้ (
+                          {underdogMvpAllTimeCount} ครั้งทั้งหมด)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-action text-base sm:text-lg font-black text-purple-200">
+                        +{(underdogMvpSeasonCount * 0.35).toFixed(2)} WIN
+                      </span>
+                      <span className="text-[7.5px] text-slate-400 block uppercase font-mono">
+                        EFFECTIVE MVP BONUS
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -835,17 +1039,71 @@ export default function PlayerProfilePage({ params }: PageProps) {
                               </span>
                             </td>
                             <td className={styles.outcomeCell}>
-                              <span
-                                className={
-                                  m.outcome === "WIN"
-                                    ? styles.outcomeWin
-                                    : m.outcome === "LOSS"
-                                      ? styles.outcomeLoss
-                                      : styles.outcomePending
-                                }
-                              >
-                                {m.outcome}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={
+                                    m.outcome === "WIN"
+                                      ? styles.outcomeWin
+                                      : m.outcome === "LOSS"
+                                        ? styles.outcomeLoss
+                                        : styles.outcomePending
+                                  }
+                                >
+                                  {m.outcome}
+                                </span>
+                                {(() => {
+                                  const isPlayerTeamA = m.team === "Blue Team";
+                                  const isWinningUnderdog =
+                                    m.isUnderdogMatch &&
+                                    m.underdogTeam &&
+                                    m.outcome === "WIN" &&
+                                    ((isPlayerTeamA &&
+                                      m.underdogTeam === "teamA") ||
+                                      (!isPlayerTeamA &&
+                                        m.underdogTeam === "teamB"));
+
+                                  const mvpLower = (
+                                    m.underdogMvp || ""
+                                  ).toLowerCase();
+                                  const isLosingMvp =
+                                    mvpLower &&
+                                    (mvpLower ===
+                                      (player?.id || "").toLowerCase() ||
+                                      mvpLower ===
+                                        (player?.name || "").toLowerCase() ||
+                                      mvpLower ===
+                                        (player?.alias || "").toLowerCase());
+
+                                  if (isWinningUnderdog) {
+                                    return (
+                                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6px] font-bold rounded uppercase border border-amber-300/60 shadow-sm">
+                                        {badgeConfig.underdogComeback.icon}{" "}
+                                        {badgeConfig.underdogComeback.name}
+                                      </span>
+                                    );
+                                  }
+
+                                  if (isLosingMvp) {
+                                    return (
+                                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-purple-900 to-indigo-900 text-purple-200 font-pixel text-[6px] font-bold rounded uppercase border border-purple-400/60 shadow-sm">
+                                        {badgeConfig.underdogLosingMvp.icon}{" "}
+                                        {badgeConfig.underdogLosingMvp.name}
+                                      </span>
+                                    );
+                                  }
+
+                                  if (m.isUnderdogMatch) {
+                                    return (
+                                      <span className="px-1 py-0.5 bg-slate-900 text-orange-400 font-pixel text-[6px] font-bold rounded border border-orange-500/40">
+                                        {badgeConfig.underdogMatch.icon}{" "}
+                                        {badgeConfig.underdogMatch.name}
+                                      </span>
+                                    );
+                                  }
+
+                                  return null;
+                                })()}
+                              </div>
                             </td>
                           </tr>
                         ))}

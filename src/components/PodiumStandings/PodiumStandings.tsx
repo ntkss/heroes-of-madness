@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SeasonPlayerStat, getPlayerReadableSlug } from "@/utils/firebase";
+import { useBadgeConfig } from "@/utils/badgeConfig";
 import styles from "./styles.module.css";
 
 interface PodiumStandingsProps {
@@ -31,6 +32,7 @@ export default function PodiumStandings({
   thirdPlace,
   lastPlace,
 }: PodiumStandingsProps) {
+  const badgeConfig = useBadgeConfig();
   return (
     <div className={styles.podiumGrid}>
       {/* 2nd Place */}
@@ -61,6 +63,22 @@ export default function PodiumStandings({
             <span className={styles.podiumSub}>
               {secondPlace.winrate}% WR ({secondPlace.total_match_played}M)
             </span>
+            {secondPlace.underdogComebackCount !== undefined &&
+              secondPlace.underdogComebackCount > 0 && (
+                <span className="text-[7.5px] text-orange-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  {badgeConfig.underdogComeback.icon}{" "}
+                  {badgeConfig.underdogComeback.name} x
+                  {secondPlace.underdogComebackCount}
+                </span>
+              )}
+            {secondPlace.underdogMvpCount !== undefined &&
+              secondPlace.underdogMvpCount > 0 && (
+                <span className="text-[7.5px] text-purple-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  {badgeConfig.underdogLosingMvp.icon}{" "}
+                  {badgeConfig.underdogLosingMvp.name} x
+                  {secondPlace.underdogMvpCount}
+                </span>
+              )}
             {secondPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
                 Needs {secondPlace.matchesToNextRank} win
@@ -115,6 +133,22 @@ export default function PodiumStandings({
             <span className={styles.championSub}>
               {firstPlace.winrate}% WR ({firstPlace.total_match_played}M)
             </span>
+            {firstPlace.underdogComebackCount !== undefined &&
+              firstPlace.underdogComebackCount > 0 && (
+                <span className="text-[7.5px] text-orange-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  {badgeConfig.underdogComeback.icon}{" "}
+                  {badgeConfig.underdogComeback.name} x
+                  {firstPlace.underdogComebackCount}
+                </span>
+              )}
+            {firstPlace.underdogMvpCount !== undefined &&
+              firstPlace.underdogMvpCount > 0 && (
+                <span className="text-[7.5px] text-purple-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  {badgeConfig.underdogLosingMvp.icon}{" "}
+                  {badgeConfig.underdogLosingMvp.name} x
+                  {firstPlace.underdogMvpCount}
+                </span>
+              )}
           </div>
         )}
         <div className={styles.firstPlacePedestal}>
@@ -151,6 +185,22 @@ export default function PodiumStandings({
             <span className={styles.podiumSub}>
               {thirdPlace.winrate}% WR ({thirdPlace.total_match_played}M)
             </span>
+            {thirdPlace.underdogComebackCount !== undefined &&
+              thirdPlace.underdogComebackCount > 0 && (
+                <span className="text-[7.5px] text-orange-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  {badgeConfig.underdogComeback.icon}{" "}
+                  {badgeConfig.underdogComeback.name} x
+                  {thirdPlace.underdogComebackCount}
+                </span>
+              )}
+            {thirdPlace.underdogMvpCount !== undefined &&
+              thirdPlace.underdogMvpCount > 0 && (
+                <span className="text-[7.5px] text-purple-400 mt-0.5 font-pixel uppercase tracking-wider font-bold">
+                  {badgeConfig.underdogLosingMvp.icon}{" "}
+                  {badgeConfig.underdogLosingMvp.name} x
+                  {thirdPlace.underdogMvpCount}
+                </span>
+              )}
             {thirdPlace.matchesToNextRank !== undefined && (
               <span className="text-[7px] text-neon-yellow mt-1 font-pixel uppercase tracking-wider">
                 Needs {thirdPlace.matchesToNextRank} win

@@ -1,5 +1,5 @@
 @reference "../../app/globals.css";
 
 .versionBadge {
-  @apply fixed bottom-1.5 right-2 sm:bottom-2 sm:right-3 z-30 font-pixel text-[7px] sm:text-[8px] text-slate-600/70 tracking-widest uppercase select-none pointer-events-none;
+  @apply fixed bottom-1.5 right-2 sm:bottom-2 sm:right-3 z-30 font-pixel text-[7px] sm:text-[8px] text-slate-500/80 tracking-widest uppercase select-none flex items-center gap-2;
 }

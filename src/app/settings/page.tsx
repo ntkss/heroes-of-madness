@@ -23,6 +23,10 @@ import {
   migrateMatchesToDocumentIds,
   backfillPlayerAliases,
   MigrationReport,
+  BadgeConfig,
+  DEFAULT_BADGE_CONFIG,
+  fetchBadgeConfig,
+  saveBadgeConfig,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
@@ -31,7 +35,7 @@ import styles from "./styles.module.css";
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
   const [settingsTab, setSettingsTab] = useState<
-    "ranks" | "users" | "seasons" | "line" | "migration"
+    "ranks" | "users" | "seasons" | "line" | "migration" | "badges"
   >("ranks");
   const [users, setUsers] = useState<DbUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -49,6 +53,12 @@ export default function SettingsPage() {
 
   const [lineGroupId, setLineGroupId] = useState("");
   const [lineEnabled, setLineEnabled] = useState(false);
+
+  const [badgeConfigState, setBadgeConfigState] =
+    useState<BadgeConfig>(DEFAULT_BADGE_CONFIG);
+  const [badgeLoading, setBadgeLoading] = useState(false);
+  const [badgeSuccess, setBadgeSuccess] = useState("");
+  const [badgeError, setBadgeError] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -168,9 +178,46 @@ export default function SettingsPage() {
       const lCfg = await fetchLineConfig();
       setLineGroupId(lCfg.groupId);
       setLineEnabled(lCfg.enabled);
+
+      const bCfg = await fetchBadgeConfig();
+      setBadgeConfigState(bCfg);
     };
     loadConfig();
   }, [isAdmin]);
+
+  const handleSaveBadges = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBadgeError("");
+    setBadgeSuccess("");
+    setBadgeLoading(true);
+    playCoin();
+
+    try {
+      const res = await saveBadgeConfig(badgeConfigState);
+      if (res) {
+        setBadgeSuccess(
+          "🏅 BADGE SYSTEM RULES SAVED TO DATABASE SUCCESSFULLY!",
+        );
+        playBeep(523, 0.2, "sine");
+      } else {
+        setBadgeError("FAILED TO SAVE BADGE CONFIGURATION.");
+      }
+    } catch (err) {
+      console.error("Error saving badges:", err);
+      setBadgeError("FAILED TO SAVE BADGE CONFIG: " + String(err));
+    } finally {
+      setBadgeLoading(false);
+    }
+  };
+
+  const handleResetBadges = () => {
+    playBeep(200, 0.1, "sawtooth");
+    setBadgeConfigState(DEFAULT_BADGE_CONFIG);
+    setBadgeError("");
+    setBadgeSuccess(
+      "RESET BADGES TO SYSTEM DEFAULTS. CLICK SAVE TO PERSIST CHANGES.",
+    );
+  };
 
   const handleReset = () => {
     playBeep(200, 0.1, "sawtooth");
@@ -502,6 +549,20 @@ export default function SettingsPage() {
                 }`}
               >
                 💾 DATA & BACKUP
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playBeep(330, 0.1, "sawtooth");
+                  setSettingsTab("badges");
+                }}
+                className={`${styles.tabBtn} ${
+                  settingsTab === "badges"
+                    ? styles.tabBtnActive
+                    : styles.tabBtnInactive
+                }`}
+              >
+                🏅 BADGES
               </button>
             </div>
 
@@ -916,7 +977,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
-            ) : (
+            ) : settingsTab === "migration" ? (
               /* Data Migration & Backup UI */
               <div className={styles.seasonEngineContainer}>
                 <div className={styles.seasonEngineDetails}>
@@ -1054,7 +1115,535 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-            )}
+            ) : settingsTab === "badges" ? (
+              <form onSubmit={handleSaveBadges} className={styles.form}>
+                <div className={styles.formSection}>
+                  <div className="flex flex-col gap-1">
+                    <span className={styles.sectionTitle}>
+                      🎖️ BADGE & EMBLEM TITLES
+                    </span>
+                    <p className="font-thai text-xs text-slate-400">
+                      กำหนดชื่อและไอคอนของทุกเหรียญเกียรติยศและป้ายเตือนในระบบ
+                      (Underdog, Champion, Podiums)
+                    </p>
+                  </div>
+
+                  <div className={styles.badgeConfigGrid}>
+                    {/* 1. Underdog Comeback Team */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>ทีมสู้ยิบตา</span>
+                        <span className="text-[7.5px] text-amber-400 font-mono">
+                          +0.20 WIN
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ทีมรองที่สามารถพลิกกลับมาชนะทีมต่อได้ (แจกยกทีม 5 คน)
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.underdogComeback.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              underdogComeback: {
+                                ...prev.underdogComeback,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.underdogComeback.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              underdogComeback: {
+                                ...prev.underdogComeback,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                          placeholder="ชื่อ Badge..."
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-gradient-to-r from-red-600 to-orange-500 text-white border border-amber-300`}
+                        >
+                          {badgeConfigState.underdogComeback.icon}{" "}
+                          {badgeConfigState.underdogComeback.name} x3
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. Underdog Losing MVP */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>MVP ฝ่ายแพ้</span>
+                        <span className="text-[7.5px] text-purple-300 font-mono">
+                          +0.35 WIN
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ผู้เล่น MVP ของทีมรองเมื่อพ่ายแพ้ในแมตช์สู้ยิบตา
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.underdogLosingMvp.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              underdogLosingMvp: {
+                                ...prev.underdogLosingMvp,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.underdogLosingMvp.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              underdogLosingMvp: {
+                                ...prev.underdogLosingMvp,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                          placeholder="ชื่อ Badge..."
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-gradient-to-r from-purple-900 to-slate-900 text-purple-200 border border-purple-400`}
+                        >
+                          {badgeConfigState.underdogLosingMvp.icon}{" "}
+                          {badgeConfigState.underdogLosingMvp.name} x2
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. Season Champion */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>แชมป์ประจำซีซัน</span>
+                        <span className="text-[7.5px] text-yellow-300 font-mono">
+                          CHAMPION
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ตราเกียรติยศผู้ชนะเลิศอันดับ 1 ของแต่ละซีซัน
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.seasonChampion.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              seasonChampion: {
+                                ...prev.seasonChampion,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.seasonChampion.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              seasonChampion: {
+                                ...prev.seasonChampion,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                          placeholder="ชื่อ Badge..."
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-amber-950 text-amber-300 border border-amber-400`}
+                        >
+                          {badgeConfigState.seasonChampion.icon}{" "}
+                          {badgeConfigState.seasonChampion.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 4. Underdog Match Tag */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>ป้ายโหมดสู้ยิบตา</span>
+                        <span className="text-[7.5px] text-orange-400 font-mono">
+                          ARENA / LOG
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ป้ายกำกับแมตช์ที่คาดการณ์อัตราชนะต่างกันตั้งแต่ 7%
+                        ขึ้นไป
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.underdogMatch.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              underdogMatch: {
+                                ...prev.underdogMatch,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.underdogMatch.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              underdogMatch: {
+                                ...prev.underdogMatch,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                          placeholder="ชื่อ Badge..."
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-red-950 text-orange-400 border border-orange-500`}
+                        >
+                          {badgeConfigState.underdogMatch.icon}{" "}
+                          {badgeConfigState.underdogMatch.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 5. Upset Victory Tag */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>ป้ายชัยชนะล้มยักษ์</span>
+                        <span className="text-[7.5px] text-yellow-300 font-mono">
+                          MATCH LOG
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ป้ายประวัติการแข่งขันเมื่อทีมรองสามารถพลิกชนะทีมต่อได้
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.upsetVictory.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              upsetVictory: {
+                                ...prev.upsetVictory,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.upsetVictory.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              upsetVictory: {
+                                ...prev.upsetVictory,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                          placeholder="ชื่อ Badge..."
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-amber-950 text-amber-300 border border-amber-400`}
+                        >
+                          {badgeConfigState.upsetVictory.icon}{" "}
+                          {badgeConfigState.upsetVictory.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 6. First Place */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>อันดับ 1 (ทอง)</span>
+                        <span className="text-[7.5px] text-yellow-400 font-mono">
+                          PODIUM
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ป้ายอันดับที่ 1 บนโพเดียมของซีซัน
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.firstPlace.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              firstPlace: {
+                                ...prev.firstPlace,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.firstPlace.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              firstPlace: {
+                                ...prev.firstPlace,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-yellow-950 text-yellow-300 border border-yellow-400`}
+                        >
+                          {badgeConfigState.firstPlace.icon}{" "}
+                          {badgeConfigState.firstPlace.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 7. Second Place */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>อันดับ 2 (เงิน)</span>
+                        <span className="text-[7.5px] text-slate-300 font-mono">
+                          PODIUM
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ป้ายรองชนะเลิศอันดับ 1 บนโพเดียม
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.secondPlace.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              secondPlace: {
+                                ...prev.secondPlace,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.secondPlace.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              secondPlace: {
+                                ...prev.secondPlace,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-slate-900 text-slate-200 border border-slate-400`}
+                        >
+                          {badgeConfigState.secondPlace.icon}{" "}
+                          {badgeConfigState.secondPlace.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 8. Third Place */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>อันดับ 3 (ทองแดง)</span>
+                        <span className="text-[7.5px] text-orange-400 font-mono">
+                          PODIUM
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ป้ายรองชนะเลิศอันดับ 2 บนโพเดียม
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.thirdPlace.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              thirdPlace: {
+                                ...prev.thirdPlace,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.thirdPlace.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              thirdPlace: {
+                                ...prev.thirdPlace,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-orange-950 text-amber-400 border border-orange-500`}
+                        >
+                          {badgeConfigState.thirdPlace.icon}{" "}
+                          {badgeConfigState.thirdPlace.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 9. Last Place */}
+                    <div className={styles.badgeCard}>
+                      <span className={styles.badgeCardTitle}>
+                        <span>อันดับสุดท้าย (บ๊วย)</span>
+                        <span className="text-[7.5px] text-red-400 font-mono">
+                          PODIUM
+                        </span>
+                      </span>
+                      <p className={styles.badgeCardDesc}>
+                        ป้ายสำหรับผู้เล่นอันดับสุดท้ายของซีซัน
+                      </p>
+                      <div className={styles.badgeInputsRow}>
+                        <input
+                          type="text"
+                          value={badgeConfigState.lastPlace.icon}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              lastPlace: {
+                                ...prev.lastPlace,
+                                icon: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeIconInput}
+                          title="Icon / Emoji"
+                        />
+                        <input
+                          type="text"
+                          value={badgeConfigState.lastPlace.name}
+                          onChange={(e) =>
+                            setBadgeConfigState((prev) => ({
+                              ...prev,
+                              lastPlace: {
+                                ...prev.lastPlace,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          className={styles.badgeNameInput}
+                        />
+                      </div>
+                      <div className={styles.badgePreviewRow}>
+                        <span>PREVIEW:</span>
+                        <span
+                          className={`${styles.badgePreviewPill} bg-red-950 text-red-300 border border-red-500`}
+                        >
+                          {badgeConfigState.lastPlace.icon}{" "}
+                          {badgeConfigState.lastPlace.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {badgeSuccess && (
+                  <div className={styles.statusSuccess}>{badgeSuccess}</div>
+                )}
+                {badgeError && (
+                  <div className={styles.statusError}>⚠️ {badgeError}</div>
+                )}
+
+                <div className={styles.formActions}>
+                  <button
+                    type="submit"
+                    disabled={badgeLoading}
+                    className={styles.submitBtn}
+                  >
+                    <span>
+                      {badgeLoading
+                        ? "SAVING BADGES..."
+                        : "💾 SAVE BADGE SETTINGS"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetBadges}
+                    disabled={badgeLoading}
+                    className={styles.resetBtn}
+                  >
+                    🔄 RESET TO DEFAULTS
+                  </button>
+                </div>
+              </form>
+            ) : null}
           </div>
         </main>
 

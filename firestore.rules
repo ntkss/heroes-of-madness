@@ -12,8 +12,8 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && (
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin') ||
-        (request.auth.token.email == 'nattakit.suksaeng@gmail.com' && request.auth.token.email_verified == true)
+        (request.auth.token.email == 'nattakit.suksaeng@gmail.com' && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin')
       );
     }
 
@@ -27,7 +27,7 @@ service cloud.firestore {
     match /matches/{matchId} {
       allow read: if true;
       allow create: if true;
-      allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback']));
+      allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback', 'underdogMvp']));
       allow delete: if isAdmin();
 
       // Comments
@@ -43,15 +43,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Config
+    // Sensitive config (LINE system) restricted to Admin
+    match /config/lineSystem {
+      allow read, write: if isAdmin();
+    }
+
+    // Public config (ranks, badges, seasonConfig)
     match /config/{configId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Match Images
+    // Match Images (Enforce max size < 1MB to prevent document overflow)
     match /matchImages/{matchId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.resource.data.image is string && request.resource.data.image.size() < 1000000;
     }
 
     // Config Bootstrap

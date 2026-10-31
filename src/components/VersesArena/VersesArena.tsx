@@ -21,7 +21,13 @@ import {
   MatchMode,
   Season,
 } from "@/utils/firebase";
-import { calculateTeamWinRates, PlayerOverallStats } from "@/utils/winrate";
+import {
+  calculateTeamWinRates,
+  PlayerOverallStats,
+  isUnderdogMatch,
+  getUnderdogTeam,
+} from "@/utils/winrate";
+import { useBadgeConfig, BadgeConfig } from "@/utils/badgeConfig";
 import PlayerCard from "@/components/PlayerCard";
 import styles from "./styles.module.css";
 
@@ -63,6 +69,8 @@ interface TeamRowProps {
   laneStats: PlayerOverallStats[];
   showShine: boolean;
   playerChampionMap: Record<string, number[]>;
+  isUnderdogTeam?: boolean;
+  badgeConfig?: BadgeConfig;
 }
 
 function findSquadPlayer(
@@ -98,6 +106,8 @@ function TeamRow({
   laneStats,
   showShine,
   playerChampionMap,
+  isUnderdogTeam,
+  badgeConfig,
 }: TeamRowProps) {
   const isBlue = side === "A";
   const isWinner = winner === (isBlue ? "teamA" : "teamB");
@@ -160,6 +170,13 @@ function TeamRow({
           >
             {label}
           </span>
+
+          {isUnderdogTeam && (
+            <span className={styles.underdogTeamBadge}>
+              {badgeConfig?.underdogMatch.icon || "🔥"}{" "}
+              {badgeConfig?.underdogMatch.name || "สู้ยิบตา"} (UNDERDOG)
+            </span>
+          )}
           <span
             className={`${styles.teamBadge} ${
               isBlue ? styles.teamBadgeBlue : styles.teamBadgeRed
@@ -250,6 +267,9 @@ function TeamRow({
                 rankClass={rankClass}
                 laneWinRate={laneStats?.[idx]?.laneWinRate}
                 championSeasons={champSeasons}
+                underdogMvpCount={player?.underdogMvpCount}
+                underdogComebackCount={player?.underdogComebackCount}
+                badgeConfig={badgeConfig}
               />
             );
           })}
@@ -292,6 +312,7 @@ export default function VersesArena({
   const [lockedSlots, setLockedSlots] = useState<boolean[]>(
     Array(10).fill(true),
   );
+  const badgeConfig = useBadgeConfig();
 
   // Compute map of player -> list of season IDs won (e.g. { "nutty": [1], "bas": [2] })
   const playerChampionMap = useMemo(() => {
@@ -318,17 +339,6 @@ export default function VersesArena({
           }
         }
       });
-    }
-
-    // Fallback mock champion seasons mapping if DB has no archived seasons yet
-    // Expanded for easy localhost visual testing of champion shimmer effects
-    if (Object.keys(map).length === 0) {
-      map["nutty"] = [1, 3]; // Multi-season champion (2x) — prismatic glow
-      map["bas"] = [2];
-      map["jajou"] = [3];
-      map["jimmy"] = [1];
-      map["moonshadow"] = [2];
-      map["beer"] = [1];
     }
 
     return map;
@@ -373,6 +383,13 @@ export default function VersesArena({
     }
     return calculateTeamWinRates(teamA, teamB, matches || [], squad, mode);
   }, [teamA, teamB, matches, squad, mode]);
+
+  const isUnderdog =
+    !isGenerating &&
+    isUnderdogMatch(winRateSummary.teamAWinRate, winRateSummary.teamBWinRate);
+  const underdogSide = isUnderdog
+    ? getUnderdogTeam(winRateSummary.teamAWinRate, winRateSummary.teamBWinRate)
+    : null;
 
   // Synchronize or reset animation win rates
   useEffect(() => {
@@ -568,9 +585,32 @@ export default function VersesArena({
       <div className={styles.ambientRed} />
       <div className={styles.ambientYellow} />
 
+      {/* Dramatic 45-degree Z-Axis Underdog Background Overlay */}
+      {isUnderdog && (
+        <div className={styles.underdogWatermarkOverlay} aria-hidden="true">
+          <div className={styles.underdogWatermarkBand}>
+            <div className={styles.underdogHazardStrip}>
+              <span>
+                ⚡ HIGH RISK • HIGH BOUNTY • UNDERDOG REBELLION • COMEBACK OR
+                DIE ⚡
+              </span>
+            </div>
+            <div className={styles.underdogWatermarkTitle}>
+              🔥 UNDERDOG BATTLE 🔥
+            </div>
+            <div className={styles.underdogHazardStrip}>
+              <span>
+                ⚡ HIGH RISK • HIGH BOUNTY • UNDERDOG REBELLION • COMEBACK OR
+                DIE ⚡
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Team A (Top Row) */}
       <TeamRow
-        label="TEAM BLUE DRAGON"
+        label="BLUE"
         side="A"
         finalNames={teamA.length >= 5 ? teamA : Array(5).fill("DRAFTING")}
         displayNames={dispA}
@@ -587,6 +627,8 @@ export default function VersesArena({
         laneStats={winRateSummary.teamALaneStats}
         showShine={showShine}
         playerChampionMap={playerChampionMap}
+        isUnderdogTeam={underdogSide === "teamA"}
+        badgeConfig={badgeConfig}
       />
 
       {/* VS Banner & Win Rate Prediction Section */}
@@ -605,65 +647,11 @@ export default function VersesArena({
           </div>
           <div className={styles.vsLineRed} />
         </div>
-
-        {/* Win Rate Comparison Prediction Banner */}
-        <div className={styles.predictionContainer}>
-          <div className={styles.predictionHeader}>
-            <span className={styles.predTeamBlue}>
-              🔵 BLUE: {animatedWinRateA}%
-            </span>
-            <span className={styles.predFavoredTag}>
-              {isGenerating
-                ? "⚡ ANALYZING OVERALL WIN RATES..."
-                : winRateSummary.favoredTeam === "teamA"
-                  ? "👑 BLUE DRAGON FAVORED TO WIN"
-                  : winRateSummary.favoredTeam === "teamB"
-                    ? "👑 RED TIGER FAVORED TO WIN"
-                    : "⚖️ EVEN MATCHUP (50/50)"}
-            </span>
-            <span className={styles.predTeamRed}>
-              🔴 RED: {animatedWinRateB}%
-            </span>
-          </div>
-
-          {/* Visual Dual-Colored Split Win Rate Progress Bar */}
-          <div className={styles.predictionBarOuter}>
-            <div
-              className={styles.predictionBarBlue}
-              style={{
-                width: `${
-                  animatedWinRateA + animatedWinRateB > 0
-                    ? Math.round(
-                        (animatedWinRateA /
-                          (animatedWinRateA + animatedWinRateB)) *
-                          100,
-                      )
-                    : 50
-                }%`,
-              }}
-            />
-            <div
-              className={styles.predictionBarRed}
-              style={{
-                width: `${
-                  animatedWinRateA + animatedWinRateB > 0
-                    ? 100 -
-                      Math.round(
-                        (animatedWinRateA /
-                          (animatedWinRateA + animatedWinRateB)) *
-                          100,
-                      )
-                    : 50
-                }%`,
-              }}
-            />
-          </div>
-        </div>
       </div>
 
       {/* Team B (Bottom Row) */}
       <TeamRow
-        label="TEAM RED TIGER"
+        label="RED"
         side="B"
         finalNames={teamB.length >= 5 ? teamB : Array(5).fill("DRAFTING")}
         displayNames={dispB}
@@ -680,6 +668,8 @@ export default function VersesArena({
         laneStats={winRateSummary.teamBLaneStats}
         showShine={showShine}
         playerChampionMap={playerChampionMap}
+        isUnderdogTeam={underdogSide === "teamB"}
+        badgeConfig={badgeConfig}
       />
 
       {/* Loading screen tips at the bottom */}

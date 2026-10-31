@@ -91,7 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const isAdmin = role === "admin";
+  // In offline LocalStorage mode (when Firebase credentials are not configured),
+  // automatically grant admin capabilities so developers and offline users can access settings.
+  const isAdmin = !isFirebaseConfigured || role === "admin";
 
   return (
     <AuthContext.Provider

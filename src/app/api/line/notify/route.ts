@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
-import { db } from "@/utils/firebase";
+import { db, fetchLineConfig } from "@/utils/firebase";
 import { doc, setDoc } from "firebase/firestore";
 
 export async function POST(request: Request) {
   try {
-    const { messageText, groupId, imageUrl, imageBuffer, matchId } =
-      await request.json();
+    const {
+      messageText,
+      groupId: providedGroupId,
+      imageUrl,
+      imageBuffer,
+      matchId,
+    } = await request.json();
 
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
@@ -19,7 +24,17 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!groupId) {
+    const lineConfig = await fetchLineConfig();
+    const targetGroupId = providedGroupId || lineConfig.groupId;
+
+    if (!lineConfig.enabled && !providedGroupId) {
+      return NextResponse.json(
+        { error: "LINE integration is disabled in settings." },
+        { status: 403 },
+      );
+    }
+
+    if (!targetGroupId) {
       return NextResponse.json(
         { error: "LINE Group ID is required." },
         { status: 400 },
@@ -28,29 +43,36 @@ export async function POST(request: Request) {
 
     let finalImageUrl = imageUrl;
 
-    // Save image base64 directly to Firestore under matchesImages collection
+    // Save image base64 directly to Firestore under matchImages collection
+    // Check max size: Firestore docs cannot exceed 1MB (~1,048,576 bytes)
     if (imageBuffer && matchId && db) {
-      try {
-        const host = request.headers.get("host") || "localhost:3000";
-        const protocol = host.startsWith("localhost") ? "http" : "https";
-        const baseUrl = `${protocol}://${host}`;
-
-        console.log(
-          `[LINE API] Storing matchup image in Firestore for match ${matchId}...`,
+      if (typeof imageBuffer === "string" && imageBuffer.length > 950000) {
+        console.warn(
+          `[LINE API] Match image size (${imageBuffer.length} bytes) exceeds Firestore 950KB safety limit. Skipping image attachment to prevent storage crash.`,
         );
-        const imageRef = doc(db, "matchImages", matchId);
-        await setDoc(imageRef, {
-          image: imageBuffer,
-          createdAt: Date.now(),
-        });
+      } else {
+        try {
+          const host = request.headers.get("host") || "localhost:3000";
+          const protocol = host.startsWith("localhost") ? "http" : "https";
+          const baseUrl = `${protocol}://${host}`;
 
-        finalImageUrl = `${baseUrl}/api/line/image/${matchId}`;
-        console.log(`[LINE API] Image saved. Serving URL: ${finalImageUrl}`);
-      } catch (dbError) {
-        console.error(
-          "[LINE API] Failed to store image in Firestore:",
-          dbError,
-        );
+          console.log(
+            `[LINE API] Storing matchup image in Firestore for match ${matchId}...`,
+          );
+          const imageRef = doc(db, "matchImages", matchId);
+          await setDoc(imageRef, {
+            image: imageBuffer,
+            createdAt: Date.now(),
+          });
+
+          finalImageUrl = `${baseUrl}/api/line/image/${matchId}`;
+          console.log(`[LINE API] Image saved. Serving URL: ${finalImageUrl}`);
+        } catch (dbError) {
+          console.error(
+            "[LINE API] Failed to store image in Firestore:",
+            dbError,
+          );
+        }
       }
     }
 
@@ -90,7 +112,7 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        to: groupId,
+        to: targetGroupId,
         messages,
       }),
     });

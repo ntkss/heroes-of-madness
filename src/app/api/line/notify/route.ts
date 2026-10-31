@@ -4,8 +4,13 @@ import { doc, setDoc } from "firebase/firestore";
 
 export async function POST(request: Request) {
   try {
-    const { messageText, groupId: providedGroupId, imageUrl, imageBuffer, matchId } =
-      await request.json();
+    const {
+      messageText,
+      groupId: providedGroupId,
+      imageUrl,
+      imageBuffer,
+      matchId,
+    } = await request.json();
 
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 

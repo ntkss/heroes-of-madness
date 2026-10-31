@@ -1474,7 +1474,8 @@ export default function HistoryDashboard({
                     const targetComeback =
                       statsSubTab === "season"
                         ? targetStat.dbPlayer?.underdogComebackCount || 0
-                        : targetStat.dbPlayer?.allTimeUnderdogComebackCount || 0;
+                        : targetStat.dbPlayer?.allTimeUnderdogComebackCount ||
+                          0;
 
                     const curMvp =
                       statsSubTab === "season"

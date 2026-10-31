@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import CRTOverlay from "@/components/CRTOverlay";
@@ -19,8 +19,10 @@ import {
   getRequiredMinMatches,
 } from "@/utils/firebase";
 import { playBeep } from "@/utils/audio";
+import { useBadgeConfig } from "@/utils/badgeConfig";
 
 export default function SeasonsPage() {
+  const badgeConfig = useBadgeConfig();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
@@ -31,31 +33,86 @@ export default function SeasonsPage() {
   );
   const [audioInitialized, setAudioInitialized] = useState(false);
 
+  const loadData = useCallback(async () => {
+    try {
+      const [archive, allMatches, rConfig] = await Promise.all([
+        fetchSeasons(),
+        fetchAllMatches(),
+        fetchRankConfig(),
+      ]);
+      setSeasons(archive);
+      setMatches(allMatches);
+      setRankConfig(rConfig);
+
+      if (archive.length > 0) {
+        setSelectedSeasonId((prev) => {
+          if (prev !== null && archive.some((s) => s.id === prev)) return prev;
+          const sorted = [...archive].sort((a, b) => b.id - a.id);
+          return sorted[0].id;
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load seasons history:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadData = async () => {
+    let isMounted = true;
+    const initData = async () => {
       try {
         const [archive, allMatches, rConfig] = await Promise.all([
           fetchSeasons(),
           fetchAllMatches(),
           fetchRankConfig(),
         ]);
-        setSeasons(archive);
-        setMatches(allMatches);
-        setRankConfig(rConfig);
+        if (isMounted) {
+          setSeasons(archive);
+          setMatches(allMatches);
+          setRankConfig(rConfig);
 
-        if (archive.length > 0) {
-          // Select the latest archived season by default
-          const sorted = [...archive].sort((a, b) => b.id - a.id);
-          setSelectedSeasonId(sorted[0].id);
+          if (archive.length > 0) {
+            setSelectedSeasonId((prev) => {
+              if (prev !== null && archive.some((s) => s.id === prev))
+                return prev;
+              const sorted = [...archive].sort((a, b) => b.id - a.id);
+              return sorted[0].id;
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to load seasons history:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
-    loadData();
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Focus and visibility revalidation
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [loadData]);
 
   const initAudioFeedback = () => {
     if (!audioInitialized) {
@@ -91,8 +148,24 @@ export default function SeasonsPage() {
 
       const aWins = Math.round((a.winrate / 100) * a.total_match_played);
       const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-      const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-      const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+      const aWeighted = getWeightedWinrate(
+        aWins,
+        a.total_match_played,
+        10,
+        a.underdogMvpCount || 0,
+        0.35,
+        a.underdogComebackCount || 0,
+        0.2,
+      );
+      const bWeighted = getWeightedWinrate(
+        bWins,
+        b.total_match_played,
+        10,
+        b.underdogMvpCount || 0,
+        0.35,
+        b.underdogComebackCount || 0,
+        0.2,
+      );
 
       if (bWeighted !== aWeighted) {
         return bWeighted - aWeighted;
@@ -308,6 +381,26 @@ export default function SeasonsPage() {
                                   <span className={styles.fighterCellName}>
                                     {stat.name}
                                   </span>
+                                  {stat.underdogComebackCount !== undefined &&
+                                    stat.underdogComebackCount > 0 && (
+                                      <span
+                                        className="ml-1.5 px-1 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6.5px] rounded uppercase font-bold"
+                                        title={`${badgeConfig.underdogComeback.name} ${stat.underdogComebackCount} ครั้ง`}
+                                      >
+                                        {badgeConfig.underdogComeback.icon} x
+                                        {stat.underdogComebackCount}
+                                      </span>
+                                    )}
+                                  {stat.underdogMvpCount !== undefined &&
+                                    stat.underdogMvpCount > 0 && (
+                                      <span
+                                        className="ml-1 px-1 py-0.5 bg-gradient-to-r from-purple-900 to-indigo-900 text-purple-200 font-pixel text-[6.5px] rounded uppercase font-bold border border-purple-400/60"
+                                        title={`${badgeConfig.underdogLosingMvp.name} ${stat.underdogMvpCount} ครั้ง`}
+                                      >
+                                        {badgeConfig.underdogLosingMvp.icon} x
+                                        {stat.underdogMvpCount}
+                                      </span>
+                                    )}
                                 </td>
                                 <td className={styles.matchesCell}>
                                   {stat.total_match_played} M

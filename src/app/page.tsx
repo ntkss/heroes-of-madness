@@ -18,6 +18,7 @@ import {
   fetchAllMatches,
   saveMatch,
   updateMatchWinner,
+  updateMatchUnderdogMvp,
   deleteMatch,
   deleteAllMatches,
   fetchPlayers,
@@ -32,9 +33,12 @@ import {
   fetchSeasons,
 } from "@/utils/firebase";
 import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
+import { calculateTeamWinRates } from "@/utils/winrate";
 import { FILL_POOL_NAMES } from "@/constants/players";
 import { toBlob, toPng } from "html-to-image";
 import { useAuth } from "@/utils/AuthContext";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { notifyTeamDrafted } from "@/utils/notifications";
 
 export default function Home() {
   const {
@@ -90,8 +94,8 @@ export default function Home() {
     }
   }, [isGenerating]);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = useCallback(async () => {
+    try {
       const [logs, players, config, seasonCfg, archiveSeasons] =
         await Promise.all([
           fetchAllMatches(),
@@ -105,9 +109,80 @@ export default function Home() {
       setRankConfig(config);
       setActiveSeasonId(seasonCfg.activeSeasonId);
       setSeasons(archiveSeasons);
-    };
-    loadData();
+    } catch (err) {
+      console.error("Error refreshing application data:", err);
+    }
   }, []);
+
+  // Initial mount
+  useEffect(() => {
+    let isMounted = true;
+    const initData = async () => {
+      try {
+        const [logs, players, config, seasonCfg, archiveSeasons] =
+          await Promise.all([
+            fetchAllMatches(),
+            fetchPlayers(),
+            fetchRankConfig(),
+            fetchSeasonConfig(),
+            fetchSeasons(),
+          ]);
+        if (isMounted) {
+          setMatches(logs);
+          setAvailablePlayers(players);
+          setRankConfig(config);
+          setActiveSeasonId(seasonCfg.activeSeasonId);
+          setSeasons(archiveSeasons);
+        }
+      } catch (err) {
+        console.error("Error loading application data:", err);
+      }
+    };
+    initData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Freshness guarantee: Auto-revalidate on window focus & tab visibility change
+  useEffect(() => {
+    let lastRevalidate = Date.now();
+    const handleRevalidate = () => {
+      // Throttle revalidation to avoid spamming Firestore (at most once every 5 seconds)
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        Date.now() - lastRevalidate > 5000
+      ) {
+        lastRevalidate = Date.now();
+        loadData();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    // Multi-tab sync: if another tab updates any store, sync immediately
+    const handleStorageChange = (e: StorageEvent) => {
+      if (
+        e.key === "mlbb_generator_matches" ||
+        e.key === "mlbb_generator_players" ||
+        e.key === "mlbb_generator_seasons" ||
+        e.key === "mlbb_rank_config" ||
+        e.key === "mlbb_badge_config" ||
+        e.key === "mlbb_generator_season_config"
+      ) {
+        loadData();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [loadData]);
 
   const handleAddPlayer = async (newPlayer: Omit<DbPlayer, "id">) => {
     const saved = await savePlayer(newPlayer);
@@ -558,6 +633,24 @@ export default function Home() {
     setTeamA(finalTeamA);
     setTeamB(finalTeamB);
 
+    // Calculate predicted win rates for Underdog mode evaluation (threshold: 7%)
+    const draftPredictions = calculateTeamWinRates(
+      finalTeamA,
+      finalTeamB,
+      matches,
+      availablePlayers,
+      activeMode,
+    );
+    const draftDiff = Math.abs(
+      draftPredictions.teamAWinRate - draftPredictions.teamBWinRate,
+    );
+    const isUnderdogDraft = draftDiff >= 7;
+    const underdogTeamSide = isUnderdogDraft
+      ? draftPredictions.teamAWinRate < draftPredictions.teamBWinRate
+        ? "teamA"
+        : "teamB"
+      : undefined;
+
     if (activeMode === "HERO_ROV" || activeMode === "HERO_MLBB") {
       const currentGame: GameType = activeMode === "HERO_ROV" ? "ROV" : "MLBB";
       const baseLanes: HeroLane[] = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
@@ -602,11 +695,18 @@ export default function Home() {
             createdAt: Date.now(),
             seasonId: activeSeasonId,
             mode: activeMode === "HERO_ROV" ? "HERO_ROV" : "HERO_MLBB",
+            isUnderdogMatch: isUnderdogDraft,
+            underdogTeam: underdogTeamSide,
+            predictedWinRateDiff: draftDiff,
           });
           setActiveMatchId(saved.id);
+          setMatches((prev) => [
+            saved,
+            ...prev.filter((m) => m.id !== saved.id),
+          ]);
 
-          const updatedLogs = await fetchAllMatches();
-          setMatches(updatedLogs);
+          // Native device notification for PWA
+          notifyTeamDrafted(finalTeamA, finalTeamB, isUnderdogDraft);
         } catch (error) {
           console.error("Failed to log hero draft match:", error);
         } finally {
@@ -633,11 +733,15 @@ export default function Home() {
           createdAt: Date.now(),
           seasonId: activeSeasonId,
           mode: "TEAM_LANE",
+          isUnderdogMatch: isUnderdogDraft,
+          underdogTeam: underdogTeamSide,
+          predictedWinRateDiff: draftDiff,
         });
         setActiveMatchId(saved.id);
+        setMatches((prev) => [saved, ...prev.filter((m) => m.id !== saved.id)]);
 
-        const updatedLogs = await fetchAllMatches();
-        setMatches(updatedLogs);
+        // Native device notification for PWA
+        notifyTeamDrafted(finalTeamA, finalTeamB, isUnderdogDraft);
 
         // Send text notification immediately
         await triggerLineDraftNotification(
@@ -675,6 +779,25 @@ export default function Home() {
     ]);
     setMatches(updatedLogs);
     setAvailablePlayers(updatedPlayers);
+  };
+
+  const handleUpdateUnderdogMvp = async (
+    matchId: string,
+    underdogMvp: string | null,
+  ) => {
+    await updateMatchUnderdogMvp(matchId, underdogMvp);
+    const [updatedLogs, updatedPlayers] = await Promise.all([
+      fetchAllMatches(),
+      fetchPlayers(),
+    ]);
+    setMatches(updatedLogs);
+    setAvailablePlayers(updatedPlayers);
+    setToast({
+      message: underdogMvp
+        ? "UNDERDOG MVP RECORDED! 🔥"
+        : "UNDERDOG MVP CLEARED!",
+      type: "success",
+    });
   };
 
   const handleDeleteMatch = async (matchId: string) => {
@@ -737,7 +860,10 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
+            <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
+              {/* PWA Installation & Notification Control */}
+              <PWAInstallPrompt senderName={user?.displayName || undefined} />
+
               {/* Google Authentication Control */}
               {loading ? (
                 <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none shrink-0">
@@ -981,6 +1107,7 @@ export default function Home() {
                 onDeleteMatch={handleDeleteMatch}
                 onDeleteAllMatches={handleDeleteAllMatches}
                 onUpdateWinner={handleUpdatePastWinner}
+                onUpdateUnderdogMvp={handleUpdateUnderdogMvp}
                 availablePlayers={availablePlayers}
                 rankConfig={rankConfig || DEFAULT_RANK_CONFIG}
                 isAdmin={isAdmin}

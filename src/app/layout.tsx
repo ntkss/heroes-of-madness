@@ -49,6 +49,7 @@ export const metadata: Metadata = {
     "Hall of Fame",
     "Esports",
   ],
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

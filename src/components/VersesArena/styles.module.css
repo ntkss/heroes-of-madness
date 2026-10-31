@@ -70,7 +70,7 @@
 }
 
 .teamRow {
-  @apply relative flex flex-col gap-1 w-full shrink-0;
+  @apply relative z-10 flex flex-col gap-1 w-full shrink-0;
 }
 
 .teamRowHeader {
@@ -477,4 +477,70 @@
 
 .championWinrate {
   @apply font-pixel text-[7px] sm:text-[8px] text-amber-400 uppercase tracking-widest mt-0.5;
+}
+
+/* Underdog Mode styles */
+.underdogWatermarkOverlay {
+  @apply absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none z-0;
+}
+
+.underdogWatermarkBand {
+  @apply relative flex flex-col items-center justify-center py-5 sm:py-7 w-[240%] sm:w-[200%] md:w-[170%] opacity-90;
+  transform: rotateZ(0);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(185, 28, 28, 0.08) 10%,
+    rgba(234, 88, 12, 0.22) 30%,
+    rgba(239, 68, 68, 0.3) 50%,
+    rgba(234, 88, 12, 0.22) 70%,
+    rgba(185, 28, 28, 0.08) 90%,
+    transparent 100%
+  );
+  /* border-top: 2px dashed rgba(249, 115, 22, 0.55);
+  border-bottom: 2px dashed rgba(249, 115, 22, 0.55); */
+  box-shadow:
+    0 0 50px rgba(239, 68, 68, 0.25),
+    inset 0 0 30px rgba(255, 69, 0, 0.2);
+  animation: underdogWatermarkPulse 3s infinite ease-in-out;
+}
+
+@keyframes underdogWatermarkPulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 15px rgba(255, 69, 0, 0.5));
+    transform: rotateZ(0) scale(0.98);
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 35px rgba(239, 68, 68, 0.8));
+    transform: rotateZ(0) scale(1.02);
+  }
+}
+
+.underdogWatermarkTitle {
+  @apply font-pixel font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl uppercase whitespace-nowrap;
+  background: linear-gradient(
+    180deg,
+    #fff7ed 0%,
+    #fbbf24 35%,
+    #f97316 70%,
+    #dc2626 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 69, 0, 0.95))
+    drop-shadow(0 0 40px rgba(239, 68, 68, 0.7));
+  letter-spacing: 0.18em;
+}
+
+.underdogHazardStrip {
+  @apply font-pixel text-[7.5px] sm:text-[9.5px] md:text-[11px] text-amber-300/80 tracking-[0.3em] uppercase whitespace-nowrap my-1;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+}
+
+.underdogTeamBadge {
+  @apply px-1.5 py-0.5 rounded font-pixel text-[6.5px] md:text-[7.5px] uppercase tracking-wider bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-bold border border-amber-300 animate-pulse;
+  box-shadow: 0 0 8px rgba(255, 69, 0, 0.6);
 }

@@ -3,6 +3,9 @@ import { SQUAD } from "@/constants/players";
 import { normalizeLane } from "@/constants/heroes";
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection,
   addDoc,
   setDoc,
@@ -62,6 +65,10 @@ export interface Match {
   feedback?: {
     [playerKey: string]: PlayerFeedback;
   };
+  isUnderdogMatch?: boolean;
+  underdogMvp?: string;
+  underdogTeam?: "teamA" | "teamB";
+  predictedWinRateDiff?: number;
 }
 
 export interface MatchComment {
@@ -89,6 +96,10 @@ export interface DbPlayer {
   allTimeWins?: number;
   allTimeMatches?: number;
   allTimeWinrate?: number;
+  underdogMvpCount?: number;
+  allTimeUnderdogMvpCount?: number;
+  underdogComebackCount?: number;
+  allTimeUnderdogComebackCount?: number;
 }
 
 export interface SeasonPlayerStat {
@@ -103,6 +114,8 @@ export interface SeasonPlayerStat {
   losses?: number;
   matchesToNextRank?: number;
   nextRankTarget?: number;
+  underdogMvpCount?: number;
+  underdogComebackCount?: number;
 }
 
 export interface Season {
@@ -130,6 +143,72 @@ export interface RankConfig {
     low: string;
   };
 }
+
+export interface BadgeItemConfig {
+  name: string;
+  icon: string;
+  description?: string;
+}
+
+export interface BadgeConfig {
+  underdogLosingMvp: BadgeItemConfig;
+  underdogComeback: BadgeItemConfig;
+  seasonChampion: BadgeItemConfig;
+  underdogMatch: BadgeItemConfig;
+  upsetVictory: BadgeItemConfig;
+  firstPlace: BadgeItemConfig;
+  secondPlace: BadgeItemConfig;
+  thirdPlace: BadgeItemConfig;
+  lastPlace: BadgeItemConfig;
+}
+
+export const DEFAULT_BADGE_CONFIG: BadgeConfig = {
+  underdogLosingMvp: {
+    name: "ฝันร้ายราชา",
+    icon: "🗡️",
+    description: "MVP ฝ่ายแพ้ในโหมดสู้ยิบตา (+0.35 Wins)",
+  },
+  underdogComeback: {
+    name: "สู้ยิบตา",
+    icon: "🔥",
+    description: "ทีมรองที่พลิกกลับมาชนะทีมต่อได้ (+0.20 Wins ยกทีม)",
+  },
+  seasonChampion: {
+    name: "แชมเปี้ยน",
+    icon: "👑",
+    description: "แชมป์ประจำซีซัน (Season Champion)",
+  },
+  underdogMatch: {
+    name: "โหมดสู้ยิบตา",
+    icon: "🔥",
+    description: "แท็กแมตช์ที่ผลต่างอัตราชนะ >= 7%",
+  },
+  upsetVictory: {
+    name: "ล้มยักษ์สำเร็จ",
+    icon: "⚡",
+    description: "ชัยชนะพลิกล็อกของทีมรอง (Comeback Victory)",
+  },
+  firstPlace: {
+    name: "อันดับ 1",
+    icon: "🥇",
+    description: "ผู้ชนะอันดับ 1 บนโพเดียม",
+  },
+  secondPlace: {
+    name: "อันดับ 2",
+    icon: "🥈",
+    description: "รองชนะเลิศอันดับ 1",
+  },
+  thirdPlace: {
+    name: "อันดับ 3",
+    icon: "🥉",
+    description: "รองชนะเลิศอันดับ 2",
+  },
+  lastPlace: {
+    name: "อันดับสุดท้าย",
+    icon: "💩",
+    description: "อันดับสุดท้ายของซีซัน",
+  },
+};
 
 export const DEFAULT_RANK_CONFIG: RankConfig = {
   minMatches: 3,
@@ -193,7 +272,22 @@ if (isFirebaseConfigured) {
     // Prevent double-initialization in Next.js Hot Module Replacement (HMR)
     const app =
       getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    db = getFirestore(app);
+
+    // Enable IndexedDB offline persistence in browser environments for blazing speed & zero-cost read quota preservation
+    if (typeof window !== "undefined") {
+      try {
+        db = initializeFirestore(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        });
+      } catch {
+        db = getFirestore(app);
+      }
+    } else {
+      db = getFirestore(app);
+    }
+
     auth = getAuth(app);
     storage = getStorage(app);
     console.log("🔥 Firebase, Auth & Storage initialized successfully!");
@@ -210,6 +304,7 @@ if (isFirebaseConfigured) {
 }
 
 const LOCAL_STORAGE_KEY = "mlbb_generator_matches";
+const LOCAL_SEASONS_KEY = "mlbb_generator_seasons";
 
 // --- Database Interface Functions ---
 
@@ -238,8 +333,34 @@ export async function fetchMatches(): Promise<Match[]> {
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           feedback: data.feedback || {},
+          isUnderdogMatch: data.isUnderdogMatch || false,
+          underdogMvp: data.underdogMvp || undefined,
+          underdogTeam: data.underdogTeam || undefined,
+          predictedWinRateDiff:
+            data.predictedWinRateDiff !== undefined
+              ? Number(data.predictedWinRateDiff)
+              : undefined,
         });
       });
+
+      // Keep LocalStorage cache fresh by merging incoming matches
+      if (typeof window !== "undefined" && list.length > 0) {
+        try {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const existingList: Match[] = stored ? JSON.parse(stored) : [];
+          const idMap = new Map<string, Match>(
+            existingList.map((m) => [m.id, m]),
+          );
+          list.forEach((m) => idMap.set(m.id, m));
+          const merged = Array.from(idMap.values()).sort(
+            (a, b) => b.createdAt - a.createdAt,
+          );
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+        } catch (e) {
+          console.warn("Could not cache matches to LocalStorage:", e);
+        }
+      }
+
       return list;
     } catch (e) {
       console.error(
@@ -257,6 +378,17 @@ export async function fetchMatches(): Promise<Match[]> {
     const list = JSON.parse(stored) as Match[];
     // Sort descending by date
     return list.sort((a, b) => b.createdAt - a.createdAt);
+  } catch {
+    return [];
+  }
+}
+
+// Synchronous getter for matches (for instant 0ms render / SWR)
+export function getMatchesSync(): Match[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as Match[]) : [];
   } catch {
     return [];
   }
@@ -284,6 +416,13 @@ export async function fetchMatchById(matchId: string): Promise<Match | null> {
           winner: data.winner !== undefined ? data.winner : null,
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           feedback: data.feedback || {},
+          isUnderdogMatch: data.isUnderdogMatch || false,
+          underdogMvp: data.underdogMvp || undefined,
+          underdogTeam: data.underdogTeam || undefined,
+          predictedWinRateDiff:
+            data.predictedWinRateDiff !== undefined
+              ? Number(data.predictedWinRateDiff)
+              : undefined,
         };
       }
     } catch (e) {
@@ -353,8 +492,34 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       if (newMatch.feedback !== undefined) {
         firestoreData.feedback = newMatch.feedback;
       }
+      if (newMatch.isUnderdogMatch !== undefined) {
+        firestoreData.isUnderdogMatch = newMatch.isUnderdogMatch;
+      }
+      if (newMatch.underdogMvp !== undefined) {
+        firestoreData.underdogMvp = newMatch.underdogMvp;
+      }
+      if (newMatch.underdogTeam !== undefined) {
+        firestoreData.underdogTeam = newMatch.underdogTeam;
+      }
+      if (newMatch.predictedWinRateDiff !== undefined) {
+        firestoreData.predictedWinRateDiff = newMatch.predictedWinRateDiff;
+      }
       const docRef = await addDoc(matchesCol, firestoreData);
       newMatch.id = docRef.id;
+
+      // Always synchronize to LocalStorage so cache is immediately fresh and identical
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const list = stored ? (JSON.parse(stored) as Match[]) : [];
+          const filtered = list.filter((m) => m.id !== newMatch.id);
+          filtered.unshift(newMatch);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+        } catch (e) {
+          console.warn("Could not sync match to LocalStorage:", e);
+        }
+      }
+
       return newMatch;
     } catch (e) {
       console.error(
@@ -366,10 +531,15 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
 
   // LocalStorage Fallback
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const list = stored ? (JSON.parse(stored) as Match[]) : [];
-    list.push(newMatch);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const list = stored ? (JSON.parse(stored) as Match[]) : [];
+      const filtered = list.filter((m) => m.id !== newMatch.id);
+      filtered.unshift(newMatch);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+    } catch (e) {
+      console.warn("Could not save match to LocalStorage:", e);
+    }
   }
   return newMatch;
 }
@@ -378,12 +548,17 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
 export async function updateMatchWinner(
   matchId: string,
   winner: "teamA" | "teamB" | null,
+  underdogMvp?: string | null,
 ): Promise<boolean> {
   let success = false;
   if (db && !matchId.startsWith("local_")) {
     try {
       const docRef = doc(db, "matches", matchId);
-      await updateDoc(docRef, { winner });
+      const updatePayload: DocumentData = { winner };
+      if (underdogMvp !== undefined) {
+        updatePayload.underdogMvp = underdogMvp;
+      }
+      await updateDoc(docRef, updatePayload);
       success = true;
     } catch (e) {
       console.error(
@@ -393,17 +568,64 @@ export async function updateMatchWinner(
     }
   }
 
-  // LocalStorage Fallback
-  if (!success && typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) {
-      const list = JSON.parse(stored) as Match[];
-      const idx = list.findIndex((m) => m.id === matchId);
-      if (idx !== -1) {
-        list[idx].winner = winner;
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-        success = true;
+  // Always sync to LocalStorage to keep cache 100% fresh and accurate
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const list = JSON.parse(stored) as Match[];
+        const idx = list.findIndex((m) => m.id === matchId);
+        if (idx !== -1) {
+          list[idx].winner = winner;
+          if (underdogMvp !== undefined) {
+            list[idx].underdogMvp = underdogMvp || undefined;
+          }
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          if (!db) success = true;
+        }
       }
+    } catch (e) {
+      console.warn("Could not sync updated match winner to LocalStorage:", e);
+    }
+  }
+
+  if (success) {
+    await recalculateRanks();
+  }
+  return success;
+}
+
+// Update Underdog MVP for a match
+export async function updateMatchUnderdogMvp(
+  matchId: string,
+  underdogMvp: string | null,
+): Promise<boolean> {
+  let success = false;
+  if (db && !matchId.startsWith("local_")) {
+    try {
+      const docRef = doc(db, "matches", matchId);
+      await updateDoc(docRef, { underdogMvp: underdogMvp || null });
+      success = true;
+    } catch (e) {
+      console.error("Error updating match underdog MVP in Firestore:", e);
+    }
+  }
+
+  // Always sync to LocalStorage to prevent stale underdog badges
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const list = JSON.parse(stored) as Match[];
+        const idx = list.findIndex((m) => m.id === matchId);
+        if (idx !== -1) {
+          list[idx].underdogMvp = underdogMvp || undefined;
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          if (!db) success = true;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not sync underdog MVP to LocalStorage:", e);
     }
   }
 
@@ -429,17 +651,21 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
     }
   }
 
-  // LocalStorage Fallback
-  if (!success && typeof window !== "undefined") {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) {
-      let list = JSON.parse(stored) as Match[];
-      const originalLen = list.length;
-      list = list.filter((m) => m.id !== matchId);
-      if (list.length < originalLen) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-        success = true;
+  // Always sync deletion to LocalStorage to remove stale match records
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        let list = JSON.parse(stored) as Match[];
+        const originalLen = list.length;
+        list = list.filter((m) => m.id !== matchId);
+        if (list.length < originalLen) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+          if (!db) success = true;
+        }
       }
+    } catch (e) {
+      console.warn("Could not sync match deletion to LocalStorage:", e);
     }
   }
 
@@ -551,6 +777,11 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           allTimeWins: Number(data.allTimeWins) || 0,
           allTimeMatches: Number(data.allTimeMatches) || 0,
           allTimeWinrate: Number(data.allTimeWinrate) || 0,
+          underdogMvpCount: Number(data.underdogMvpCount) || 0,
+          allTimeUnderdogMvpCount: Number(data.allTimeUnderdogMvpCount) || 0,
+          underdogComebackCount: Number(data.underdogComebackCount) || 0,
+          allTimeUnderdogComebackCount:
+            Number(data.allTimeUnderdogComebackCount) || 0,
         });
       });
 
@@ -584,6 +815,10 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           allTimeWins: 0,
           allTimeMatches: 0,
           allTimeWinrate: 0,
+          underdogMvpCount: 0,
+          allTimeUnderdogMvpCount: 0,
+          underdogComebackCount: 0,
+          allTimeUnderdogComebackCount: 0,
         };
       });
 
@@ -602,6 +837,10 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
           allTimeWins: player.allTimeWins,
           allTimeMatches: player.allTimeMatches,
           allTimeWinrate: player.allTimeWinrate,
+          underdogMvpCount: 0,
+          allTimeUnderdogMvpCount: 0,
+          underdogComebackCount: 0,
+          allTimeUnderdogComebackCount: 0,
         });
       }
 
@@ -659,6 +898,17 @@ export async function fetchPlayers(): Promise<DbPlayer[]> {
   }
 
   return [];
+}
+
+// Synchronous getter for players (for instant 0ms render / SWR)
+export function getPlayersSync(): DbPlayer[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LOCAL_PLAYERS_KEY);
+    return stored ? (JSON.parse(stored) as DbPlayer[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -872,6 +1122,172 @@ export async function saveRankConfig(config: RankConfig): Promise<boolean> {
   return false;
 }
 
+// Synchronous getter for rank configuration (for instant 0ms render / SWR)
+export function getRankConfigSync(): RankConfig {
+  if (typeof window === "undefined") return DEFAULT_RANK_CONFIG;
+  try {
+    const stored = localStorage.getItem(LOCAL_CONFIG_KEY);
+    return stored ? (JSON.parse(stored) as RankConfig) : DEFAULT_RANK_CONFIG;
+  } catch {
+    return DEFAULT_RANK_CONFIG;
+  }
+}
+
+const LOCAL_BADGE_CONFIG_KEY = "mlbb_badge_config";
+
+// Synchronous getter for Badge configuration (for initial render / SSR hydration)
+export function getBadgeConfigSync(): BadgeConfig {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_BADGE_CONFIG_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          ...DEFAULT_BADGE_CONFIG,
+          ...parsed,
+          underdogLosingMvp: {
+            ...DEFAULT_BADGE_CONFIG.underdogLosingMvp,
+            ...(parsed.underdogLosingMvp || {}),
+          },
+          underdogComeback: {
+            ...DEFAULT_BADGE_CONFIG.underdogComeback,
+            ...(parsed.underdogComeback || {}),
+          },
+          seasonChampion: {
+            ...DEFAULT_BADGE_CONFIG.seasonChampion,
+            ...(parsed.seasonChampion || {}),
+          },
+          underdogMatch: {
+            ...DEFAULT_BADGE_CONFIG.underdogMatch,
+            ...(parsed.underdogMatch || {}),
+          },
+          upsetVictory: {
+            ...DEFAULT_BADGE_CONFIG.upsetVictory,
+            ...(parsed.upsetVictory || {}),
+          },
+          firstPlace: {
+            ...DEFAULT_BADGE_CONFIG.firstPlace,
+            ...(parsed.firstPlace || {}),
+          },
+          secondPlace: {
+            ...DEFAULT_BADGE_CONFIG.secondPlace,
+            ...(parsed.secondPlace || {}),
+          },
+          thirdPlace: {
+            ...DEFAULT_BADGE_CONFIG.thirdPlace,
+            ...(parsed.thirdPlace || {}),
+          },
+          lastPlace: {
+            ...DEFAULT_BADGE_CONFIG.lastPlace,
+            ...(parsed.lastPlace || {}),
+          },
+        };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return DEFAULT_BADGE_CONFIG;
+}
+
+// Fetch badge configuration rules
+export async function fetchBadgeConfig(): Promise<BadgeConfig> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "badgeSystem");
+      const docSnap = await getDoc(configRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const merged: BadgeConfig = {
+          underdogLosingMvp: {
+            ...DEFAULT_BADGE_CONFIG.underdogLosingMvp,
+            ...(data.underdogLosingMvp || {}),
+          },
+          underdogComeback: {
+            ...DEFAULT_BADGE_CONFIG.underdogComeback,
+            ...(data.underdogComeback || {}),
+          },
+          seasonChampion: {
+            ...DEFAULT_BADGE_CONFIG.seasonChampion,
+            ...(data.seasonChampion || {}),
+          },
+          underdogMatch: {
+            ...DEFAULT_BADGE_CONFIG.underdogMatch,
+            ...(data.underdogMatch || {}),
+          },
+          upsetVictory: {
+            ...DEFAULT_BADGE_CONFIG.upsetVictory,
+            ...(data.upsetVictory || {}),
+          },
+          firstPlace: {
+            ...DEFAULT_BADGE_CONFIG.firstPlace,
+            ...(data.firstPlace || {}),
+          },
+          secondPlace: {
+            ...DEFAULT_BADGE_CONFIG.secondPlace,
+            ...(data.secondPlace || {}),
+          },
+          thirdPlace: {
+            ...DEFAULT_BADGE_CONFIG.thirdPlace,
+            ...(data.thirdPlace || {}),
+          },
+          lastPlace: {
+            ...DEFAULT_BADGE_CONFIG.lastPlace,
+            ...(data.lastPlace || {}),
+          },
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_BADGE_CONFIG_KEY, JSON.stringify(merged));
+        }
+        return merged;
+      } else {
+        await setDoc(configRef, DEFAULT_BADGE_CONFIG);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            LOCAL_BADGE_CONFIG_KEY,
+            JSON.stringify(DEFAULT_BADGE_CONFIG),
+          );
+        }
+        return DEFAULT_BADGE_CONFIG;
+      }
+    } catch (e) {
+      console.error(
+        "Error fetching badge config from Firestore, fallback to LocalStorage:",
+        e,
+      );
+    }
+  }
+  return getBadgeConfigSync();
+}
+
+// Save custom badge configuration rules
+export async function saveBadgeConfig(config: BadgeConfig): Promise<boolean> {
+  if (db) {
+    try {
+      const configRef = doc(db, "config", "badgeSystem");
+      await setDoc(configRef, config);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_BADGE_CONFIG_KEY, JSON.stringify(config));
+        window.dispatchEvent(new Event("badge-config-updated"));
+      }
+      return true;
+    } catch (e) {
+      console.error(
+        "Error saving badge config to Firestore, saving to LocalStorage instead:",
+        e,
+      );
+    }
+  }
+
+  // LocalStorage Fallback
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_BADGE_CONFIG_KEY, JSON.stringify(config));
+    window.dispatchEvent(new Event("badge-config-updated"));
+    return true;
+  }
+  return false;
+}
+
 // Fetch LINE configuration rules
 export async function fetchLineConfig(): Promise<LineConfig> {
   if (db) {
@@ -987,8 +1403,22 @@ export async function fetchAllMatches(): Promise<Match[]> {
           seasonId: data.seasonId !== undefined ? Number(data.seasonId) : 1,
           mode: data.mode || "TEAM_LANE",
           feedback: data.feedback || {},
+          isUnderdogMatch: data.isUnderdogMatch || false,
+          underdogMvp: data.underdogMvp || undefined,
+          underdogTeam: data.underdogTeam || undefined,
+          predictedWinRateDiff:
+            data.predictedWinRateDiff !== undefined
+              ? Number(data.predictedWinRateDiff)
+              : undefined,
         });
       });
+      if (typeof window !== "undefined" && list.length > 0) {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {
+          console.warn("Could not cache all matches to LocalStorage:", e);
+        }
+      }
       return list;
     } catch (e) {
       console.error("Error fetching all matches from Firestore:", e);
@@ -1026,12 +1456,29 @@ export async function fetchSeasonConfig(): Promise<SeasonConfig> {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        return {
+        const cfg: SeasonConfig = {
           activeSeasonId: Number(data.activeSeasonId) || 1,
           seasonStart: Number(data.seasonStart) || Date.now(),
         };
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              "mlbb_generator_season_config",
+              JSON.stringify(cfg),
+            );
+          } catch {}
+        }
+        return cfg;
       } else {
         await setDoc(docRef, defaultConfig);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              "mlbb_generator_season_config",
+              JSON.stringify(defaultConfig),
+            );
+          } catch {}
+        }
         return defaultConfig;
       }
     } catch (e) {
@@ -1055,6 +1502,21 @@ export async function fetchSeasonConfig(): Promise<SeasonConfig> {
   return defaultConfig;
 }
 
+// Synchronous getter for season config (for instant 0ms render / SWR)
+export function getSeasonConfigSync(): SeasonConfig {
+  const defaultConfig: SeasonConfig = {
+    activeSeasonId: 1,
+    seasonStart: Date.now(),
+  };
+  if (typeof window === "undefined") return defaultConfig;
+  try {
+    const stored = localStorage.getItem("mlbb_generator_season_config");
+    return stored ? (JSON.parse(stored) as SeasonConfig) : defaultConfig;
+  } catch {
+    return defaultConfig;
+  }
+}
+
 // Fetch all archived seasons
 export async function fetchSeasons(): Promise<Season[]> {
   if (db) {
@@ -1075,6 +1537,12 @@ export async function fetchSeasons(): Promise<Season[]> {
           fighterStats: data.fighterStats || [],
         });
       });
+
+      if (typeof window !== "undefined" && list.length > 0) {
+        try {
+          localStorage.setItem(LOCAL_SEASONS_KEY, JSON.stringify(list));
+        } catch {}
+      }
       return list;
     } catch (e) {
       console.error("Error fetching seasons from Firestore:", e);
@@ -1083,7 +1551,7 @@ export async function fetchSeasons(): Promise<Season[]> {
 
   // LocalStorage Fallback
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("mlbb_generator_seasons");
+    const stored = localStorage.getItem(LOCAL_SEASONS_KEY);
     if (stored) {
       try {
         return JSON.parse(stored) as Season[];
@@ -1091,6 +1559,17 @@ export async function fetchSeasons(): Promise<Season[]> {
     }
   }
   return [];
+}
+
+// Synchronous getter for archived seasons (for instant 0ms render / SWR)
+export function getSeasonsSync(): Season[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LOCAL_SEASONS_KEY);
+    return stored ? (JSON.parse(stored) as Season[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 // End current season, archive stats, and start a new one
@@ -1121,8 +1600,24 @@ export async function endCurrentSeason(): Promise<boolean> {
       .sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-        const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-        const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+        const aWeighted = getWeightedWinrate(
+          aWins,
+          a.total_match_played,
+          10,
+          a.underdogMvpCount || 0,
+          0.35,
+          a.underdogComebackCount || 0,
+          0.2,
+        );
+        const bWeighted = getWeightedWinrate(
+          bWins,
+          b.total_match_played,
+          10,
+          b.underdogMvpCount || 0,
+          0.35,
+          b.underdogComebackCount || 0,
+          0.2,
+        );
 
         if (bWeighted !== aWeighted) {
           return bWeighted - aWeighted;
@@ -1144,6 +1639,8 @@ export async function endCurrentSeason(): Promise<boolean> {
         current_rank: p.current_rank,
         wins,
         losses,
+        underdogMvpCount: p.underdogMvpCount || 0,
+        underdogComebackCount: p.underdogComebackCount || 0,
       };
     });
 
@@ -1159,8 +1656,24 @@ export async function endCurrentSeason(): Promise<boolean> {
       const sortedWorst = [...qualifiedNonPodiumPlayers].sort((a, b) => {
         const aWins = Math.round((a.winrate / 100) * a.total_match_played);
         const bWins = Math.round((b.winrate / 100) * b.total_match_played);
-        const aWeighted = getWeightedWinrate(aWins, a.total_match_played);
-        const bWeighted = getWeightedWinrate(bWins, b.total_match_played);
+        const aWeighted = getWeightedWinrate(
+          aWins,
+          a.total_match_played,
+          10,
+          a.underdogMvpCount || 0,
+          0.35,
+          a.underdogComebackCount || 0,
+          0.2,
+        );
+        const bWeighted = getWeightedWinrate(
+          bWins,
+          b.total_match_played,
+          10,
+          b.underdogMvpCount || 0,
+          0.35,
+          b.underdogComebackCount || 0,
+          0.2,
+        );
 
         if (aWeighted !== bWeighted) {
           return aWeighted - bWeighted;
@@ -1182,6 +1695,8 @@ export async function endCurrentSeason(): Promise<boolean> {
         current_rank: worstPlayer.current_rank,
         wins,
         losses,
+        underdogMvpCount: worstPlayer.underdogMvpCount || 0,
+        underdogComebackCount: worstPlayer.underdogComebackCount || 0,
       };
     }
 
@@ -1199,6 +1714,8 @@ export async function endCurrentSeason(): Promise<boolean> {
         current_rank: p.current_rank,
         wins,
         losses,
+        underdogMvpCount: p.underdogMvpCount || 0,
+        underdogComebackCount: p.underdogComebackCount || 0,
       };
     });
 
@@ -1224,17 +1741,22 @@ export async function endCurrentSeason(): Promise<boolean> {
       };
       const configRef = doc(db, "config", "seasonConfig");
       await setDoc(configRef, nextSeasonConfig);
-    } else {
-      // LocalStorage Season archive
-      if (typeof window !== "undefined") {
-        const storedSeasons = localStorage.getItem("mlbb_generator_seasons");
+    }
+
+    // Always synchronize Season archive and Season config to LocalStorage
+    if (typeof window !== "undefined") {
+      try {
+        const storedSeasons = localStorage.getItem(LOCAL_SEASONS_KEY);
         const seasonsList = storedSeasons
           ? (JSON.parse(storedSeasons) as Season[])
           : [];
-        seasonsList.push(archivedSeason);
+        const filteredSeasons = seasonsList.filter(
+          (s) => s.id !== archivedSeason.id,
+        );
+        filteredSeasons.push(archivedSeason);
         localStorage.setItem(
-          "mlbb_generator_seasons",
-          JSON.stringify(seasonsList),
+          LOCAL_SEASONS_KEY,
+          JSON.stringify(filteredSeasons),
         );
 
         const nextSeasonConfig: SeasonConfig = {
@@ -1245,6 +1767,8 @@ export async function endCurrentSeason(): Promise<boolean> {
           "mlbb_generator_season_config",
           JSON.stringify(nextSeasonConfig),
         );
+      } catch (e) {
+        console.warn("Could not sync season archive to LocalStorage:", e);
       }
     }
 
@@ -1314,9 +1838,22 @@ export async function recalculateRanks(
     // We will build stats map for BOTH current season and all-time
     const currentSeasonStats: Record<
       string,
-      { wins: number; matches: number }
+      {
+        wins: number;
+        matches: number;
+        underdogMvpCount?: number;
+        underdogComebackCount?: number;
+      }
     > = {};
-    const allTimeStats: Record<string, { wins: number; matches: number }> = {};
+    const allTimeStats: Record<
+      string,
+      {
+        wins: number;
+        matches: number;
+        underdogMvpCount?: number;
+        underdogComebackCount?: number;
+      }
+    > = {};
 
     matches.forEach((match) => {
       if (!match.winner) return;
@@ -1348,14 +1885,25 @@ export async function recalculateRanks(
         const key = getPlayerKey(playerNameOrId);
 
         // All-Time
-        if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
+        if (!allTimeStats[key])
+          allTimeStats[key] = {
+            wins: 0,
+            matches: 0,
+            underdogMvpCount: 0,
+            underdogComebackCount: 0,
+          };
         allTimeStats[key].wins += 1;
         allTimeStats[key].matches += 1;
 
         // Current Season
         if (isCurrentSeason) {
           if (!currentSeasonStats[key])
-            currentSeasonStats[key] = { wins: 0, matches: 0 };
+            currentSeasonStats[key] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+              underdogComebackCount: 0,
+            };
           currentSeasonStats[key].wins += 1;
           currentSeasonStats[key].matches += 1;
         }
@@ -1365,16 +1913,87 @@ export async function recalculateRanks(
         const key = getPlayerKey(playerNameOrId);
 
         // All-Time
-        if (!allTimeStats[key]) allTimeStats[key] = { wins: 0, matches: 0 };
+        if (!allTimeStats[key])
+          allTimeStats[key] = {
+            wins: 0,
+            matches: 0,
+            underdogMvpCount: 0,
+            underdogComebackCount: 0,
+          };
         allTimeStats[key].matches += 1;
 
         // Current Season
         if (isCurrentSeason) {
           if (!currentSeasonStats[key])
-            currentSeasonStats[key] = { wins: 0, matches: 0 };
+            currentSeasonStats[key] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+              underdogComebackCount: 0,
+            };
           currentSeasonStats[key].matches += 1;
         }
       });
+
+      // Underdog Comeback Team Bonus (สู้ยิบตา - เมื่อทีมรองพลิกชนะทีมต่อได้ รับโบนัสยกทีม)
+      const isUnderdogComeback =
+        Boolean(match.isUnderdogMatch) &&
+        Boolean(match.underdogTeam) &&
+        match.winner === match.underdogTeam;
+
+      if (isUnderdogComeback) {
+        winningTeam.forEach((playerNameOrId) => {
+          const key = getPlayerKey(playerNameOrId);
+          if (!allTimeStats[key])
+            allTimeStats[key] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+              underdogComebackCount: 0,
+            };
+          allTimeStats[key].underdogComebackCount =
+            (allTimeStats[key].underdogComebackCount || 0) + 1;
+
+          if (isCurrentSeason) {
+            if (!currentSeasonStats[key])
+              currentSeasonStats[key] = {
+                wins: 0,
+                matches: 0,
+                underdogMvpCount: 0,
+                underdogComebackCount: 0,
+              };
+            currentSeasonStats[key].underdogComebackCount =
+              (currentSeasonStats[key].underdogComebackCount || 0) + 1;
+          }
+        });
+      }
+
+      // Tally Underdog MVP (ฝันร้ายราชา)
+      if (match.underdogMvp) {
+        const mvpKey = getPlayerKey(match.underdogMvp);
+        if (!allTimeStats[mvpKey])
+          allTimeStats[mvpKey] = {
+            wins: 0,
+            matches: 0,
+            underdogMvpCount: 0,
+            underdogComebackCount: 0,
+          };
+        allTimeStats[mvpKey].underdogMvpCount =
+          (allTimeStats[mvpKey].underdogMvpCount || 0) + 1;
+
+        if (isCurrentSeason) {
+          if (!currentSeasonStats[mvpKey]) {
+            currentSeasonStats[mvpKey] = {
+              wins: 0,
+              matches: 0,
+              underdogMvpCount: 0,
+              underdogComebackCount: 0,
+            };
+          }
+          currentSeasonStats[mvpKey].underdogMvpCount =
+            (currentSeasonStats[mvpKey].underdogMvpCount || 0) + 1;
+        }
+      }
     });
 
     const seasonMatches = matches.filter(
@@ -1395,8 +2014,14 @@ export async function recalculateRanks(
 
         // Current Season Stats
         const totalMatches = sStats.matches;
+        const underdogMvpCount = sStats.underdogMvpCount || 0;
+        const underdogComebackCount = sStats.underdogComebackCount || 0;
+        const effectiveWins =
+          sStats.wins + underdogMvpCount * 0.35 + underdogComebackCount * 0.2;
         const winrate =
-          totalMatches > 0 ? Math.round((sStats.wins / totalMatches) * 100) : 0;
+          totalMatches > 0
+            ? Math.min(100, Math.round((effectiveWins / totalMatches) * 100))
+            : 0;
 
         let newRank = "Unranked";
         if (totalMatches >= requiredMinMatches) {
@@ -1420,9 +2045,18 @@ export async function recalculateRanks(
 
         // All-Time Stats
         const allTimeMatches = atStats.matches;
+        const allTimeUnderdogCount = atStats.underdogMvpCount || 0;
+        const allTimeComebackCount = atStats.underdogComebackCount || 0;
+        const allTimeEffectiveWins =
+          atStats.wins +
+          allTimeUnderdogCount * 0.35 +
+          allTimeComebackCount * 0.2;
         const allTimeWinrate =
           allTimeMatches > 0
-            ? Math.round((atStats.wins / allTimeMatches) * 100)
+            ? Math.min(
+                100,
+                Math.round((allTimeEffectiveWins / allTimeMatches) * 100),
+              )
             : 0;
 
         const hasChanged =
@@ -1432,7 +2066,11 @@ export async function recalculateRanks(
           player.highest_rank !== newHighestRank ||
           player.allTimeWins !== atStats.wins ||
           player.allTimeMatches !== allTimeMatches ||
-          player.allTimeWinrate !== allTimeWinrate;
+          player.allTimeWinrate !== allTimeWinrate ||
+          player.underdogMvpCount !== underdogMvpCount ||
+          player.allTimeUnderdogMvpCount !== allTimeUnderdogCount ||
+          player.underdogComebackCount !== underdogComebackCount ||
+          player.allTimeUnderdogComebackCount !== allTimeComebackCount;
 
         if (hasChanged) {
           const updatedFields = {
@@ -1443,6 +2081,10 @@ export async function recalculateRanks(
             allTimeWins: atStats.wins,
             allTimeMatches: allTimeMatches,
             allTimeWinrate: allTimeWinrate,
+            underdogMvpCount: underdogMvpCount,
+            allTimeUnderdogMvpCount: allTimeUnderdogCount,
+            underdogComebackCount: underdogComebackCount,
+            allTimeUnderdogComebackCount: allTimeComebackCount,
           };
 
           const updatedPlayer: DbPlayer = {
@@ -1806,279 +2448,6 @@ export async function updateUserRole(
   }
 }
 
-// Seed mock seasons and matches data for testing
-export async function seedMockSeasons(): Promise<boolean> {
-  const mockSeasons: Season[] = [
-    {
-      id: 1,
-      name: "Season 1",
-      startDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
-      endDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
-      podium: [
-        {
-          id: "nutty",
-          name: "Nutty",
-          alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
-          winrate: 75,
-          total_match_played: 12,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "goku",
-          name: "Goku",
-          alias: "Goku",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
-          winrate: 64,
-          total_match_played: 11,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "mike",
-          name: "Mike",
-          alias: "Mike",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
-          winrate: 58,
-          total_match_played: 12,
-          current_rank: "คนปกติ",
-        },
-      ],
-      lastPlace: {
-        id: "feeder",
-        name: "Feeder Pro",
-        alias: "Feeder",
-        avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder",
-        winrate: 18,
-        total_match_played: 11,
-        current_rank: "คนกาก",
-      },
-      fighterStats: [
-        {
-          id: "nutty",
-          name: "Nutty",
-          alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
-          winrate: 75,
-          total_match_played: 12,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "goku",
-          name: "Goku",
-          alias: "Goku",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
-          winrate: 64,
-          total_match_played: 11,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "mike",
-          name: "Mike",
-          alias: "Mike",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mike",
-          winrate: 58,
-          total_match_played: 12,
-          current_rank: "คนปกติ",
-        },
-        {
-          id: "feeder",
-          name: "Feeder Pro",
-          alias: "Feeder",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=feeder",
-          winrate: 18,
-          total_match_played: 11,
-          current_rank: "คนกาก",
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Season 2",
-      startDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
-      endDate: Date.now() - 1000,
-      podium: [
-        {
-          id: "goku",
-          name: "Goku",
-          alias: "Goku",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
-          winrate: 80,
-          total_match_played: 15,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "nutty",
-          name: "Nutty",
-          alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
-          winrate: 70,
-          total_match_played: 10,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "billy",
-          name: "Billy",
-          alias: "Billy",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy",
-          winrate: 60,
-          total_match_played: 10,
-          current_rank: "คนปกติ",
-        },
-      ],
-      lastPlace: {
-        id: "noob",
-        name: "Noob King",
-        alias: "Noob",
-        avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob",
-        winrate: 10,
-        total_match_played: 10,
-        current_rank: "คนกาก",
-      },
-      fighterStats: [
-        {
-          id: "goku",
-          name: "Goku",
-          alias: "Goku",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=goku",
-          winrate: 80,
-          total_match_played: 15,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "nutty",
-          name: "Nutty",
-          alias: "Nutty",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=nutty",
-          winrate: 70,
-          total_match_played: 10,
-          current_rank: "คนเก่ง",
-        },
-        {
-          id: "billy",
-          name: "Billy",
-          alias: "Billy",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=billy",
-          winrate: 60,
-          total_match_played: 10,
-          current_rank: "คนปกติ",
-        },
-        {
-          id: "noob",
-          name: "Noob King",
-          alias: "Noob",
-          avatar: "https://api.dicebear.com/9.x/pixel-art/svg?seed=noob",
-          winrate: 10,
-          total_match_played: 10,
-          current_rank: "คนกาก",
-        },
-      ],
-    },
-  ];
-
-  const mockMatches: Match[] = [
-    {
-      id: "mock_m1",
-      createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-      teamA: ["Nutty", "Goku", "Mike", "Player 4", "Player 5"],
-      teamB: ["Feeder Pro", "Player 7", "Player 8", "Player 9", "Player 10"],
-      winner: "teamA",
-      seasonId: 1,
-    },
-    {
-      id: "mock_m2",
-      createdAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
-      teamA: ["Nutty", "Goku", "Mike", "Player 4", "Player 5"],
-      teamB: ["Feeder Pro", "Player 7", "Player 8", "Player 9", "Player 10"],
-      winner: "teamA",
-      seasonId: 1,
-    },
-    {
-      id: "mock_m3",
-      createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
-      teamA: ["Goku", "Nutty", "Billy", "Player 4", "Player 5"],
-      teamB: ["Noob King", "Player 7", "Player 8", "Player 9", "Player 10"],
-      winner: "teamA",
-      seasonId: 2,
-    },
-  ];
-
-  try {
-    if (db) {
-      for (const season of mockSeasons) {
-        const seasonRef = doc(db, "seasons", `season_${season.id}`);
-        await setDoc(seasonRef, season);
-      }
-      for (const match of mockMatches) {
-        const matchRef = doc(db, "matches", match.id);
-        const cleanMatch = {
-          createdAt: match.createdAt,
-          teamA: match.teamA,
-          teamB: match.teamB,
-          winner: match.winner,
-          seasonId: match.seasonId,
-        };
-        await setDoc(matchRef, cleanMatch);
-      }
-      const configRef = doc(db, "config", "seasonConfig");
-      await setDoc(configRef, { activeSeasonId: 3, seasonStart: Date.now() });
-    } else {
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "mlbb_generator_seasons",
-          JSON.stringify(mockSeasons),
-        );
-        localStorage.setItem(
-          "mlbb_generator_matches",
-          JSON.stringify(mockMatches),
-        );
-        localStorage.setItem(
-          "mlbb_generator_season_config",
-          JSON.stringify({ activeSeasonId: 3, seasonStart: Date.now() }),
-        );
-      }
-    }
-    return true;
-  } catch (e) {
-    console.error("Error seeding mock seasons:", e);
-    return false;
-  }
-}
-
-// Clear seeded mock seasons and matches data
-export async function clearMockSeasons(): Promise<boolean> {
-  try {
-    if (db) {
-      const s1 = doc(db, "seasons", "season_1");
-      const s2 = doc(db, "seasons", "season_2");
-      await deleteDoc(s1);
-      await deleteDoc(s2);
-
-      const m1 = doc(db, "matches", "mock_m1");
-      const m2 = doc(db, "matches", "mock_m2");
-      const m3 = doc(db, "matches", "mock_m3");
-      await deleteDoc(m1);
-      await deleteDoc(m2);
-      await deleteDoc(m3);
-
-      const configRef = doc(db, "config", "seasonConfig");
-      await setDoc(configRef, { activeSeasonId: 1, seasonStart: Date.now() });
-    } else {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("mlbb_generator_seasons");
-        localStorage.removeItem("mlbb_generator_matches");
-        localStorage.setItem(
-          "mlbb_generator_season_config",
-          JSON.stringify({ activeSeasonId: 1, seasonStart: Date.now() }),
-        );
-      }
-    }
-    return true;
-  } catch (e) {
-    console.error("Error clearing mock seasons:", e);
-    return false;
-  }
-}
-
 /**
  * Calculates the dynamic qualification threshold (minimum matches)
  * to qualify for the ranked standings / podium.
@@ -2106,10 +2475,18 @@ export function getWeightedWinrate(
   wins: number,
   totalMatches: number,
   C: number = 10,
+  underdogMvpCount: number = 0,
+  weight: number = 0.35,
+  underdogComebackCount: number = 0,
+  comebackWeight: number = 0.2,
 ): number {
   if (totalMatches === 0) return 0;
+  const effectiveWins =
+    wins +
+    (underdogMvpCount || 0) * weight +
+    (underdogComebackCount || 0) * comebackWeight;
   const prior = 0.5;
-  return ((wins + C * prior) / (totalMatches + C)) * 100;
+  return ((effectiveWins + C * prior) / (totalMatches + C)) * 100;
 }
 
 // Toggle player feedback (Likes/Dislikes) in a match for an authenticated user
@@ -3139,6 +3516,7 @@ export interface DatabaseBackup {
   rankConfig: RankConfig;
   seasonConfig: SeasonConfig;
   lineConfig: LineConfig;
+  badgeConfig?: BadgeConfig;
 }
 
 export interface MigrationReport {
@@ -3154,15 +3532,23 @@ export interface MigrationReport {
  * Creates a comprehensive snapshot of all collections and configurations in the system.
  */
 export async function exportAllDataAsBackup(): Promise<DatabaseBackup> {
-  const [matches, players, seasons, rankConfig, seasonConfig, lineConfig] =
-    await Promise.all([
-      fetchAllMatches(),
-      fetchPlayers(),
-      fetchSeasons(),
-      fetchRankConfig(),
-      fetchSeasonConfig(),
-      fetchLineConfig(),
-    ]);
+  const [
+    matches,
+    players,
+    seasons,
+    rankConfig,
+    seasonConfig,
+    lineConfig,
+    badgeConfig,
+  ] = await Promise.all([
+    fetchAllMatches(),
+    fetchPlayers(),
+    fetchSeasons(),
+    fetchRankConfig(),
+    fetchSeasonConfig(),
+    fetchLineConfig(),
+    fetchBadgeConfig(),
+  ]);
 
   const timestamp = Date.now();
   return {
@@ -3178,6 +3564,7 @@ export async function exportAllDataAsBackup(): Promise<DatabaseBackup> {
     rankConfig,
     seasonConfig,
     lineConfig,
+    badgeConfig,
   };
 }
 

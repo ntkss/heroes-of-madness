@@ -22,12 +22,19 @@ import PodiumStandings from "@/components/PodiumStandings";
 import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
 import { ConsolidatedWinRateChart } from "@/components/Charts";
+import { useBadgeConfig } from "@/utils/badgeConfig";
+import { isUnderdogComeback } from "@/utils/winrate";
 
 interface HistoryDashboardProps {
   matches: Match[];
   onDeleteMatch: (id: string) => void;
   onDeleteAllMatches: (mode?: MatchMode) => void;
-  onUpdateWinner: (id: string, winner: "teamA" | "teamB") => void;
+  onUpdateWinner: (
+    id: string,
+    winner: "teamA" | "teamB",
+    underdogMvp?: string | null,
+  ) => void;
+  onUpdateUnderdogMvp?: (id: string, underdogMvp: string | null) => void;
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
   isAdmin?: boolean;
@@ -46,7 +53,12 @@ interface MatchCardProps {
   formatDate: (timestamp: number) => string;
   editingMatchId: string | null;
   setEditingMatchId: (id: string | null) => void;
-  handleWinnerChange: (id: string, winner: "teamA" | "teamB") => void;
+  handleWinnerChange: (
+    id: string,
+    winner: "teamA" | "teamB",
+    underdogMvp?: string | null,
+  ) => void;
+  onUpdateUnderdogMvp?: (id: string, underdogMvp: string | null) => void;
   handleDelete: (id: string) => void;
 }
 
@@ -61,6 +73,7 @@ function MatchCardComponent({
   setEditingMatchId,
   handleWinnerChange,
   handleDelete,
+  onUpdateUnderdogMvp,
 }: MatchCardProps) {
   const { user } = useAuth();
   const [prevFeedback, setPrevFeedback] = useState(match.feedback);
@@ -104,10 +117,19 @@ function MatchCardComponent({
     }
   };
 
+  const badgeConfig = useBadgeConfig();
+  const isUnderdog = Boolean(
+    match.isUnderdogMatch ||
+    (match.predictedWinRateDiff !== undefined &&
+      match.predictedWinRateDiff >= 7),
+  );
+  const isComeback = isUnderdogComeback(match);
+
   const renderRoster = (
     team: string[],
     lanes: string[] | undefined,
     heroes: string[] | undefined,
+    side: "teamA" | "teamB",
   ) => {
     const defaultLanes = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
     return (
@@ -127,6 +149,23 @@ function MatchCardComponent({
           const isLiked = userVote === "likes";
           const isDisliked = userVote === "dislikes";
 
+          const isWinningUnderdogPlayer = Boolean(
+            isComeback &&
+            ((side === "teamA" && match.winner === "teamA") ||
+              (side === "teamB" && match.winner === "teamB")),
+          );
+
+          const isUnderdogMvp = Boolean(
+            match.underdogMvp &&
+            (pKey.toLowerCase() === match.underdogMvp.toLowerCase() ||
+              (dbPlayer &&
+                dbPlayer.id.toLowerCase() ===
+                  match.underdogMvp.toLowerCase()) ||
+              (dbPlayer &&
+                dbPlayer.name.toLowerCase() ===
+                  match.underdogMvp.toLowerCase())),
+          );
+
           return (
             <div key={idx} className={styles.rosterRow}>
               <div className={styles.rosterPlayerInfo}>
@@ -141,7 +180,21 @@ function MatchCardComponent({
                   />
                 </div>
                 <div className={styles.playerMeta}>
-                  <span className={styles.playerName}>{name}</span>
+                  <div className="flex items-center gap-1">
+                    <span className={styles.playerName}>{name}</span>
+                    {isWinningUnderdogPlayer && (
+                      <span className={styles.playerComebackBadge}>
+                        {badgeConfig.underdogComeback.icon}{" "}
+                        {badgeConfig.underdogComeback.name}
+                      </span>
+                    )}
+                    {isUnderdogMvp && (
+                      <span className={styles.playerMvpBadge}>
+                        {badgeConfig.underdogLosingMvp.icon}{" "}
+                        {badgeConfig.underdogLosingMvp.name}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <span className={styles.playerLaneBadge}>{lane}</span>
                     {hero && (
@@ -225,10 +278,19 @@ function MatchCardComponent({
     }
   };
 
+  const losingTeamPlayers =
+    match.winner === "teamA"
+      ? match.teamB
+      : match.winner === "teamB"
+        ? match.teamA
+        : [];
+
   const modeBadgeInfo = getModeBadge(match.mode);
 
   return (
-    <div className={styles.matchCardContainer}>
+    <div
+      className={`${styles.matchCardContainer} ${isUnderdog ? styles.underdogMatchCardContainer : ""}`}
+    >
       <div className={styles.matchCard}>
         {/* Match Details */}
         <div className={styles.matchDetails}>
@@ -236,6 +298,13 @@ function MatchCardComponent({
           <div className={styles.matchDetailsHeader}>
             <div className="flex items-center gap-2">
               <span className={styles.matchDetailsHeaderTag}>MATCH LOG</span>
+              {isUnderdog && (
+                <span className={styles.underdogHeaderTag}>
+                  {badgeConfig.underdogMatch.icon}{" "}
+                  {badgeConfig.underdogMatch.name.toUpperCase()} • UNDERDOG
+                </span>
+              )}
+
               <span
                 className={`${styles.modeBadge} ${modeBadgeInfo.className}`}
               >
@@ -251,13 +320,33 @@ function MatchCardComponent({
           <div className={styles.rosterGrid}>
             {/* Blue */}
             <div className={styles.rosterCol}>
-              <span className={styles.rosterLabelBlue}>BLUE TEAM</span>
-              {renderRoster(match.teamA, match.teamALanes, match.teamAHeroes)}
+              <span className={styles.rosterLabelBlue}>
+                BLUE TEAM{" "}
+                {match.underdogTeam === "teamA"
+                  ? `🛡️ (ทีม${badgeConfig.underdogComeback.name})`
+                  : ""}
+              </span>
+              {renderRoster(
+                match.teamA,
+                match.teamALanes,
+                match.teamAHeroes,
+                "teamA",
+              )}
             </div>
             {/* Red */}
             <div className={styles.rosterCol}>
-              <span className={styles.rosterLabelRed}>RED TEAM</span>
-              {renderRoster(match.teamB, match.teamBLanes, match.teamBHeroes)}
+              <span className={styles.rosterLabelRed}>
+                RED TEAM{" "}
+                {match.underdogTeam === "teamB"
+                  ? `🛡️ (ทีม${badgeConfig.underdogComeback.name})`
+                  : ""}
+              </span>
+              {renderRoster(
+                match.teamB,
+                match.teamBLanes,
+                match.teamBHeroes,
+                "teamB",
+              )}
             </div>
           </div>
         </div>
@@ -288,6 +377,71 @@ function MatchCardComponent({
                 >
                   ✎ EDIT RESULT
                 </button>
+              )}
+
+              {/* Underdog Comeback (Upset Victory) Section */}
+              {isUnderdog && match.winner && isComeback && (
+                <div className={styles.upsetVictorySection}>
+                  <span className={styles.upsetVictoryHeaderTag}>
+                    {badgeConfig.upsetVictory.icon}{" "}
+                    {badgeConfig.upsetVictory.name.toUpperCase()}!
+                  </span>
+                  <span className={styles.upsetVictoryDesc}>
+                    {badgeConfig.underdogComeback.icon}{" "}
+                    {badgeConfig.underdogComeback.name} +0.20 WIN ยกทีม!
+                  </span>
+                </div>
+              )}
+
+              {/* Underdog Losing MVP Section - only shown when underdog team loses */}
+              {isUnderdog && match.winner && !isComeback && (
+                <div className={styles.underdogMvpSection}>
+                  <span className={styles.underdogMvpHeaderTag}>
+                    {badgeConfig.underdogLosingMvp.icon}{" "}
+                    {badgeConfig.underdogLosingMvp.name} (+0.35 WIN)
+                  </span>
+
+                  {match.underdogMvp ? (
+                    <div className={styles.underdogMvpDisplay}>
+                      <span className={styles.underdogMvpName}>
+                        🎖️ {getPlayerDisplayName(match.underdogMvp)}
+                      </span>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => onUpdateUnderdogMvp?.(match.id, null)}
+                          className={styles.underdogMvpClearBtn}
+                          title="Clear Underdog MVP"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    isAdmin && (
+                      <div className="flex flex-col gap-1 w-full mt-1">
+                        <select
+                          className={styles.underdogMvpSelect}
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              onUpdateUnderdogMvp?.(match.id, e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="" disabled>
+                            🎖️ เลือก {badgeConfig.underdogLosingMvp.name}...
+                          </option>
+                          {losingTeamPlayers.map((pKey) => (
+                            <option key={pKey} value={pKey}>
+                              {getPlayerDisplayName(pKey)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  )}
+                </div>
               )}
             </div>
           ) : (
@@ -353,6 +507,7 @@ export default function HistoryDashboard({
   onDeleteMatch,
   onDeleteAllMatches,
   onUpdateWinner,
+  onUpdateUnderdogMvp,
   availablePlayers,
   rankConfig,
   isAdmin = false,
@@ -764,8 +919,38 @@ export default function HistoryDashboard({
         return aRanked ? -1 : 1;
       }
 
-      const aWeighted = getWeightedWinrate(aWins, aMatches);
-      const bWeighted = getWeightedWinrate(bWins, bMatches);
+      const aUnderdogMvp = isSeason
+        ? a.dbPlayer?.underdogMvpCount || 0
+        : a.dbPlayer?.allTimeUnderdogMvpCount || 0;
+      const aUnderdogComeback = isSeason
+        ? a.dbPlayer?.underdogComebackCount || 0
+        : a.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
+      const bUnderdogMvp = isSeason
+        ? b.dbPlayer?.underdogMvpCount || 0
+        : b.dbPlayer?.allTimeUnderdogMvpCount || 0;
+      const bUnderdogComeback = isSeason
+        ? b.dbPlayer?.underdogComebackCount || 0
+        : b.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
+      const aWeighted = getWeightedWinrate(
+        aWins,
+        aMatches,
+        10,
+        aUnderdogMvp,
+        0.35,
+        aUnderdogComeback,
+        0.2,
+      );
+      const bWeighted = getWeightedWinrate(
+        bWins,
+        bMatches,
+        10,
+        bUnderdogMvp,
+        0.35,
+        bUnderdogComeback,
+        0.2,
+      );
 
       if (bWeighted !== aWeighted) {
         return bWeighted - aWeighted;
@@ -841,6 +1026,12 @@ export default function HistoryDashboard({
         losses,
         matchesToNextRank,
         nextRankTarget,
+        underdogMvpCount: isSeason
+          ? stat.dbPlayer?.underdogMvpCount || 0
+          : stat.dbPlayer?.allTimeUnderdogMvpCount || 0,
+        underdogComebackCount: isSeason
+          ? stat.dbPlayer?.underdogComebackCount || 0
+          : stat.dbPlayer?.allTimeUnderdogComebackCount || 0,
       };
     };
 
@@ -1097,6 +1288,7 @@ export default function HistoryDashboard({
                   setEditingMatchId={setEditingMatchId}
                   handleWinnerChange={handleWinnerChange}
                   handleDelete={handleDelete}
+                  onUpdateUnderdogMvp={onUpdateUnderdogMvp}
                 />
               ))}
             </div>
@@ -1275,9 +1467,33 @@ export default function HistoryDashboard({
                       statsSubTab === "season"
                         ? targetStat.matches
                         : targetStat.allTimeMatches;
+                    const targetMvp =
+                      statsSubTab === "season"
+                        ? targetStat.dbPlayer?.underdogMvpCount || 0
+                        : targetStat.dbPlayer?.allTimeUnderdogMvpCount || 0;
+                    const targetComeback =
+                      statsSubTab === "season"
+                        ? targetStat.dbPlayer?.underdogComebackCount || 0
+                        : targetStat.dbPlayer?.allTimeUnderdogComebackCount ||
+                          0;
+
+                    const curMvp =
+                      statsSubTab === "season"
+                        ? stats.dbPlayer?.underdogMvpCount || 0
+                        : stats.dbPlayer?.allTimeUnderdogMvpCount || 0;
+                    const curComeback =
+                      statsSubTab === "season"
+                        ? stats.dbPlayer?.underdogComebackCount || 0
+                        : stats.dbPlayer?.allTimeUnderdogComebackCount || 0;
+
                     const targetScore = getWeightedWinrate(
                       targetWins,
                       targetMatches,
+                      10,
+                      targetMvp,
+                      0.35,
+                      targetComeback,
+                      0.2,
                     );
 
                     let extraWins = 1;
@@ -1285,6 +1501,11 @@ export default function HistoryDashboard({
                       const score = getWeightedWinrate(
                         displayWins + extraWins,
                         displayMatches + extraWins,
+                        10,
+                        curMvp,
+                        0.35,
+                        curComeback,
+                        0.2,
                       );
                       if (score > targetScore) break;
                       extraWins++;

@@ -83,7 +83,7 @@
 }
 
 .mainRanksSeasons {
-  @apply max-w-[650px];
+  @apply max-w-[1180px];
 }
 
 .configPanel {
@@ -421,6 +421,43 @@
 
 .migrationLogBox {
   @apply bg-black/90 p-3 border border-slate-800 rounded font-mono text-[10px] text-slate-300 max-h-56 overflow-y-auto flex flex-col gap-1;
+}
+
+.badgeConfigGrid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3;
+}
+
+.badgeCard {
+  @apply flex flex-col gap-2 p-3 bg-black/70 border border-slate-800 rounded relative transition-all duration-150 hover:border-slate-600;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.badgeCardTitle {
+  @apply font-pixel text-[9px] text-amber-300 font-bold uppercase tracking-wider flex items-center justify-between;
+}
+
+.badgeCardDesc {
+  @apply font-thai text-[10px] text-slate-400 leading-tight mb-1;
+}
+
+.badgeInputsRow {
+  @apply flex items-center gap-2;
+}
+
+.badgeIconInput {
+  @apply w-12 text-center text-sm bg-slate-950 border border-slate-700 text-white font-mono p-1.5 rounded focus:border-amber-400 focus:outline-none;
+}
+
+.badgeNameInput {
+  @apply flex-1 text-xs bg-slate-950 border border-slate-700 text-amber-200 font-thai p-1.5 rounded focus:border-amber-400 focus:outline-none font-medium;
+}
+
+.badgePreviewRow {
+  @apply flex items-center justify-between pt-2 border-t border-slate-900 text-[9px] text-slate-500 font-pixel;
+}
+
+.badgePreviewPill {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8.5px] font-pixel font-bold uppercase;
 }
 
 .footer {

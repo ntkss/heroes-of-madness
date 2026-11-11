@@ -24,7 +24,6 @@ import {
   extractYouTubeId,
 } from "@/utils/firebase";
 import { parseMentions } from "@/utils/mentions";
-import { playBeep, playCoin } from "@/utils/audio";
 
 // Client-side image compression helper using Canvas
 const compressPostImage = (
@@ -122,7 +121,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
     setEditYoutubeUrl(post.youtubeUrl || "");
     setEditError("");
 
-    playBeep(440, 0.15, "triangle");
     setIsEditModalOpen(true);
 
     try {
@@ -231,7 +229,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
           mentionedMatches,
         });
         setIsEditModalOpen(false);
-        playCoin();
       } else {
         setEditError("FAILED TO UPDATE THREAD DATA!");
       }
@@ -321,12 +318,10 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
   const handleVote = async (type: "likes" | "dislikes") => {
     if (!user || !post) {
-      playBeep(120, 0.15, "sawtooth");
       alert("PLEASE LOGIN TO RATE THIS POST!");
       return;
     }
 
-    playBeep(type === "likes" ? 650 : 350, 0.1, "sine");
     try {
       const updated = await togglePostFeedback(post.id, type, user.uid);
       if (updated) {
@@ -366,7 +361,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
 
       setComments((prev) => [...prev, saved]);
       setNewCommentText("");
-      playCoin();
     } catch (err) {
       setCommentError(
         err instanceof Error ? err.message : "FAILED TO PUBLISH COMMENT!",
@@ -380,7 +374,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
     if (!post) return;
     if (!confirm("ARE YOU SURE YOU WANT TO DELETE THIS COMMENT?")) return;
 
-    playBeep(150, 0.15, "sawtooth");
     try {
       const success = await deletePostComment(post.id, commentId);
       if (success) {
@@ -399,8 +392,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
       text: post.description.substring(0, 100),
       url: shareUrl,
     };
-
-    playCoin();
 
     if (
       navigator.share &&
@@ -445,11 +436,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
     return (
       <div className={styles.forumsPage}>
         <div className={styles.container}>
-          <Link
-            href="/forums"
-            className={styles.backLink}
-            onClick={() => playBeep(200, 0.1, "sine")}
-          >
+          <Link href="/forums" className={styles.backLink}>
             ◀ FORUMS
           </Link>
           <div className="text-center py-20 border border-dashed border-red-500/30">
@@ -473,11 +460,7 @@ export default function ForumPostDetailClient({ params }: PageProps) {
       <div className={styles.forumsPage}>
         <div className={styles.container}>
           {/* Back Link */}
-          <Link
-            href="/forums"
-            className={styles.backLink}
-            onClick={() => playBeep(200, 0.1, "sine")}
-          >
+          <Link href="/forums" className={styles.backLink}>
             ◀ FORUMS
           </Link>
 
@@ -689,7 +672,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                     </p>
                     <button
                       onClick={() => {
-                        playCoin();
                         login();
                       }}
                       className={styles.loginPromptBtn}
@@ -716,7 +698,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                         key={p.id}
                         href={`/forums/${p.slug}`}
                         className={styles.listItem}
-                        onClick={() => playBeep(300, 0.1, "sine")}
                       >
                         <div className="flex flex-col gap-0.5">
                           <span className="font-semibold text-xs truncate max-w-[240px] hover:text-neon-blue">
@@ -745,7 +726,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
               <h2 className={styles.modalTitle}>EDIT THREAD</h2>
               <button
                 onClick={() => {
-                  playBeep(150, 0.1, "sine");
                   setIsEditModalOpen(false);
                 }}
                 className={styles.closeBtn}
@@ -810,7 +790,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                           insertEditMentionAtCursor(
                             `@player:${editMentionPlayerId}`,
                           );
-                          playBeep(700, 0.05, "sine");
                         }
                       }}
                       className="bg-sky-950 border border-sky-700 text-sky-400 px-2 text-xs font-pixel"
@@ -847,7 +826,6 @@ export default function ForumPostDetailClient({ params }: PageProps) {
                           insertEditMentionAtCursor(
                             `@match:${editMentionMatchId}`,
                           );
-                          playBeep(700, 0.05, "sine");
                         }
                       }}
                       className="bg-rose-950 border border-rose-700 text-rose-400 px-2 text-xs font-pixel"

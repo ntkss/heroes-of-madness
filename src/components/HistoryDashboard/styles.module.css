@@ -556,7 +556,7 @@
 
 /* Underdog Mode Styles */
 .underdogMatchCardContainer {
-  @apply border-2 border-orange-500/80 bg-gradient-to-r from-red-950/20 via-black to-orange-950/20 mb-3 rounded-none relative overflow-hidden;
+  @apply border-2 border-orange-500/80 bg-gradient-to-r from-red-950/20 via-black to-orange-950/20 mb-3 rounded-none relative;
   box-shadow: 0 0 16px rgba(255, 69, 0, 0.35);
 }
 

@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface NavLinkItem {
@@ -36,9 +35,6 @@ export default function GlassNavbar() {
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => {
-                playBeep(isActive ? 440 : 330, 0.08, "triangle");
-              }}
               className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
             >
               <span className={styles.navIcon}>{item.icon}</span>

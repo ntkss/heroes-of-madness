@@ -10,7 +10,6 @@ import {
   ForumPost,
   uploadBase64Image,
 } from "@/utils/firebase";
-import { playBeep, playCoin } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 // Client-side image compression helper using Canvas
@@ -247,7 +246,6 @@ export default function PostCreationModal({
 
       onSuccess(saved);
       onClose();
-      playCoin();
     } catch (err) {
       setFormError(
         err instanceof Error ? err.message : "FAILED TO COMPILE NEW THREAD!",
@@ -264,14 +262,7 @@ export default function PostCreationModal({
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>CREATE NEW COMMUNITY THREAD</h2>
-          <button
-            type="button"
-            onClick={() => {
-              playBeep(150, 0.1, "sine");
-              onClose();
-            }}
-            className={styles.closeBtn}
-          >
+          <button type="button" onClick={onClose} className={styles.closeBtn}>
             ✕ CLOSE
           </button>
         </div>
@@ -348,7 +339,6 @@ export default function PostCreationModal({
                   onClick={() => {
                     if (mentionPlayerId) {
                       insertTextAtCursor(`@player:${mentionPlayerId}`);
-                      playBeep(700, 0.05, "sine");
                     }
                   }}
                   className="bg-sky-950 border border-sky-700 text-sky-400 px-2 text-xs font-pixel"
@@ -383,7 +373,6 @@ export default function PostCreationModal({
                   onClick={() => {
                     if (mentionMatchId) {
                       insertTextAtCursor(`@match:${mentionMatchId}`);
-                      playBeep(700, 0.05, "sine");
                     }
                   }}
                   className="bg-rose-950 border border-rose-700 text-rose-400 px-2 text-xs font-pixel"

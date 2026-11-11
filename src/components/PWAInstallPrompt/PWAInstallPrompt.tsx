@@ -10,7 +10,6 @@ import {
   initMusterScheduler,
   NotificationPermissionState,
 } from "@/utils/notifications";
-import { playBeep, playCoin } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -75,8 +74,6 @@ export default function PWAInstallPrompt({
 
   // Handle PWA installation
   const handleInstallClick = async () => {
-    playBeep(440, 0.1, "sine");
-
     if (isIOS) {
       setShowIOSModal(true);
       return;
@@ -86,7 +83,6 @@ export default function PWAInstallPrompt({
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
       if (choiceResult.outcome === "accepted") {
-        playCoin();
         setDeferredPrompt(null);
         setIsStandalone(true);
       }
@@ -100,7 +96,6 @@ export default function PWAInstallPrompt({
   // Handle Notification Toggle
   const handleNotificationClick = async () => {
     if (notifState === "granted") {
-      playCoin();
       await sendLocalNotification("🔔 ระบบแจ้งเตือนเปิดใช้งานอยู่แล้ว", {
         body: "คุณจะได้รับการแจ้งเตือนผลการสุ่มทีม และแจ้งเตือนระดมพลเวลา 12:30 และ 18:00 น.",
       });
@@ -114,10 +109,8 @@ export default function PWAInstallPrompt({
   const handleCallToArms = async () => {
     if (isMusterSending) return;
     setIsMusterSending(true);
-    playCoin();
     try {
       await notifyMuster("manual", senderName);
-      playBeep(523, 0.2, "sine");
       alert(
         `📢 เรียกระดมพลสำเร็จ! ส่งสัญญาณเตือนเข้าเครื่องผู้เล่น และแจ้งเตือนเข้ากลุ่ม LINE เรียบร้อยแล้ว`,
       );

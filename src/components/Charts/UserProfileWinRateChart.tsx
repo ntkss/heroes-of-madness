@@ -13,7 +13,6 @@ import {
   BarController,
 } from "chart.js";
 import { DbPlayer, Match, MatchMode, Season } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import { computePlayerProgression } from "@/utils/progression";
 import StockMarketLineChart from "./StockMarketLineChart";
 import styles from "./styles.module.css";
@@ -346,7 +345,6 @@ export default function UserProfileWinRateChart({
             const idx = elements[0].index;
             const chosen = seasonalData[idx];
             if (chosen) {
-              playBeep(320, 0.08, "sine");
               setSelectedInspectSeason(chosen.seasonId);
             }
           }
@@ -438,7 +436,6 @@ export default function UserProfileWinRateChart({
             <select
               value={stockSeason}
               onChange={(e) => {
-                playBeep(300, 0.08, "sine");
                 setStockSeason(e.target.value);
               }}
               className={styles.filterSelect}
@@ -458,7 +455,6 @@ export default function UserProfileWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(320, 0.08, "sine");
                 setStockMetricType(
                   stockMetricType === "winrate"
                     ? "performance_index"
@@ -478,7 +474,6 @@ export default function UserProfileWinRateChart({
           <button
             type="button"
             onClick={() => {
-              playBeep(260, 0.08, "sine");
               setFilterMode(
                 filterMode === "current_mode" ? "all_modes" : "current_mode",
               );
@@ -496,7 +491,6 @@ export default function UserProfileWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(320, 0.08, "triangle");
                 setViewMode("stock");
               }}
               className={`${styles.toggleBtn} ${
@@ -510,7 +504,6 @@ export default function UserProfileWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(280, 0.08, "sine");
                 setViewMode("dual");
               }}
               className={`${styles.toggleBtn} ${
@@ -524,7 +517,6 @@ export default function UserProfileWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(280, 0.08, "sine");
                 setViewMode("overall");
               }}
               className={`${styles.toggleBtn} ${
@@ -538,7 +530,6 @@ export default function UserProfileWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(280, 0.08, "sine");
                 setViewMode("seasonal");
               }}
               className={`${styles.toggleBtn} ${
@@ -774,7 +765,6 @@ export default function UserProfileWinRateChart({
                         key={s.seasonId}
                         type="button"
                         onClick={() => {
-                          playBeep(320, 0.08, "sine");
                           setSelectedInspectSeason(s.seasonId);
                         }}
                         className={`font-pixel text-[7.5px] px-2.5 py-1 transition-all uppercase cursor-pointer border ${

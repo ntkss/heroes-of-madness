@@ -32,12 +32,10 @@ import {
   fetchLineConfig,
   fetchSeasons,
 } from "@/utils/firebase";
-import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { calculateTeamWinRates } from "@/utils/winrate";
 import { FILL_POOL_NAMES } from "@/constants/players";
 import { toBlob, toPng } from "html-to-image";
 import { useAuth } from "@/utils/AuthContext";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { notifyTeamDrafted } from "@/utils/notifications";
 
 export default function Home() {
@@ -73,7 +71,6 @@ export default function Home() {
     type: "success" | "info" | "error";
   } | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [audioInitialized, setAudioInitialized] = useState(false);
   const [availablePlayers, setAvailablePlayers] = useState<DbPlayer[]>([]);
   const [rankConfig, setRankConfig] = useState<RankConfig | null>(null);
   const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
@@ -285,20 +282,12 @@ export default function Home() {
     }
   }, [toast]);
 
-  const playCameraClick = () => {
-    playBeep(880, 0.05, "sine", 0.15);
-    setTimeout(() => {
-      playBeep(1200, 0.08, "sine", 0.15);
-    }, 55);
-  };
-
   const handleShareResult = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isSharing || !arenaRef.current) return;
 
     setIsSharing(true);
     setToast({ message: "INITIALIZING CAPTURE...", type: "info" });
-    playCameraClick();
 
     await new Promise((resolve) => setTimeout(resolve, 200));
 
@@ -329,7 +318,6 @@ export default function Home() {
             message: "MATCHUP COPIED TO CLIPBOARD!",
             type: "success",
           });
-          playCoin();
           copiedToClipboard = true;
         }
       } catch (clipboardError) {
@@ -353,7 +341,6 @@ export default function Home() {
             message: "MATCHUP SHARED SUCCESSFULLY!",
             type: "success",
           });
-          playCoin();
           copiedToClipboard = true;
         } catch (shareError) {
           console.warn("Web Share API failed/dismissed:", shareError);
@@ -370,12 +357,10 @@ export default function Home() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         setToast({ message: "IMAGE SAVED AS PNG FILE!", type: "success" });
-        playCoin();
       }
     } catch (error) {
       console.error("Screenshot capture failed:", error);
       setToast({ message: "CAPTURE ERROR. TRY AGAIN!", type: "error" });
-      playBeep(220, 0.35, "sawtooth", 0.15);
     } finally {
       setIsSharing(false);
     }
@@ -574,11 +559,6 @@ export default function Home() {
 
   const handleGenerate = async () => {
     if (isGenerating) return;
-
-    if (!audioInitialized) {
-      setAudioInitialized(true);
-      playCoin();
-    }
 
     setIsGenerating(true);
     setActiveWinner(null);
@@ -826,13 +806,6 @@ export default function Home() {
     setAvailablePlayers(updatedPlayers);
   };
 
-  const initAudioFeedback = () => {
-    if (audioInitialized) return;
-    setAudioInitialized(true);
-    playCoin();
-    speakAnnounce("WELCOME TO THE MOBILE LEGENDS RANDOM TEAM ARENA!");
-  };
-
   return (
     <>
       {/* Floating Top-Left Season Ribbon Badge */}
@@ -842,10 +815,7 @@ export default function Home() {
       </div>
 
       <CRTOverlay isShaking={isShaking}>
-        <div
-          className="flex-grow flex flex-col justify-between"
-          onClick={initAudioFeedback}
-        >
+        <div className="flex-grow flex flex-col justify-between">
           {/* Esports Header */}
           <header className="border-b-4 border-neon-red bg-slate-950 pt-4 sm:pt-7 pb-3 sm:pb-4 px-3 sm:px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 relative">
             {/* Decorative neon bottom bar line */}
@@ -861,9 +831,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap max-w-full py-1 scrollbar-none shrink-0">
-              {/* PWA Installation & Notification Control */}
-              <PWAInstallPrompt senderName={user?.displayName || undefined} />
-
               {/* Google Authentication Control */}
               {loading ? (
                 <div className="text-[8px] font-pixel text-neon-yellow uppercase animate-pulse leading-none select-none shrink-0">
@@ -894,7 +861,6 @@ export default function Home() {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
-                        playCoin();
                         const confirmClaim = window.confirm(
                           "Do you want to initialize this database and claim the primary administrator role?",
                         );
@@ -920,7 +886,6 @@ export default function Home() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      playBeep(200, 0.1, "sawtooth");
                       logout();
                     }}
                     className="ml-1 border border-slate-600 hover:border-neon-red text-slate-400 hover:text-neon-red text-[8px] font-pixel px-2 py-0.5 cursor-pointer transition-all duration-150"
@@ -932,7 +897,6 @@ export default function Home() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    playCoin();
                     login();
                   }}
                   className="border-2 border-neon-blue bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-white px-3.5 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 glow-blue select-none shrink-0"
@@ -940,29 +904,6 @@ export default function Home() {
                   🔐 LOGIN GOOGLE
                 </button>
               )}
-
-              {/* Announcer Synth Activator */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAudioInitialized(true);
-                  playCoin();
-                  speakAnnounce("VOICE LOG INITIALIZED");
-                }}
-                className={`w-9 h-9 md:w-10 md:h-10 border-2 rounded-none flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 ${
-                  audioInitialized
-                    ? "border-neon-yellow text-neon-yellow bg-neon-yellow/10 glow-yellow"
-                    : "border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300"
-                }`}
-                title="Click to boot cabinet announcer"
-              >
-                <svg
-                  className="w-4 h-4 md:w-5 md:h-5 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02M3 9v6h4l5 5V4L7 9H3z" />
-                </svg>
-              </button>
             </div>
           </header>
 

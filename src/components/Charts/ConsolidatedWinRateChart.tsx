@@ -19,7 +19,6 @@ import {
   Season,
   getPlayerReadableSlug,
 } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import { computeComparativeSeasonProgression } from "@/utils/progression";
 import StockMarketLineChart from "./StockMarketLineChart";
 import styles from "./styles.module.css";
@@ -338,7 +337,6 @@ export default function ConsolidatedWinRateChart({
   }, [comparativeProgression.series, activeFighterIds]);
 
   const toggleFighterVisibility = (fId: string) => {
-    playBeep(320, 0.06, "sine");
     setCustomFighterIds((prev) => {
       const current =
         prev ??
@@ -350,7 +348,6 @@ export default function ConsolidatedWinRateChart({
   };
 
   const handleSpotlightFighter = (fId: string) => {
-    playBeep(440, 0.08, "triangle");
     setSpotlightId((prev) => (prev === fId ? null : fId));
     // Ensure the spotlighted fighter is visible
     if (!activeFighterIds.includes(fId)) {
@@ -530,7 +527,6 @@ export default function ConsolidatedWinRateChart({
         <button
           type="button"
           onClick={() => {
-            playBeep(440, 0.08, "triangle");
             setViewMode("stock_timeline");
           }}
           className={`${styles.subTabButton} ${
@@ -544,7 +540,6 @@ export default function ConsolidatedWinRateChart({
         <button
           type="button"
           onClick={() => {
-            playBeep(380, 0.08, "triangle");
             setViewMode("ranking_bars");
           }}
           className={`${styles.subTabButton} ${
@@ -557,7 +552,6 @@ export default function ConsolidatedWinRateChart({
         </button>
         <Link
           href="/graphs"
-          onClick={() => playBeep(520, 0.1, "sine")}
           className="ml-auto font-pixel text-[8px] text-neon-blue hover:text-white border border-neon-blue/60 hover:border-neon-blue bg-neon-blue/10 px-2.5 py-1.5 transition-all flex items-center gap-1 uppercase select-none"
         >
           <span>🖥️ TRADING TERMINAL</span>
@@ -586,7 +580,6 @@ export default function ConsolidatedWinRateChart({
           <select
             value={selectedSeason}
             onChange={(e) => {
-              playBeep(300, 0.08, "sine");
               setSelectedSeason(e.target.value);
             }}
             className={styles.filterSelect}
@@ -603,7 +596,6 @@ export default function ConsolidatedWinRateChart({
           <select
             value={selectedMode}
             onChange={(e) => {
-              playBeep(300, 0.08, "sine");
               setUserSelectedMode(e.target.value as MatchMode | "ALL");
               if (onModeChange && e.target.value !== "ALL") {
                 onModeChange(e.target.value as MatchMode);
@@ -623,7 +615,6 @@ export default function ConsolidatedWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(320, 0.08, "sine");
                 setMetricType(
                   metricType === "winrate" ? "performance_index" : "winrate",
                 );
@@ -639,7 +630,6 @@ export default function ConsolidatedWinRateChart({
             <button
               type="button"
               onClick={() => {
-                playBeep(260, 0.08, "sine");
                 setSortBy(sortBy === "winrate" ? "matches" : "winrate");
               }}
               className={`${styles.toggleBtn} ${styles.toggleBtnActive}`}
@@ -653,7 +643,6 @@ export default function ConsolidatedWinRateChart({
           <button
             type="button"
             onClick={() => {
-              playBeep(260, 0.08, "sine");
               setMinMatchesOnly(!minMatchesOnly);
             }}
             className={`${styles.toggleBtn} ${
@@ -745,7 +734,6 @@ export default function ConsolidatedWinRateChart({
                   <button
                     type="button"
                     onClick={() => {
-                      playBeep(350, 0.05, "sine");
                       setCustomFighterIds(
                         comparativeProgression.series
                           .slice(0, 6)
@@ -760,7 +748,6 @@ export default function ConsolidatedWinRateChart({
                   <button
                     type="button"
                     onClick={() => {
-                      playBeep(350, 0.05, "sine");
                       setCustomFighterIds(
                         comparativeProgression.series.map((s) => s.playerId),
                       );
@@ -773,7 +760,6 @@ export default function ConsolidatedWinRateChart({
                   <button
                     type="button"
                     onClick={() => {
-                      playBeep(300, 0.05, "sine");
                       setCustomFighterIds([]);
                       setSpotlightId(null);
                     }}
@@ -927,7 +913,6 @@ export default function ConsolidatedWinRateChart({
             <Link
               key={f.id}
               href={`/players/${getPlayerReadableSlug(f)}`}
-              onClick={() => playBeep(350, 0.08, "sine")}
               className="font-pixel text-[7.5px] bg-black/60 border border-slate-800 hover:border-neon-yellow hover:text-neon-yellow px-2 py-1 text-slate-300 transition-colors uppercase flex items-center gap-1.5"
             >
               <span>{f.name}</span>

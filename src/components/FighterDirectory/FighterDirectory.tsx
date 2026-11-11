@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { DbPlayer, getPlayerReadableSlug } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface FighterDirectoryProps {
@@ -44,7 +43,6 @@ export default function FighterDirectory({
     if (!deletingPlayer) return;
     setIsDeleting(true);
     try {
-      playBeep(120, 0.35, "sawtooth", 0.15); // alarm warning sound
       await onDeletePlayer(deletingPlayer.id);
       setDeletingPlayer(null);
     } catch (e) {
@@ -179,7 +177,6 @@ export default function FighterDirectory({
                       href={`/players/${getPlayerReadableSlug(player)}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        playBeep(300, 0.1, "sine");
                       }}
                       className={styles.profileLinkBtn}
                     >
@@ -199,7 +196,6 @@ export default function FighterDirectory({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        playBeep(220, 0.15, "sawtooth");
                         setDeletingPlayer(player);
                       }}
                       className={`${styles.actionBtn} ${styles.deleteBtn}`}

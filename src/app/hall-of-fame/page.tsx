@@ -14,7 +14,6 @@ import {
   fetchSeasonConfig,
   getPlayerReadableSlug,
 } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 
 interface FameCardData {
   year: number;
@@ -215,19 +214,11 @@ export default function HallOfFamePage() {
         <div className={styles.container}>
           {/* Navigation Breadcrumbs */}
           <div className="flex items-center justify-between">
-            <Link
-              href="/"
-              className={styles.backLink}
-              onClick={() => playBeep(200, 0.1, "sine")}
-            >
+            <Link href="/" className={styles.backLink}>
               ◀ BACK TO ARENA
             </Link>
 
-            <Link
-              href="/seasons"
-              className={styles.backLink}
-              onClick={() => playBeep(300, 0.1, "sawtooth")}
-            >
+            <Link href="/seasons" className={styles.backLink}>
               🏆 SEASONS ARCHIVE ▶
             </Link>
           </div>
@@ -280,7 +271,6 @@ export default function HallOfFamePage() {
                           alias: card.championAlias,
                         })}`}
                         className={styles.fameCard}
-                        onClick={() => playBeep(400, 0.1, "sine")}
                       >
                         {/* Full Card Background Avatar Image */}
                         <img

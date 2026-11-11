@@ -1,7 +1,6 @@
 import React from "react";
 import Tag from "../Tag";
 import { ForumPost } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface SidebarWidgetPanelProps {
@@ -24,10 +23,7 @@ export default function SidebarWidgetPanel({
         <h3 className={styles.widgetTitle}>TAG</h3>
         <div className={styles.widgetTagsList}>
           <button
-            onClick={() => {
-              playBeep(400, 0.05, "sine");
-              onSelectTag(null);
-            }}
+            onClick={() => onSelectTag(null)}
             className={`${styles.widgetTagBtn} ${!selectedTag ? styles.widgetTagActive : ""}`}
           >
             #ALL-TAGS ({posts.length})

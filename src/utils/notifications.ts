@@ -1,7 +1,5 @@
 "use client";
 
-import { playBeep, playCoin } from "./audio";
-
 // Check notification permission state
 export type NotificationPermissionState =
   | "granted"
@@ -47,7 +45,6 @@ export async function requestNotificationPermission(): Promise<boolean> {
   try {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
-      playCoin();
       // Send a test welcome notification
       await sendLocalNotification("🔔 เปิดการแจ้งเตือนสำเร็จ!", {
         body: "คุณจะได้รับการแจ้งเตือนเมื่อมีการสุ่มทีม และการเรียกระดมพลเวลา 12:30 และ 18:00 น.",
@@ -55,7 +52,6 @@ export async function requestNotificationPermission(): Promise<boolean> {
       });
       return true;
     } else {
-      playBeep(220, 0.2, "sawtooth");
       return false;
     }
   } catch (err) {

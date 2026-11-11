@@ -18,7 +18,6 @@ import {
   getWeightedWinrate,
   getRequiredMinMatches,
 } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import { useBadgeConfig } from "@/utils/badgeConfig";
 
 export default function SeasonsPage() {
@@ -31,7 +30,6 @@ export default function SeasonsPage() {
   const [activeTab, setActiveTab] = useState<"leaderboard" | "matches">(
     "leaderboard",
   );
-  const [audioInitialized, setAudioInitialized] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -113,12 +111,6 @@ export default function SeasonsPage() {
       document.removeEventListener("visibilitychange", handleRevalidate);
     };
   }, [loadData]);
-
-  const initAudioFeedback = () => {
-    if (!audioInitialized) {
-      setAudioInitialized(true);
-    }
-  };
 
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId) || null;
 
@@ -215,7 +207,7 @@ export default function SeasonsPage() {
 
   return (
     <CRTOverlay>
-      <div className={styles.container} onClick={initAudioFeedback}>
+      <div className={styles.container}>
         {/* Header */}
         <header className={styles.header}>
           <div className={styles.headerBorderLine} />
@@ -227,11 +219,7 @@ export default function SeasonsPage() {
             </p>
           </div>
 
-          <Link
-            href="/"
-            onClick={() => playBeep(250, 0.1, "sawtooth")}
-            className={styles.backBtn}
-          >
+          <Link href="/" className={styles.backBtn}>
             ✕ BACK TO ARENA
           </Link>
         </header>
@@ -246,11 +234,7 @@ export default function SeasonsPage() {
                 SEASON IN SETTINGS, ITS ARCHIVES WILL RECORD HERE!
               </p>
 
-              <Link
-                href="/"
-                onClick={() => playBeep(250, 0.1, "sawtooth")}
-                className={styles.returnBtn}
-              >
+              <Link href="/" className={styles.returnBtn}>
                 ✕ RETURN TO PLAY
               </Link>
             </div>
@@ -263,7 +247,6 @@ export default function SeasonsPage() {
                   <select
                     value={selectedSeasonId || ""}
                     onChange={(e) => {
-                      playBeep(330, 0.1, "sine");
                       setSelectedSeasonId(Number(e.target.value));
                     }}
                     className={styles.selectBox}
@@ -303,7 +286,6 @@ export default function SeasonsPage() {
               <div className={styles.tabsList}>
                 <button
                   onClick={() => {
-                    playBeep(330, 0.1, "sine");
                     setActiveTab("leaderboard");
                   }}
                   className={`${styles.tabBtn} ${
@@ -316,7 +298,6 @@ export default function SeasonsPage() {
                 </button>
                 <button
                   onClick={() => {
-                    playBeep(330, 0.1, "sine");
                     setActiveTab("matches");
                   }}
                   className={`${styles.tabBtn} ${

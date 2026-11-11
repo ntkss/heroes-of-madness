@@ -10,13 +10,6 @@ import {
   getRandomHero,
   getHeroCount,
 } from "@/constants/heroes";
-import {
-  playBeep,
-  playCoin,
-  playLockName,
-  playExplosion,
-  speakAnnounce,
-} from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface HeroRandomizerProps {
@@ -61,7 +54,6 @@ export default function HeroRandomizer({
 
   const handleSwitchGame = (game: GameType) => {
     if (isRolling) return;
-    playBeep(330, 0.08, "triangle");
     setActiveGame(game);
     setDisplayResult(null);
     setIsLockedIn(false);
@@ -76,7 +68,6 @@ export default function HeroRandomizer({
 
     setIsRolling(true);
     setIsLockedIn(false);
-    playCoin();
 
     // 1. Determine final target result
     const targetOverrideLane =
@@ -86,16 +77,13 @@ export default function HeroRandomizer({
     // Roll animation sequence:
     // Phase 1: Fast random flicking through lanes and heroes
     // Phase 2: Lock lane, then flick heroes within that lane
-    // Phase 3: Lock hero with explosion sound and screen shake
+    // Phase 3: Lock hero with screen shake
     let tickCount = 0;
     const totalTicks = 24;
     const pool = HERO_POOLS[activeGame];
 
     const interval = setInterval(() => {
       tickCount++;
-
-      // Rapid audio ticks
-      playBeep(300 + tickCount * 25, 0.04, "sawtooth", 0.06);
 
       if (tickCount < 14) {
         // Phase 1: Lane & hero both cycling
@@ -124,13 +112,6 @@ export default function HeroRandomizer({
         setDisplayResult(finalResult);
         setIsRolling(false);
         setIsLockedIn(true);
-
-        // Sound effects
-        playLockName();
-        setTimeout(() => {
-          playExplosion();
-          speakAnnounce(`${finalResult.lane}. ${finalResult.hero}!`);
-        }, 120);
 
         if (triggerScreenShake) {
           triggerScreenShake();
@@ -163,7 +144,6 @@ export default function HeroRandomizer({
     if (!displayResult) return;
     const text = `Game: ${displayResult.game} | Lane: ${displayResult.lane} | Hero: ${displayResult.hero}`;
     navigator.clipboard.writeText(text);
-    playBeep(880, 0.1, "sine");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -371,7 +351,6 @@ export default function HeroRandomizer({
               <button
                 type="button"
                 onClick={() => {
-                  playBeep(440, 0.05, "sine");
                   setSelectedLaneFilter("ANY");
                 }}
                 disabled={isRolling}
@@ -389,7 +368,6 @@ export default function HeroRandomizer({
                   key={lane}
                   type="button"
                   onClick={() => {
-                    playBeep(440, 0.05, "sine");
                     setSelectedLaneFilter(lane);
                   }}
                   disabled={isRolling}
@@ -441,7 +419,6 @@ export default function HeroRandomizer({
         <button
           type="button"
           onClick={() => {
-            playBeep(440, 0.05, "triangle");
             setShowPoolDrawer(!showPoolDrawer);
           }}
           className={styles.poolToggleBtn}

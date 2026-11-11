@@ -19,7 +19,6 @@ import {
   MatchMode,
   Season,
 } from "@/utils/firebase";
-import { playBeep, playCoin } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
 import { UserProfileWinRateChart } from "@/components/Charts";
@@ -177,7 +176,6 @@ export default function PlayerProfilePage({ params }: PageProps) {
     if (!player) return;
     try {
       const updated = await updatePlayer(player.id, { name, alias, avatar });
-      playCoin();
       setPlayer(updated);
       setIsEditing(false);
       // If alias changed, navigate smoothly to new canonical alias URL
@@ -566,18 +564,13 @@ export default function PlayerProfilePage({ params }: PageProps) {
             {isChampion && (
               <Link
                 href="/hall-of-fame"
-                onClick={() => playBeep(300, 0.15, "sawtooth")}
                 className="border-2 border-amber-500 bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-black px-3 py-1.5 font-pixel text-[9px] cursor-pointer transition-all duration-200 uppercase tracking-wide select-none shadow-[0_0_12px_rgba(255,210,0,0.5)]"
               >
                 🏆 HALL OF FAME ▶
               </Link>
             )}
 
-            <Link
-              href="/"
-              onClick={() => playBeep(250, 0.1, "sawtooth")}
-              className={styles.backBtn}
-            >
+            <Link href="/" className={styles.backBtn}>
               ✕ BACK TO ARENA
             </Link>
           </div>
@@ -691,7 +684,6 @@ export default function PlayerProfilePage({ params }: PageProps) {
                       <button
                         type="button"
                         onClick={() => {
-                          playBeep(440, 0.08, "triangle");
                           setIsEditing(true);
                         }}
                         className={styles.editProfileBtn}
@@ -955,7 +947,6 @@ export default function PlayerProfilePage({ params }: PageProps) {
                     <select
                       value={effectiveSeasonId}
                       onChange={(e) => {
-                        playBeep(330, 0.1, "sine");
                         setSelectedSeasonId(Number(e.target.value));
                       }}
                       className={styles.seasonSelectBox}
@@ -972,7 +963,6 @@ export default function PlayerProfilePage({ params }: PageProps) {
                     <select
                       value={selectedMode}
                       onChange={(e) => {
-                        playBeep(330, 0.1, "sine");
                         setSelectedMode(e.target.value as MatchMode);
                       }}
                       className={styles.seasonSelectBox}

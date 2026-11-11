@@ -6,7 +6,6 @@ import Link from "next/link";
 import styles from "./styles.module.css";
 import { useAuth } from "@/utils/AuthContext";
 import { fetchPosts, ForumPost } from "@/utils/firebase";
-import { playBeep, playCoin } from "@/utils/audio";
 import PostCard from "@/components/PostCard";
 import SidebarWidgetPanel from "@/components/SidebarWidgetPanel";
 import PostCreationModal from "@/components/PostCreationModal";
@@ -60,11 +59,7 @@ export default function ForumsPage() {
       <div className={styles.forumsPage}>
         <div className={styles.container}>
           {/* Navigation Breadcrumb */}
-          <Link
-            href="/"
-            className={styles.backLink}
-            onClick={() => playBeep(200, 0.1, "sine")}
-          >
+          <Link href="/" className={styles.backLink}>
             ◀ BACK
           </Link>
 
@@ -80,7 +75,6 @@ export default function ForumsPage() {
               {user ? (
                 <button
                   onClick={() => {
-                    playBeep(440, 0.15, "triangle");
                     setIsModalOpen(true);
                   }}
                   className={styles.actionBtnYellow}
@@ -90,7 +84,6 @@ export default function ForumsPage() {
               ) : (
                 <button
                   onClick={() => {
-                    playCoin();
                     login();
                   }}
                   className={styles.actionBtn}
@@ -106,7 +99,6 @@ export default function ForumsPage() {
             <div className={styles.tabGroup}>
               <button
                 onClick={() => {
-                  playBeep(600, 0.05, "sine");
                   setActiveTab("all");
                 }}
                 className={`${styles.tabBtn} ${activeTab === "all" ? styles.tabBtnActive : ""}`}
@@ -115,7 +107,6 @@ export default function ForumsPage() {
               </button>
               <button
                 onClick={() => {
-                  playBeep(600, 0.05, "sine");
                   setActiveTab("news");
                 }}
                 className={`${styles.tabBtn} ${activeTab === "news" ? styles.tabBtnActive : ""}`}
@@ -124,7 +115,6 @@ export default function ForumsPage() {
               </button>
               <button
                 onClick={() => {
-                  playBeep(600, 0.05, "sine");
                   setActiveTab("forum");
                 }}
                 className={`${styles.tabBtn} ${activeTab === "forum" ? styles.tabBtnActive : ""}`}

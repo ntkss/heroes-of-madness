@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { ForumPost, extractYouTubeId } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface PostCardProps {
@@ -16,7 +15,6 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <Link
       href={`/forums/${post.slug}`}
-      onClick={() => playBeep(520, 0.1, "sine")}
       className={`${styles.postCard} ${post.type === "news" ? styles.postCardNews : ""}`}
     >
       {post.imageUrl && (

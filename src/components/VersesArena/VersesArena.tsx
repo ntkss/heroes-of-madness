@@ -7,12 +7,6 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import {
-  playLockName,
-  playExplosion,
-  speakAnnounce,
-  playBeep,
-} from "@/utils/audio";
 import { SQUAD_NAMES } from "@/constants/players";
 import {
   DbPlayer,
@@ -426,7 +420,6 @@ export default function VersesArena({
         requestAnimationFrame(step);
       } else {
         setShowShine(true);
-        playBeep(880, 0.35, "sine");
       }
     };
 
@@ -449,8 +442,6 @@ export default function VersesArena({
         setPercentages(initialPcts);
       }, 0);
       lockTimersRef.current.push(initTimer);
-
-      playBeep(440, 0.2, "sawtooth");
 
       // Increment progress timers
       pctIntervalRef.current = setInterval(() => {
@@ -514,8 +505,6 @@ export default function VersesArena({
             return next;
           });
 
-          playLockName();
-
           setLockedSlots((prev) => {
             const next = [...prev];
             next[i] = true;
@@ -534,15 +523,11 @@ export default function VersesArena({
           if (i === 4) {
             clearInterval(rollInterval);
             triggerScreenShake();
-            playExplosion();
             if (pctIntervalRef.current) {
               clearInterval(pctIntervalRef.current);
               pctIntervalRef.current = null;
             }
             animateWinrates();
-            setTimeout(() => {
-              speakAnnounce("ROUND ONE. FIGHT!");
-            }, 300);
           }
         }, delay);
 

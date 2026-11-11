@@ -1,5 +1,4 @@
 import React from "react";
-import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface TagProps {
@@ -12,10 +11,7 @@ interface TagProps {
 export default function Tag({ tag, count, isActive, onClick }: TagProps) {
   return (
     <button
-      onClick={() => {
-        playBeep(400, 0.05, "sine");
-        onClick();
-      }}
+      onClick={onClick}
       className={`${styles.widgetTagBtn} ${isActive ? styles.widgetTagActive : ""}`}
     >
       #{tag} ({count})

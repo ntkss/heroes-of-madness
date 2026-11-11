@@ -129,7 +129,7 @@
 }
 
 .tabsContainer {
-  @apply flex border-b border-slate-700/50 pb-2 gap-4 select-none;
+  @apply flex border-b border-slate-700/50 pb-2 gap-4 select-none overflow-x-auto whitespace-nowrap scrollbar-none;
 }
 
 .tabBtn {

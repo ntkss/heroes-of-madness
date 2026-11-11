@@ -28,15 +28,16 @@ import {
   fetchBadgeConfig,
   saveBadgeConfig,
 } from "@/utils/firebase";
-import { playBeep, playCoin, speakAnnounce } from "@/utils/audio";
 import { useAuth } from "@/utils/AuthContext";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import styles from "./styles.module.css";
 
 export default function SettingsPage() {
   const { user: currentAdmin, isAdmin, loading: authLoading } = useAuth();
   const [settingsTab, setSettingsTab] = useState<
-    "ranks" | "users" | "seasons" | "line" | "migration" | "badges"
+    "ranks" | "users" | "seasons" | "line" | "migration" | "badges" | "pwa"
   >("ranks");
+  const activeTab = !isAdmin ? "pwa" : settingsTab;
   const [users, setUsers] = useState<DbUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
@@ -65,7 +66,6 @@ export default function SettingsPage() {
   const [lineError, setLineError] = useState("");
   const [lineSuccess, setLineSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const [audioInitialized, setAudioInitialized] = useState(false);
 
   // Data Migration & Backup States
   const [isMigrating, setIsMigrating] = useState(false);
@@ -100,7 +100,6 @@ export default function SettingsPage() {
     );
     if (!confirmChange) return;
 
-    playCoin();
     const success = await updateUserRole(targetUser.uid, newRole);
     if (success) {
       loadUsers();
@@ -123,14 +122,9 @@ export default function SettingsPage() {
     }
 
     setSeasonEnding(true);
-    playCoin();
     try {
       const success = await endCurrentSeason();
       if (success) {
-        speakAnnounce(
-          `SEASON ${seasonConfig.activeSeasonId} COMPLETED. NEW SEASON INITIALIZED.`,
-        );
-        playCoin();
         alert(
           `SUCCESS! Season ${seasonConfig.activeSeasonId} closed. Season ${seasonConfig.activeSeasonId + 1} has begun!`,
         );
@@ -152,13 +146,13 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (isAdmin && settingsTab === "users") {
+    if (isAdmin && activeTab === "users") {
       const timer = setTimeout(() => {
         loadUsers();
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isAdmin, settingsTab]);
+  }, [isAdmin, activeTab]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -190,7 +184,6 @@ export default function SettingsPage() {
     setBadgeError("");
     setBadgeSuccess("");
     setBadgeLoading(true);
-    playCoin();
 
     try {
       const res = await saveBadgeConfig(badgeConfigState);
@@ -198,7 +191,6 @@ export default function SettingsPage() {
         setBadgeSuccess(
           "🏅 BADGE SYSTEM RULES SAVED TO DATABASE SUCCESSFULLY!",
         );
-        playBeep(523, 0.2, "sine");
       } else {
         setBadgeError("FAILED TO SAVE BADGE CONFIGURATION.");
       }
@@ -211,7 +203,6 @@ export default function SettingsPage() {
   };
 
   const handleResetBadges = () => {
-    playBeep(200, 0.1, "sawtooth");
     setBadgeConfigState(DEFAULT_BADGE_CONFIG);
     setBadgeError("");
     setBadgeSuccess(
@@ -220,7 +211,6 @@ export default function SettingsPage() {
   };
 
   const handleReset = () => {
-    playBeep(200, 0.1, "sawtooth");
     setHighName(DEFAULT_RANK_CONFIG.tiers.high);
     setNormalName(DEFAULT_RANK_CONFIG.tiers.normal);
     setLowName(DEFAULT_RANK_CONFIG.tiers.low);
@@ -229,13 +219,6 @@ export default function SettingsPage() {
     setLowWinrate(DEFAULT_RANK_CONFIG.lowTierWinrate);
     setError("");
     setSuccess("");
-  };
-
-  const initAudioFeedback = () => {
-    if (audioInitialized) return;
-    setAudioInitialized(true);
-    playCoin();
-    speakAnnounce("SYSTEM SETTINGS CONNECTOR INITIALIZED");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -296,7 +279,6 @@ export default function SettingsPage() {
       };
       await saveRankConfig(newConfig);
       setRankConfig(newConfig);
-      playCoin();
       setSuccess("RANK CONFIGURATION RULES UPDATED SUCCESSFULLY!");
     } catch (err) {
       const errorMessage =
@@ -317,7 +299,6 @@ export default function SettingsPage() {
         groupId: lineGroupId.trim(),
         enabled: lineEnabled,
       });
-      playCoin();
       setLineSuccess("LINE BOT SETTINGS UPDATED SUCCESSFULLY!");
     } catch (err) {
       const errorMessage =
@@ -330,12 +311,10 @@ export default function SettingsPage() {
 
   const handleDownloadBackup = async () => {
     setIsExporting(true);
-    playCoin();
     try {
       const backup = await exportAllDataAsBackup();
       downloadBackupFile(backup);
       setSuccess("FULL DATABASE BACKUP GENERATED & DOWNLOADED!");
-      playBeep(440, 0.1, "sine");
     } catch (err) {
       console.error("Backup failed:", err);
       setError("FAILED TO GENERATE BACKUP: " + String(err));
@@ -358,7 +337,6 @@ export default function SettingsPage() {
     setIsMigrating(true);
     setMigrationError("");
     setMigrationReport(null);
-    playCoin();
 
     try {
       const result = await migrateMatchesToDocumentIds();
@@ -367,7 +345,6 @@ export default function SettingsPage() {
         setSuccess(
           `MIGRATION COMPLETE! ${result.migratedMatches} matches updated (${result.convertedSlots} player slots converted).`,
         );
-        playBeep(523, 0.2, "sine");
       } else {
         setMigrationError("Migration encountered errors. Check report below.");
       }
@@ -381,14 +358,12 @@ export default function SettingsPage() {
 
   const handleBackfillAliases = async () => {
     setIsAuditingAliases(true);
-    playCoin();
     try {
       const res = await backfillPlayerAliases();
       setAliasReport(res);
       setSuccess(
         `AUDITED ${res.totalPlayers} PLAYERS: ${res.updatedCount} ALIASES BACKFILLED IN FIRESTORE!`,
       );
-      playBeep(523, 0.2, "sine");
     } catch (err) {
       console.error("Alias audit failed:", err);
       setError("ALIAS AUDIT FAILED: " + String(err));
@@ -409,34 +384,9 @@ export default function SettingsPage() {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <CRTOverlay>
-        <div className={styles.unauthorizedContainer}>
-          <div className={styles.violationCard}>
-            <div className={styles.violationIcon}>⚠️</div>
-            <h1 className={styles.violationTitle}>SECURITY VIOLATION</h1>
-            <div className={styles.violationDivider} />
-            <p className={styles.violationDesc}>
-              UNAUTHORIZED ACCESS DETECTED. THIS TERMINAL IS RESTRICTED TO
-              ADMINISTRATORS ONLY. YOUR ATTEMPT HAS BEEN LOGGED.
-            </p>
-            <Link
-              href="/"
-              onClick={() => playBeep(250, 0.1, "sawtooth")}
-              className={styles.returnToArenaBtn}
-            >
-              ✕ RETURN TO ARENA
-            </Link>
-          </div>
-        </div>
-      </CRTOverlay>
-    );
-  }
-
   return (
     <CRTOverlay>
-      <div className={styles.container} onClick={initAudioFeedback}>
+      <div className={styles.container}>
         {/* Esports Header */}
         <header className={styles.header}>
           <div className={styles.headerBorderLine} />
@@ -448,11 +398,7 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <Link
-            href="/"
-            onClick={() => playBeep(250, 0.1, "sawtooth")}
-            className={styles.backBtn}
-          >
+          <Link href="/" className={styles.backBtn}>
             ✕ BACK TO ARENA
           </Link>
         </header>
@@ -460,7 +406,7 @@ export default function SettingsPage() {
         {/* Settings Control Panel Form Container */}
         <main
           className={`${styles.main} ${
-            settingsTab === "users" ? styles.mainUsers : styles.mainRanksSeasons
+            activeTab === "users" ? styles.mainUsers : styles.mainRanksSeasons
           }`}
         >
           <div className={styles.configPanel}>
@@ -480,99 +426,172 @@ export default function SettingsPage() {
 
             {/* Admin Page Tabs */}
             <div className={styles.tabsContainer}>
+              {isAdmin && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("ranks");
+                    }}
+                    className={`${styles.tabBtn} ${
+                      activeTab === "ranks"
+                        ? styles.tabBtnActive
+                        : styles.tabBtnInactive
+                    }`}
+                  >
+                    ⚙️ RANK RULES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("users");
+                    }}
+                    className={`${styles.tabBtn} ${
+                      activeTab === "users"
+                        ? styles.tabBtnActive
+                        : styles.tabBtnInactive
+                    }`}
+                  >
+                    👥 USER MANAGEMENT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("seasons");
+                    }}
+                    className={`${styles.tabBtn} ${
+                      activeTab === "seasons"
+                        ? styles.tabBtnActive
+                        : styles.tabBtnInactive
+                    }`}
+                  >
+                    🏆 SEASON ENGINE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("line");
+                    }}
+                    className={`${styles.tabBtn} ${
+                      activeTab === "line"
+                        ? styles.tabBtnActive
+                        : styles.tabBtnInactive
+                    }`}
+                  >
+                    💬 LINE CHATBOT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("migration");
+                    }}
+                    className={`${styles.tabBtn} ${
+                      activeTab === "migration"
+                        ? styles.tabBtnActive
+                        : styles.tabBtnInactive
+                    }`}
+                  >
+                    💾 DATA & BACKUP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("badges");
+                    }}
+                    className={`${styles.tabBtn} ${
+                      activeTab === "badges"
+                        ? styles.tabBtnActive
+                        : styles.tabBtnInactive
+                    }`}
+                  >
+                    🏅 BADGES
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => {
-                  playBeep(330, 0.1, "sawtooth");
-                  setSettingsTab("ranks");
+                  setSettingsTab("pwa");
                 }}
                 className={`${styles.tabBtn} ${
-                  settingsTab === "ranks"
+                  activeTab === "pwa"
                     ? styles.tabBtnActive
                     : styles.tabBtnInactive
                 }`}
               >
-                ⚙️ RANK RULES
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playBeep(330, 0.1, "sawtooth");
-                  setSettingsTab("users");
-                }}
-                className={`${styles.tabBtn} ${
-                  settingsTab === "users"
-                    ? styles.tabBtnActive
-                    : styles.tabBtnInactive
-                }`}
-              >
-                👥 USER MANAGEMENT
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playBeep(330, 0.1, "sawtooth");
-                  setSettingsTab("seasons");
-                }}
-                className={`${styles.tabBtn} ${
-                  settingsTab === "seasons"
-                    ? styles.tabBtnActive
-                    : styles.tabBtnInactive
-                }`}
-              >
-                🏆 SEASON ENGINE
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playBeep(330, 0.1, "sawtooth");
-                  setSettingsTab("line");
-                }}
-                className={`${styles.tabBtn} ${
-                  settingsTab === "line"
-                    ? styles.tabBtnActive
-                    : styles.tabBtnInactive
-                }`}
-              >
-                💬 LINE CHATBOT
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playBeep(330, 0.1, "sawtooth");
-                  setSettingsTab("migration");
-                }}
-                className={`${styles.tabBtn} ${
-                  settingsTab === "migration"
-                    ? styles.tabBtnActive
-                    : styles.tabBtnInactive
-                }`}
-              >
-                💾 DATA & BACKUP
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playBeep(330, 0.1, "sawtooth");
-                  setSettingsTab("badges");
-                }}
-                className={`${styles.tabBtn} ${
-                  settingsTab === "badges"
-                    ? styles.tabBtnActive
-                    : styles.tabBtnInactive
-                }`}
-              >
-                🏅 BADGES
+                📲 APP & PWA
               </button>
             </div>
 
-            {rankConfig === null ? (
+            {activeTab === "pwa" ? (
+              /* PWA & Notifications UI */
+              <div className={styles.seasonEngineContainer}>
+                <div className={styles.formSection}>
+                  <span className={styles.sectionTitle}>
+                    📲 PROGRESSIVE WEB APP (PWA) & NOTIFICATIONS
+                  </span>
+                  <p className={styles.seasonEngineDesc}>
+                    ติดตั้ง HEROES OF MADNESS ลงในอุปกรณ์ของคุณแบบ NATIVE
+                    APPLICATION เพื่อการใช้งานที่รวดเร็ว เต็มหน้าจอ
+                    และเปิดรับการแจ้งเตือนสุ่มทีมและการเรียกระดมพล
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-slate-900/60 border border-slate-800 rounded mt-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-pixel text-[11px] text-neon-yellow uppercase tracking-wider">
+                        APPLICATION CONTROLS
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        แตะปุ่มด้านขวาเพื่อติดตั้งแอป, เปิด/ปิดการแจ้งเตือน,
+                        หรือส่งสัญญาณเรียกระดมพล
+                      </span>
+                    </div>
+                    <div className="shrink-0">
+                      <PWAInstallPrompt
+                        senderName={currentAdmin?.displayName || undefined}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.seasonEngineDetails}>
+                  <div className={styles.seasonEngineDetailRow}>
+                    <span className={styles.seasonEngineDetailLabel}>
+                      📱 NATIVE APP EXPERIENCE:
+                    </span>
+                    <span className="text-slate-300 text-[10px] font-sans">
+                      เปิดแอปได้จากหน้าจอโฮมโดยไม่มีแถบเบราว์เซอร์กวนใจ
+                      รองรับทั้ง iOS (Safari Add to Home Screen) และ Android /
+                      Chrome (Install App)
+                    </span>
+                  </div>
+                  <div className={styles.seasonEngineDetailRow}>
+                    <span className={styles.seasonEngineDetailLabel}>
+                      🔔 SYSTEM NOTIFICATIONS:
+                    </span>
+                    <span className="text-slate-300 text-[10px] font-sans">
+                      รับการแจ้งเตือนผลการสุ่มทีม และแจ้งเตือนระดมพลประจำวันเวลา
+                      12:30 น. และ 18:00 น.
+                    </span>
+                  </div>
+                  <div className={styles.seasonEngineDetailRow}>
+                    <span className={styles.seasonEngineDetailLabel}>
+                      📢 CALL TO ARMS (เรียกระดมพล):
+                    </span>
+                    <span className="text-slate-300 text-[10px] font-sans">
+                      ส่งสัญญาณแจ้งเตือนเข้าเครื่องผู้เล่นทุกคนที่เปิดแจ้งเตือนไว้
+                      พร้อมส่งข้อความแจ้งเตือนเข้ากลุ่ม LINE อัตโนมัติ
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : rankConfig === null ? (
               <div className={styles.panelLoading}>
                 <span className={styles.panelLoadingText}>
                   CONNECTING STORAGE...
                 </span>
               </div>
-            ) : settingsTab === "ranks" ? (
+            ) : activeTab === "ranks" ? (
               <form onSubmit={handleSubmit} className={styles.form}>
                 {/* 1. Tiers Labels */}
                 <div className={styles.formSection}>
@@ -729,7 +748,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
-            ) : settingsTab === "users" ? (
+            ) : activeTab === "users" ? (
               /* User management UI */
               <div className={styles.usersSection}>
                 <div className={styles.usersHeader}>
@@ -841,7 +860,7 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-            ) : settingsTab === "seasons" ? (
+            ) : activeTab === "seasons" ? (
               /* Season Engine UI */
               <div className={styles.seasonEngineContainer}>
                 <div className={styles.formSection}>
@@ -891,7 +910,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
-            ) : settingsTab === "line" ? (
+            ) : activeTab === "line" ? (
               /* LINE Chatbot UI */
               <form onSubmit={handleLineSubmit} className={styles.form}>
                 <div className={styles.formSection}>
@@ -958,7 +977,6 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      playBeep(200, 0.1, "sawtooth");
                       setLineGroupId("");
                       setLineEnabled(false);
                     }}
@@ -977,7 +995,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
-            ) : settingsTab === "migration" ? (
+            ) : activeTab === "migration" ? (
               /* Data Migration & Backup UI */
               <div className={styles.seasonEngineContainer}>
                 <div className={styles.seasonEngineDetails}>
@@ -1115,7 +1133,7 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-            ) : settingsTab === "badges" ? (
+            ) : activeTab === "badges" ? (
               <form onSubmit={handleSaveBadges} className={styles.form}>
                 <div className={styles.formSection}>
                   <div className="flex flex-col gap-1">

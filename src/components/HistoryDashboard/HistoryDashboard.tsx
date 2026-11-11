@@ -17,7 +17,6 @@ import {
   getPlayerReadableSlug,
 } from "@/utils/firebase";
 import styles from "./styles.module.css";
-import { playBeep, playWin } from "@/utils/audio";
 import PodiumStandings from "@/components/PodiumStandings";
 import { useAuth } from "@/utils/AuthContext";
 import { normalizeLane } from "@/constants/heroes";
@@ -92,12 +91,10 @@ function MatchCardComponent({
     type: "likes" | "dislikes",
   ) => {
     if (!user) {
-      playBeep(200, 0.1, "sine");
       alert("Please log in to rate player performance.");
       return;
     }
 
-    playBeep(440, 0.05, "sine", 0.1);
     const updatedFb = await togglePlayerFeedback(
       match.id,
       playerKey,
@@ -207,7 +204,6 @@ function MatchCardComponent({
               <div className={styles.playerActions}>
                 <Link
                   href={`/players/${getPlayerReadableSlug(dbPlayer, pKey)}`}
-                  onClick={() => playBeep(300, 0.1, "sine")}
                   className={styles.profileLinkBtn}
                 >
                   PROFILE 👤
@@ -369,7 +365,6 @@ function MatchCardComponent({
               {isAdmin && (
                 <button
                   onClick={() => {
-                    playBeep(200, 0.1, "sine");
                     setEditingMatchId(match.id);
                   }}
                   className={styles.editWinnerBtn}
@@ -470,7 +465,6 @@ function MatchCardComponent({
                   {editingMatchId === match.id && (
                     <button
                       onClick={() => {
-                        playBeep(150, 0.1, "sine");
                         setEditingMatchId(null);
                       }}
                       className={styles.cancelBtn}
@@ -623,7 +617,6 @@ export default function HistoryDashboard({
     [availablePlayers],
   );
   const handlePurgeAllClick = () => {
-    playBeep(220, 0.1, "sawtooth");
     const modeLabel =
       selectedMode === "HERO_ROV"
         ? "RANDOM HERO – ROV"
@@ -634,7 +627,6 @@ export default function HistoryDashboard({
       `⚠️ DANGER! ARE YOU SURE YOU WANT TO PURGE ALL [${modeLabel}] MATCH LOGS FROM THE CABINET DATABASE?\nTHIS ACTION CANNOT BE UNDONE!`,
     );
     if (confirmDelete) {
-      playBeep(100, 0.3, "sawtooth");
       onDeleteAllMatches(selectedMode);
     }
   };
@@ -651,7 +643,6 @@ export default function HistoryDashboard({
   };
 
   const handleDelete = (id: string) => {
-    playBeep(200, 0.1, "sawtooth");
     setDeletingMatchId(id);
   };
 
@@ -659,7 +650,6 @@ export default function HistoryDashboard({
     if (!deletingMatchId) return;
     setIsDeletingMatch(true);
     try {
-      playBeep(120, 0.35, "sawtooth", 0.15);
       await onDeleteMatch(deletingMatchId);
       setDeletingMatchId(null);
     } catch (e) {
@@ -675,7 +665,6 @@ export default function HistoryDashboard({
       `🏆 CONFIRM OUTCOME: Are you sure you want to declare ${teamName} as the winner of this match?`,
     );
     if (confirmSet) {
-      playWin();
       onUpdateWinner(id, winner);
       setEditingMatchId(null);
     }
@@ -1150,7 +1139,6 @@ export default function HistoryDashboard({
       <div className={styles.tabBar}>
         <button
           onClick={() => {
-            playBeep(330, 0.1, "sawtooth");
             setActiveTab("history");
           }}
           className={`${styles.tabButton} ${
@@ -1163,7 +1151,6 @@ export default function HistoryDashboard({
         </button>
         <button
           onClick={() => {
-            playBeep(392, 0.1, "sawtooth");
             setActiveTab("stats");
           }}
           className={`${styles.tabButton} ${
@@ -1176,7 +1163,6 @@ export default function HistoryDashboard({
         </button>
         <button
           onClick={() => {
-            playBeep(440, 0.1, "sawtooth");
             setActiveTab("winrate_graph");
           }}
           className={`${styles.tabButton} ${
@@ -1232,7 +1218,6 @@ export default function HistoryDashboard({
               <select
                 value={effectiveSeasonId}
                 onChange={(e) => {
-                  playBeep(330, 0.1, "sine");
                   setSelectedSeasonId(Number(e.target.value));
                 }}
                 className={styles.seasonSelectBox}
@@ -1249,7 +1234,6 @@ export default function HistoryDashboard({
               <select
                 value={selectedMode}
                 onChange={(e) => {
-                  playBeep(330, 0.1, "sine");
                   handleModeChange(e.target.value as MatchMode);
                 }}
                 className={styles.seasonSelectBox}
@@ -1310,7 +1294,6 @@ export default function HistoryDashboard({
                     : String(effectiveSeasonId)
                 }
                 onChange={(e) => {
-                  playBeep(330, 0.1, "sine");
                   const val = e.target.value;
                   if (val === "alltime") {
                     setStatsSubTab("alltime");
@@ -1338,7 +1321,6 @@ export default function HistoryDashboard({
               <select
                 value={selectedMode}
                 onChange={(e) => {
-                  playBeep(330, 0.1, "sine");
                   handleModeChange(e.target.value as MatchMode);
                 }}
                 className={styles.seasonSelectBox}
@@ -1359,7 +1341,6 @@ export default function HistoryDashboard({
           <div className="flex justify-center border-b-2 border-slate-800 pb-2.5 mb-2 gap-3 select-none">
             <button
               onClick={() => {
-                playBeep(260, 0.1, "sine");
                 setStatsSubTab("season");
               }}
               className={`font-pixel text-[8.5px] px-3.5 py-1.5 cursor-pointer border transition-all ${
@@ -1374,7 +1355,6 @@ export default function HistoryDashboard({
             </button>
             <button
               onClick={() => {
-                playBeep(260, 0.1, "sine");
                 setStatsSubTab("alltime");
               }}
               className={`font-pixel text-[8.5px] px-3.5 py-1.5 cursor-pointer border transition-all ${
@@ -1562,7 +1542,6 @@ export default function HistoryDashboard({
                           </span>
                           <Link
                             href={`/players/${getPlayerReadableSlug(stats.dbPlayer, stats.name)}`}
-                            onClick={() => playBeep(300, 0.1, "sine")}
                             className="font-pixel text-[7.5px] border border-neon-blue/30 text-neon-blue/80 hover:text-neon-blue hover:border-neon-blue px-2 py-0.5 hover:bg-neon-blue/10 transition-all rounded-none uppercase select-none cursor-pointer"
                           >
                             PROFILE 👤

@@ -2,7 +2,6 @@
 
 import React from "react";
 import { MatchMode } from "@/utils/firebase";
-import { playBeep } from "@/utils/audio";
 import styles from "./styles.module.css";
 
 interface SegmentedControlProps {
@@ -62,7 +61,6 @@ export default function SegmentedControl({
               aria-selected={isActive}
               type="button"
               onClick={() => {
-                playBeep(440, 0.08, "triangle");
                 onChange(mode.id);
               }}
               className={`${styles.tabBtn} ${isActive ? mode.activeClass : ""}`}

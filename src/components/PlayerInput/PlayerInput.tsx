@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { playBeep, playCoin } from "@/utils/audio";
 import { DbPlayer, validateAlias } from "@/utils/firebase";
 import RegisterFighterForm from "@/components/RegisterFighterForm";
 import FighterDirectory from "@/components/FighterDirectory";
@@ -59,7 +58,6 @@ export default function PlayerInput({
         n.toLowerCase() === player.name.toLowerCase(),
     );
     if (exists) {
-      playBeep(220, 0.1, "sawtooth");
       onChange(
         names.filter(
           (n) =>
@@ -71,29 +69,24 @@ export default function PlayerInput({
       );
     } else {
       if (names.length >= 10) {
-        playBeep(120, 0.2, "sawtooth"); // Error beep, draft full
         return;
       }
-      playCoin();
       onChange([...names, playerIdentifier]);
     }
   };
 
   const handleRemoveName = (refToRemove: string) => {
     if (isGenerating) return;
-    playBeep(220, 0.1, "sawtooth");
     onChange(
       names.filter((n) => n.toLowerCase() !== refToRemove.toLowerCase()),
     );
   };
 
   const handleClear = () => {
-    playBeep(220, 0.15, "sawtooth");
     onChange([]);
   };
 
   const handleQuickFill = () => {
-    playCoin();
     // Find players not yet selected
     const unselected = availablePlayers.filter(
       (p) =>
@@ -114,7 +107,6 @@ export default function PlayerInput({
   };
 
   const toggleAddForm = () => {
-    playBeep(440, 0.08, "triangle");
     setIsAdding(!isAdding);
   };
 
@@ -239,10 +231,7 @@ export default function PlayerInput({
 
             <button
               type="button"
-              onClick={() => {
-                playBeep(880, 0.15, "sawtooth");
-                onGenerate();
-              }}
+              onClick={onGenerate}
               disabled={isGenerating || !isReady}
               className={`${styles.randomizeBtn} ${
                 isGenerating || !isReady
@@ -308,7 +297,6 @@ export default function PlayerInput({
             });
 
             setIsAdding(false);
-            playCoin();
 
             // Auto-add new player to draft using their ALIAS if there's space
             if (names.length < 10) {

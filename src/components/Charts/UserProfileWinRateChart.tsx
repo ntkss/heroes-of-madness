@@ -56,7 +56,13 @@ export default function UserProfileWinRateChart({
   const [filterMode, setFilterMode] = useState<"current_mode" | "all_modes">(
     "current_mode",
   );
-  const [stockSeason, setStockSeason] = useState<string>("all");
+  const [userSelectedStockSeason, setUserSelectedStockSeason] = useState<
+    string | null
+  >(null);
+  const stockSeason =
+    userSelectedStockSeason !== null
+      ? userSelectedStockSeason
+      : String(activeSeasonId || 1);
   const [stockMetricType, setStockMetricType] = useState<
     "winrate" | "performance_index"
   >("winrate");
@@ -436,17 +442,19 @@ export default function UserProfileWinRateChart({
             <select
               value={stockSeason}
               onChange={(e) => {
-                setStockSeason(e.target.value);
+                setUserSelectedStockSeason(e.target.value);
               }}
               className={styles.filterSelect}
               title="Filter by Season"
             >
-              <option value="all">🌐 ALL-TIME</option>
-              {seasonalData.map((s) => (
-                <option key={s.seasonId} value={String(s.seasonId)}>
-                  {s.label}
-                </option>
-              ))}
+              {[...seasonalData]
+                .sort((a, b) => b.seasonId - a.seasonId)
+                .map((s) => (
+                  <option key={s.seasonId} value={String(s.seasonId)}>
+                    {s.label}
+                  </option>
+                ))}
+              <option value="all">🌐 ALL-TIME (OVERALL)</option>
             </select>
           )}
 

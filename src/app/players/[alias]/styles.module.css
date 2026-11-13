@@ -410,6 +410,69 @@
   box-shadow: 0 0 6px rgba(255, 210, 0, 0.1);
 }
 
+/* Match Roster Expand Button & Panel */
+.rosterToggleBtn {
+  @apply font-pixel text-[7.5px] sm:text-[8px] px-2 py-1 border border-slate-700 bg-slate-900/80 text-slate-300 hover:border-neon-blue hover:text-neon-blue hover:bg-sky-950/30 transition-all cursor-pointer uppercase tracking-wider select-none shrink-0;
+}
+
+.rosterToggleBtnActive {
+  @apply border-neon-yellow text-neon-yellow bg-yellow-950/30;
+  box-shadow: 0 0 8px rgba(255, 210, 0, 0.2);
+}
+
+.expandedMatchRow {
+  @apply bg-slate-950/95 border-b-2 border-slate-800;
+}
+
+.expandedRosterContainer {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-3 p-3 sm:p-4 bg-gradient-to-b from-black/80 to-slate-950/90;
+}
+
+.rosterTeamBox {
+  @apply border p-2.5 sm:p-3 flex flex-col gap-2 bg-black/40;
+}
+
+.rosterTeamBoxBlue {
+  @apply border-cyan-500/30 bg-cyan-950/10;
+}
+
+.rosterTeamBoxRed {
+  @apply border-rose-500/30 bg-rose-950/10;
+}
+
+.rosterTeamHeader {
+  @apply flex items-center justify-between border-b border-slate-800 pb-1.5 text-[8.5px] font-pixel uppercase tracking-wider;
+}
+
+.allyTag {
+  @apply text-[6.5px] font-pixel px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/40;
+}
+
+.opponentTag {
+  @apply text-[6.5px] font-pixel px-1.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700;
+}
+
+.winnerMiniTag {
+  @apply text-[7px] font-pixel px-1.5 py-0.5 bg-amber-500/20 text-neon-yellow border border-amber-400/50;
+}
+
+.rosterPlayersList {
+  @apply flex flex-col gap-1.5;
+}
+
+.rosterPlayerItem {
+  @apply flex items-center justify-between gap-2 p-1.5 bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 transition-colors;
+}
+
+.rosterPlayerCurrent {
+  @apply border-neon-yellow/60 bg-yellow-950/20;
+  box-shadow: inset 0 0 8px rgba(255, 210, 0, 0.08);
+}
+
+.youTag {
+  @apply font-pixel text-[6px] px-1 py-0.5 bg-neon-yellow text-black font-bold uppercase tracking-wider shrink-0;
+}
+
 .footer {
   @apply border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none mt-auto;
 }

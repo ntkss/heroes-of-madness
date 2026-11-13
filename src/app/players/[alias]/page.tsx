@@ -14,6 +14,7 @@ import {
   fetchSeasons,
   fetchSeasonConfig,
   updatePlayer,
+  getPlayerReadableSlug,
   DbPlayer,
   Match,
   MatchMode,
@@ -35,13 +36,42 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const playerSlug = resolvedParams.alias || resolvedParams.id || "";
 
   const [player, setPlayer] = useState<DbPlayer | null>(null);
+  const [allPlayers, setAllPlayers] = useState<DbPlayer[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [activeSeasonId, setActiveSeasonId] = useState<number>(1);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
+  const [selectedLaneSeasonId, setSelectedLaneSeasonId] = useState<
+    number | "ALL" | null
+  >(null);
+  const [expandedMatchIds, setExpandedMatchIds] = useState<
+    Record<string, boolean>
+  >({});
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [selectedMode, setSelectedMode] = useState<MatchMode>("TEAM_LANE");
   const [loading, setLoading] = useState(true);
+
+  const toggleExpandMatch = useCallback((matchId: string) => {
+    setExpandedMatchIds((prev) => ({
+      ...prev,
+      [matchId]: !prev[matchId],
+    }));
+  }, []);
+
+  const findDbPlayer = useCallback(
+    (idOrNameOrAlias: string): DbPlayer | undefined => {
+      if (!idOrNameOrAlias) return undefined;
+      const key = idOrNameOrAlias.toLowerCase().trim();
+      return allPlayers.find(
+        (p) =>
+          p.id.toLowerCase() === key ||
+          p.id === idOrNameOrAlias.trim() ||
+          (p.alias && p.alias.toLowerCase() === key) ||
+          p.name.toLowerCase() === key,
+      );
+    },
+    [allPlayers],
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -52,6 +82,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
         fetchSeasonConfig(),
       ]);
 
+      setAllPlayers(players);
       setSeasons(archiveSeasons);
       if (seasonCfg?.activeSeasonId) {
         setActiveSeasonId(seasonCfg.activeSeasonId);
@@ -105,6 +136,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
 
         if (!isMounted) return;
 
+        setAllPlayers(players);
         setSeasons(archiveSeasons);
         if (seasonCfg?.activeSeasonId) {
           setActiveSeasonId(seasonCfg.activeSeasonId);
@@ -219,6 +251,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
           isUnderdogMatch?: boolean;
           underdogMvp?: string;
           underdogTeam?: string;
+          rawMatch: Match;
         }>,
       };
     }
@@ -254,6 +287,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
       isUnderdogMatch?: boolean;
       underdogMvp?: string;
       underdogTeam?: string;
+      rawMatch: Match;
     }> = [];
 
     modeMatches.forEach((match) => {
@@ -341,6 +375,7 @@ export default function PlayerProfilePage({ params }: PageProps) {
         isUnderdogMatch: match.isUnderdogMatch,
         underdogMvp: match.underdogMvp,
         underdogTeam: match.underdogTeam,
+        rawMatch: match,
       });
     });
 
@@ -443,6 +478,59 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const seasonMatchHistory = React.useMemo(() => {
     return matchHistory.filter((m) => m.seasonId === effectiveSeasonId);
   }, [matchHistory, effectiveSeasonId]);
+
+  // Determine effective season ID for LANE SPECIFIC METRICS (defaults to latest activeSeasonId)
+  const effectiveLaneSeasonId =
+    selectedLaneSeasonId !== null ? selectedLaneSeasonId : activeSeasonId;
+
+  // Compute lane metrics for the selected season in LANE SPECIFIC METRICS
+  const seasonLaneStats = React.useMemo(() => {
+    if (effectiveLaneSeasonId === "ALL") {
+      return laneStats;
+    }
+
+    const defaultLanes = ["Exp", "Jungle", "Mid", "Gold", "Roam"];
+    const counters: Record<
+      string,
+      { matches: number; wins: number; losses: number }
+    > = {};
+    defaultLanes.forEach((l) => {
+      counters[l] = { matches: 0, wins: 0, losses: 0 };
+    });
+
+    const filtered = matchHistory.filter(
+      (m) => m.seasonId === effectiveLaneSeasonId,
+    );
+
+    filtered.forEach((m) => {
+      if (!counters[m.lane]) return;
+      if (m.outcome === "WIN") {
+        counters[m.lane].wins++;
+        counters[m.lane].matches++;
+      } else if (m.outcome === "LOSS") {
+        counters[m.lane].losses++;
+        counters[m.lane].matches++;
+      } else {
+        counters[m.lane].matches++;
+      }
+    });
+
+    const resolved: Record<
+      string,
+      { matches: number; wins: number; losses: number; winRate: number }
+    > = {};
+    defaultLanes.forEach((l) => {
+      const s = counters[l];
+      resolved[l] = {
+        matches: s.matches,
+        wins: s.wins,
+        losses: s.losses,
+        winRate: s.matches > 0 ? Math.round((s.wins / s.matches) * 100) : 0,
+      };
+    });
+
+    return resolved;
+  }, [effectiveLaneSeasonId, laneStats, matchHistory]);
 
   const badgeConfig = useBadgeConfig();
 
@@ -868,11 +956,35 @@ export default function PlayerProfilePage({ params }: PageProps) {
                 <div className={`${styles.rivet} ${styles.rivetBottomLeft}`} />
                 <div className={`${styles.rivet} ${styles.rivetBottomRight}`} />
 
-                <h3 className={styles.cardTitle}>LANE SPECIFIC METRICS</h3>
+                <div className={styles.historyHeader}>
+                  <h3 className={styles.historyTitle}>LANE SPECIFIC METRICS</h3>
+                  <div className={styles.seasonFilterControls}>
+                    <span className={styles.seasonFilterLabel}>
+                      FILTER SEASON:
+                    </span>
+                    <select
+                      value={effectiveLaneSeasonId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedLaneSeasonId(
+                          val === "ALL" ? "ALL" : Number(val),
+                        );
+                      }}
+                      className={styles.seasonSelectBox}
+                    >
+                      {seasonOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                      <option value="ALL">ALL SEASONS (OVERALL)</option>
+                    </select>
+                  </div>
+                </div>
 
                 <div className={styles.laneStatsGrid}>
                   {defaultLanes.map((lane) => {
-                    const stats = laneStats[lane] || {
+                    const stats = seasonLaneStats[lane] || {
                       matches: 0,
                       wins: 0,
                       losses: 0,
@@ -995,108 +1107,318 @@ export default function PlayerProfilePage({ params }: PageProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {seasonMatchHistory.map((m, idx) => (
-                          <tr key={m.id || idx} className={styles.tableBodyRow}>
-                            <td className={styles.dateCell}>
-                              {formatDate(m.date)}
-                            </td>
-                            <td className={styles.teamCell}>
-                              <span
-                                className={
-                                  m.team === "Blue Team"
-                                    ? styles.teamBlue
-                                    : styles.teamRed
-                                }
+                        {seasonMatchHistory.map((m, idx) => {
+                          const rowKey = m.id || String(idx);
+                          const isExpanded = Boolean(expandedMatchIds[rowKey]);
+
+                          const renderTeamRoster = (
+                            teamPlayerKeys: string[],
+                            teamLanes?: string[],
+                            teamHeroes?: string[],
+                            side?: "teamA" | "teamB",
+                          ) => {
+                            const isBlueSide = side === "teamA";
+                            const isWinningSide = m.rawMatch.winner === side;
+                            const isPlayerOnThisSide =
+                              (isBlueSide && m.team === "Blue Team") ||
+                              (!isBlueSide && m.team === "Red Team");
+
+                            return (
+                              <div
+                                className={`${styles.rosterTeamBox} ${
+                                  isBlueSide
+                                    ? styles.rosterTeamBoxBlue
+                                    : styles.rosterTeamBoxRed
+                                }`}
                               >
-                                {m.team.toUpperCase()}
-                              </span>
-                            </td>
-                            <td className={styles.laneCell}>
-                              {m.lane.toUpperCase()}
-                              {m.hero && (
-                                <span className="ml-1.5 text-emerald-400 font-bold">
-                                  • {m.hero}
-                                </span>
-                              )}
-                            </td>
-                            <td className={styles.feedbackCell}>
-                              <span className={styles.likeText}>
-                                👍 {m.feedback.likes}
-                              </span>
-                              <span className={styles.feedbackSpacer}>|</span>
-                              <span className={styles.dislikeText}>
-                                👎 {m.feedback.dislikes}
-                              </span>
-                            </td>
-                            <td className={styles.outcomeCell}>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span
-                                  className={
-                                    m.outcome === "WIN"
-                                      ? styles.outcomeWin
-                                      : m.outcome === "LOSS"
-                                        ? styles.outcomeLoss
-                                        : styles.outcomePending
-                                  }
-                                >
-                                  {m.outcome}
-                                </span>
-                                {(() => {
-                                  const isPlayerTeamA = m.team === "Blue Team";
-                                  const isWinningUnderdog =
-                                    m.isUnderdogMatch &&
-                                    m.underdogTeam &&
-                                    m.outcome === "WIN" &&
-                                    ((isPlayerTeamA &&
-                                      m.underdogTeam === "teamA") ||
-                                      (!isPlayerTeamA &&
-                                        m.underdogTeam === "teamB"));
+                                <div className={styles.rosterTeamHeader}>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span
+                                      className={
+                                        isBlueSide
+                                          ? styles.teamBlue
+                                          : styles.teamRed
+                                      }
+                                    >
+                                      {isBlueSide
+                                        ? "🔵 BLUE TEAM"
+                                        : "🔴 RED TEAM"}
+                                    </span>
+                                    <span
+                                      className={
+                                        isPlayerOnThisSide
+                                          ? styles.allyTag
+                                          : styles.opponentTag
+                                      }
+                                    >
+                                      {isPlayerOnThisSide
+                                        ? "ALLY TEAM"
+                                        : "OPPONENTS"}
+                                    </span>
+                                  </div>
+                                  {isWinningSide && (
+                                    <span className={styles.winnerMiniTag}>
+                                      🏆 WINNER
+                                    </span>
+                                  )}
+                                </div>
 
-                                  const mvpLower = (
-                                    m.underdogMvp || ""
-                                  ).toLowerCase();
-                                  const isLosingMvp =
-                                    mvpLower &&
-                                    (mvpLower ===
-                                      (player?.id || "").toLowerCase() ||
-                                      mvpLower ===
-                                        (player?.name || "").toLowerCase() ||
-                                      mvpLower ===
-                                        (player?.alias || "").toLowerCase());
-
-                                  if (isWinningUnderdog) {
-                                    return (
-                                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6px] font-bold rounded uppercase border border-amber-300/60 shadow-sm">
-                                        {badgeConfig.underdogComeback.icon}{" "}
-                                        {badgeConfig.underdogComeback.name}
-                                      </span>
+                                <div className={styles.rosterPlayersList}>
+                                  {teamPlayerKeys.map((pKey, pIdx) => {
+                                    const dbP = findDbPlayer(pKey);
+                                    const displayName = dbP ? dbP.name : pKey;
+                                    const pLane = normalizeLane(
+                                      teamLanes?.[pIdx] ||
+                                        defaultLanes[pIdx] ||
+                                        "Unknown",
                                     );
-                                  }
+                                    const pHero = teamHeroes?.[pIdx];
+                                    const pFb = m.rawMatch.feedback?.[
+                                      pKey.toLowerCase()
+                                    ] || {
+                                      likes: 0,
+                                      dislikes: 0,
+                                    };
+                                    const isCurrentProfilePlayer =
+                                      player &&
+                                      (pKey.toLowerCase().trim() ===
+                                        player.id.toLowerCase() ||
+                                        pKey.toLowerCase().trim() ===
+                                          player.name.toLowerCase() ||
+                                        (player.alias &&
+                                          pKey.toLowerCase().trim() ===
+                                            player.alias.toLowerCase()));
 
-                                  if (isLosingMvp) {
                                     return (
-                                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-purple-900 to-indigo-900 text-purple-200 font-pixel text-[6px] font-bold rounded uppercase border border-purple-400/60 shadow-sm">
-                                        {badgeConfig.underdogLosingMvp.icon}{" "}
-                                        {badgeConfig.underdogLosingMvp.name}
-                                      </span>
-                                    );
-                                  }
+                                      <div
+                                        key={`${pKey}-${pIdx}`}
+                                        className={`${styles.rosterPlayerItem} ${
+                                          isCurrentProfilePlayer
+                                            ? styles.rosterPlayerCurrent
+                                            : ""
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <img
+                                            src={
+                                              dbP?.avatar ||
+                                              `https://api.dicebear.com/9.x/pixel-art/svg?seed=${pKey}&backgroundColor=1a1a2e`
+                                            }
+                                            alt={displayName}
+                                            className="w-6 h-6 border border-slate-700 object-cover shrink-0 bg-slate-900"
+                                          />
+                                          <div className="flex flex-col min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <Link
+                                                href={`/players/${getPlayerReadableSlug(dbP, pKey)}`}
+                                                className="text-xs font-bold text-white hover:text-neon-yellow truncate transition-colors"
+                                              >
+                                                {displayName}
+                                              </Link>
+                                              {isCurrentProfilePlayer && (
+                                                <span className={styles.youTag}>
+                                                  YOU
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-1 text-[9px] font-pixel text-slate-400">
+                                              <span className="text-sky-400">
+                                                {pLane.toUpperCase()}
+                                              </span>
+                                              {pHero && (
+                                                <span className="text-emerald-400 font-sans font-bold">
+                                                  • {pHero}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
 
-                                  if (m.isUnderdogMatch) {
-                                    return (
-                                      <span className="px-1 py-0.5 bg-slate-900 text-orange-400 font-pixel text-[6px] font-bold rounded border border-orange-500/40">
-                                        {badgeConfig.underdogMatch.icon}{" "}
-                                        {badgeConfig.underdogMatch.name}
-                                      </span>
+                                        <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+                                          <span className="text-emerald-400">
+                                            👍 {pFb.likes || 0}
+                                          </span>
+                                          <span className="text-slate-700">
+                                            |
+                                          </span>
+                                          <span className="text-rose-500">
+                                            👎 {pFb.dislikes || 0}
+                                          </span>
+                                        </div>
+                                      </div>
                                     );
-                                  }
-
-                                  return null;
-                                })()}
+                                  })}
+                                </div>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
+                            );
+                          };
+
+                          return (
+                            <React.Fragment key={rowKey}>
+                              <tr className={styles.tableBodyRow}>
+                                <td className={styles.dateCell}>
+                                  {formatDate(m.date)}
+                                </td>
+                                <td className={styles.teamCell}>
+                                  <span
+                                    className={
+                                      m.team === "Blue Team"
+                                        ? styles.teamBlue
+                                        : styles.teamRed
+                                    }
+                                  >
+                                    {m.team.toUpperCase()}
+                                  </span>
+                                </td>
+                                <td className={styles.laneCell}>
+                                  {m.lane.toUpperCase()}
+                                  {m.hero && (
+                                    <span className="ml-1.5 text-emerald-400 font-bold">
+                                      • {m.hero}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className={styles.feedbackCell}>
+                                  <span className={styles.likeText}>
+                                    👍 {m.feedback.likes}
+                                  </span>
+                                  <span className={styles.feedbackSpacer}>
+                                    |
+                                  </span>
+                                  <span className={styles.dislikeText}>
+                                    👎 {m.feedback.dislikes}
+                                  </span>
+                                </td>
+                                <td className={styles.outcomeCell}>
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span
+                                        className={
+                                          m.outcome === "WIN"
+                                            ? styles.outcomeWin
+                                            : m.outcome === "LOSS"
+                                              ? styles.outcomeLoss
+                                              : styles.outcomePending
+                                        }
+                                      >
+                                        {m.outcome}
+                                      </span>
+                                      {(() => {
+                                        const isPlayerTeamA =
+                                          m.team === "Blue Team";
+                                        const isWinningUnderdog =
+                                          m.isUnderdogMatch &&
+                                          m.underdogTeam &&
+                                          m.outcome === "WIN" &&
+                                          ((isPlayerTeamA &&
+                                            m.underdogTeam === "teamA") ||
+                                            (!isPlayerTeamA &&
+                                              m.underdogTeam === "teamB"));
+
+                                        const mvpLower = (
+                                          m.underdogMvp || ""
+                                        ).toLowerCase();
+                                        const isLosingMvp =
+                                          mvpLower &&
+                                          (mvpLower ===
+                                            (player?.id || "").toLowerCase() ||
+                                            mvpLower ===
+                                              (
+                                                player?.name || ""
+                                              ).toLowerCase() ||
+                                            mvpLower ===
+                                              (
+                                                player?.alias || ""
+                                              ).toLowerCase());
+
+                                        if (isWinningUnderdog) {
+                                          return (
+                                            <span className="px-1.5 py-0.5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-pixel text-[6px] font-bold rounded uppercase border border-amber-300/60 shadow-sm">
+                                              {
+                                                badgeConfig.underdogComeback
+                                                  .icon
+                                              }{" "}
+                                              {
+                                                badgeConfig.underdogComeback
+                                                  .name
+                                              }
+                                            </span>
+                                          );
+                                        }
+
+                                        if (isLosingMvp) {
+                                          return (
+                                            <span className="px-1.5 py-0.5 bg-gradient-to-r from-purple-900 to-indigo-900 text-purple-200 font-pixel text-[6px] font-bold rounded uppercase border border-purple-400/60 shadow-sm">
+                                              {
+                                                badgeConfig.underdogLosingMvp
+                                                  .icon
+                                              }{" "}
+                                              {
+                                                badgeConfig.underdogLosingMvp
+                                                  .name
+                                              }
+                                            </span>
+                                          );
+                                        }
+
+                                        if (m.isUnderdogMatch) {
+                                          return (
+                                            <span className="px-1 py-0.5 bg-slate-900 text-orange-400 font-pixel text-[6px] font-bold rounded border border-orange-500/40">
+                                              {badgeConfig.underdogMatch.icon}{" "}
+                                              {badgeConfig.underdogMatch.name}
+                                            </span>
+                                          );
+                                        }
+
+                                        return null;
+                                      })()}
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleExpandMatch(rowKey)}
+                                      className={`${styles.rosterToggleBtn} ${
+                                        isExpanded
+                                          ? styles.rosterToggleBtnActive
+                                          : ""
+                                      }`}
+                                      title="ดูรายชื่อผู้เล่นในแมตช์นี้"
+                                    >
+                                      <span>
+                                        {isExpanded
+                                          ? "👥 HIDE ▲"
+                                          : "👥 PLAYERS ▼"}
+                                      </span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+
+                              {isExpanded && (
+                                <tr className={styles.expandedMatchRow}>
+                                  <td colSpan={5} className="p-0">
+                                    <div
+                                      className={styles.expandedRosterContainer}
+                                    >
+                                      {renderTeamRoster(
+                                        m.rawMatch.teamA,
+                                        m.rawMatch.teamALanes,
+                                        m.rawMatch.teamAHeroes,
+                                        "teamA",
+                                      )}
+                                      {renderTeamRoster(
+                                        m.rawMatch.teamB,
+                                        m.rawMatch.teamBLanes,
+                                        m.rawMatch.teamBHeroes,
+                                        "teamB",
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

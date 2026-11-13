@@ -54,7 +54,13 @@ export default function ConsolidatedWinRateChart({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<ChartJS | null>(null);
 
-  const [selectedSeason, setSelectedSeason] = useState<string>("all");
+  const [userSelectedSeason, setUserSelectedSeason] = useState<string | null>(
+    null,
+  );
+  const selectedSeason =
+    userSelectedSeason !== null
+      ? userSelectedSeason
+      : String(activeSeasonId || 1);
   const [userSelectedMode, setUserSelectedMode] = useState<
     MatchMode | "ALL" | null
   >(null);
@@ -92,7 +98,6 @@ export default function ConsolidatedWinRateChart({
     const sorted = Array.from(seasonIds).sort((a, b) => b - a);
 
     return [
-      { value: "all", label: "🌐 ALL-TIME (OVERALL)" },
       ...sorted.map((id) => {
         const isCurrent = id === activeSeasonId;
         const archive = seasons.find((s) => s.id === id);
@@ -104,6 +109,7 @@ export default function ConsolidatedWinRateChart({
           label: isCurrent ? `🏆 ${name} (CURRENT)` : `📜 ${name}`,
         };
       }),
+      { value: "all", label: "🌐 ALL-TIME (OVERALL)" },
     ];
   }, [seasons, activeSeasonId, matches]);
 
@@ -580,7 +586,7 @@ export default function ConsolidatedWinRateChart({
           <select
             value={selectedSeason}
             onChange={(e) => {
-              setSelectedSeason(e.target.value);
+              setUserSelectedSeason(e.target.value);
             }}
             className={styles.filterSelect}
             title="Filter by Season"

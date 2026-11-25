@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -32,7 +33,8 @@ interface HistoryDashboardProps {
     id: string,
     winner: "teamA" | "teamB",
     underdogMvp?: string | null,
-  ) => void;
+    resultImageUrl?: string | null,
+  ) => Promise<void> | void;
   onUpdateUnderdogMvp?: (id: string, underdogMvp: string | null) => void;
   availablePlayers: DbPlayer[];
   rankConfig: RankConfig;
@@ -42,6 +44,60 @@ interface HistoryDashboardProps {
   activeMode?: MatchMode;
   onModeChange?: (mode: MatchMode) => void;
 }
+
+// Client-side image compression helper using Canvas for match result screenshots
+// Uses ObjectURL + immediate Canvas memory release to prevent mobile Safari WebKit OOM
+const compressMatchResultImage = (
+  file: File,
+  maxWidth = 1024,
+  maxHeight = 768,
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        canvas.width = 0;
+        canvas.height = 0;
+        reject(new Error("Canvas context could not be created"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.72);
+      // Free WebKit GPU canvas memory immediately on mobile devices
+      canvas.width = 0;
+      canvas.height = 0;
+      resolve(compressedBase64);
+    };
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+    img.src = objectUrl;
+  });
+};
 
 interface MatchCardProps {
   match: Match;
@@ -56,7 +112,8 @@ interface MatchCardProps {
     id: string,
     winner: "teamA" | "teamB",
     underdogMvp?: string | null,
-  ) => void;
+    resultImageUrl?: string | null,
+  ) => Promise<void> | void;
   onUpdateUnderdogMvp?: (id: string, underdogMvp: string | null) => void;
   handleDelete: (id: string) => void;
 }
@@ -79,6 +136,69 @@ function MatchCardComponent({
   const [localFeedback, setLocalFeedback] = useState<{
     [playerKey: string]: PlayerFeedback;
   }>(match.feedback || {});
+  const [selectedWinner, setSelectedWinner] = useState<
+    "teamA" | "teamB" | null
+  >(match.winner);
+  const [pendingResultImage, setPendingResultImage] = useState<
+    string | null | undefined
+  >(undefined);
+  const [imageError, setImageError] = useState<string>("");
+  const [isSavingResult, setIsSavingResult] = useState<boolean>(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+
+  // Lock page scrollbar when fullscreen image lightbox is open
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [isLightboxOpen]);
+
+  const effectiveDraftImage =
+    pendingResultImage !== undefined
+      ? pendingResultImage
+      : match.resultImageUrl || null;
+
+  const handleResultImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageError("");
+    if (file.size > 15 * 1024 * 1024) {
+      setImageError("ขนาดไฟล์ใหญ่เกินไป (สูงสุด 15MB)");
+      return;
+    }
+    try {
+      const compressed = await compressMatchResultImage(file);
+      setPendingResultImage(compressed);
+    } catch {
+      setImageError("ไม่สามารถประมวลผลรูปภาพได้");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const handleSaveOutcome = async () => {
+    if (!selectedWinner || isSavingResult) return;
+    setIsSavingResult(true);
+    try {
+      await handleWinnerChange(
+        match.id,
+        selectedWinner,
+        undefined,
+        pendingResultImage,
+      );
+      setPendingResultImage(undefined);
+    } finally {
+      setIsSavingResult(false);
+    }
+  };
 
   // Sync localFeedback if match updates
   if (match.feedback !== prevFeedback) {
@@ -365,6 +485,9 @@ function MatchCardComponent({
               {isAdmin && (
                 <button
                   onClick={() => {
+                    setSelectedWinner(match.winner);
+                    setPendingResultImage(undefined);
+                    setImageError("");
                     setEditingMatchId(match.id);
                   }}
                   className={styles.editWinnerBtn}
@@ -372,6 +495,27 @@ function MatchCardComponent({
                 >
                   ✎ EDIT RESULT
                 </button>
+              )}
+
+              {/* Saved Match Result Screenshot Preview */}
+              {match.resultImageUrl && (
+                <div className={styles.savedResultImageBox}>
+                  <button
+                    type="button"
+                    onClick={() => setIsLightboxOpen(true)}
+                    className={styles.savedResultThumbBtn}
+                    title="คลิกเพื่อดูรูปผลการแข่งขันขนาดเต็ม"
+                  >
+                    <img
+                      src={match.resultImageUrl}
+                      alt="Match Result Screenshot"
+                      className={styles.savedResultThumbImg}
+                    />
+                    <span className={styles.savedResultThumbLabel}>
+                      📸 VIEW RESULT
+                    </span>
+                  </button>
+                </div>
               )}
 
               {/* Underdog Comeback (Upset Victory) Section */}
@@ -450,24 +594,106 @@ function MatchCardComponent({
                 <div className={styles.pendingBtnGrid}>
                   <div className="flex gap-2 w-full">
                     <button
-                      onClick={() => handleWinnerChange(match.id, "teamA")}
-                      className={styles.pendingBtnBlue}
+                      type="button"
+                      onClick={() => setSelectedWinner("teamA")}
+                      className={`${styles.pendingBtnBlue} ${
+                        selectedWinner === "teamA"
+                          ? styles.pendingBtnBlueActive
+                          : ""
+                      }`}
                     >
-                      👑 BLUE WIN
+                      {selectedWinner === "teamA" ? "✓ " : "👑 "}BLUE WIN
                     </button>
                     <button
-                      onClick={() => handleWinnerChange(match.id, "teamB")}
-                      className={styles.pendingBtnRed}
+                      type="button"
+                      onClick={() => setSelectedWinner("teamB")}
+                      className={`${styles.pendingBtnRed} ${
+                        selectedWinner === "teamB"
+                          ? styles.pendingBtnRedActive
+                          : ""
+                      }`}
                     >
-                      👑 RED WIN
+                      {selectedWinner === "teamB" ? "✓ " : "👑 "}RED WIN
                     </button>
                   </div>
+
+                  {/* Screenshot Upload Area below BLUE WIN / RED WIN */}
+                  <div className={styles.resultImageUploadSection}>
+                    {effectiveDraftImage ? (
+                      <div className={styles.resultImagePreviewCard}>
+                        <button
+                          type="button"
+                          onClick={() => setIsLightboxOpen(true)}
+                          className={styles.resultImagePreviewThumbBtn}
+                          title="คลิกเพื่อดูรูปขยาย"
+                        >
+                          <img
+                            src={effectiveDraftImage}
+                            alt="Match Result Preview"
+                            className={styles.resultImagePreviewImg}
+                          />
+                        </button>
+                        <div className={styles.resultImagePreviewActions}>
+                          <label className={styles.resultImageChangeBtn}>
+                            📷 CHANGE
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleResultImageUpload}
+                              className="hidden"
+                              disabled={isSavingResult}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setPendingResultImage(null)}
+                            className={styles.resultImageRemoveBtn}
+                            disabled={isSavingResult}
+                          >
+                            ✕ REMOVE
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className={styles.resultImageUploadBtn}>
+                        <span>📸 + แนบรูปผลแข่ง (CAP)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleResultImageUpload}
+                          className="hidden"
+                          disabled={isSavingResult}
+                        />
+                      </label>
+                    )}
+                    {imageError && (
+                      <span className={styles.resultImageErrorText}>
+                        {imageError}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Save & Cancel Buttons */}
+                  <button
+                    type="button"
+                    onClick={handleSaveOutcome}
+                    disabled={!selectedWinner || isSavingResult}
+                    className={styles.saveOutcomeBtn}
+                  >
+                    {isSavingResult ? "⏳ SAVING..." : "💾 SAVE RESULT"}
+                  </button>
+
                   {editingMatchId === match.id && (
                     <button
+                      type="button"
                       onClick={() => {
+                        setSelectedWinner(match.winner);
+                        setPendingResultImage(undefined);
+                        setImageError("");
                         setEditingMatchId(null);
                       }}
                       className={styles.cancelBtn}
+                      disabled={isSavingResult}
                     >
                       ✕ CANCEL
                     </button>
@@ -476,6 +702,58 @@ function MatchCardComponent({
               )}
             </div>
           )}
+
+          {/* Fullscreen Lightbox Modal for Match Result Screenshot (Portal to body so CRT transform doesn't offset it) */}
+          {isLightboxOpen &&
+            (effectiveDraftImage || match.resultImageUrl) &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <div
+                className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden"
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9999,
+                  overflow: "hidden",
+                }}
+                onClick={() => setIsLightboxOpen(false)}
+              >
+                <div
+                  className="bg-slate-950 border-2 border-neon-yellow/80 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(255,210,0,0.25)]"
+                  style={{ maxHeight: "90vh", overflow: "hidden" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5 bg-black/80 shrink-0">
+                    <span className="font-pixel text-[8.5px] sm:text-[10px] text-neon-yellow uppercase tracking-wider truncate">
+                      📸 MATCH RESULT SCREENSHOT • {formatDate(match.createdAt)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsLightboxOpen(false)}
+                      className="font-pixel text-[8px] text-slate-300 hover:text-white bg-rose-950/60 hover:bg-rose-600 border border-rose-500/50 px-2.5 py-1 cursor-pointer transition-colors uppercase shrink-0"
+                    >
+                      ✕ CLOSE
+                    </button>
+                  </div>
+                  <div
+                    className="p-2 sm:p-4 overflow-hidden flex items-center justify-center bg-black/60"
+                    style={{ overflow: "hidden" }}
+                  >
+                    <img
+                      src={(effectiveDraftImage || match.resultImageUrl) ?? ""}
+                      alt="Match Result Fullscreen"
+                      className="max-w-full max-h-[78vh] w-auto h-auto object-contain border border-slate-800"
+                      style={{
+                        maxHeight: "78vh",
+                        maxWidth: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )}
 
           {/* Delete button */}
           {isAdmin && (
@@ -659,15 +937,14 @@ export default function HistoryDashboard({
     }
   };
 
-  const handleWinnerChange = (id: string, winner: "teamA" | "teamB") => {
-    const teamName = winner === "teamA" ? "BLUE TEAM" : "RED TEAM";
-    const confirmSet = window.confirm(
-      `🏆 CONFIRM OUTCOME: Are you sure you want to declare ${teamName} as the winner of this match?`,
-    );
-    if (confirmSet) {
-      onUpdateWinner(id, winner);
-      setEditingMatchId(null);
-    }
+  const handleWinnerChange = async (
+    id: string,
+    winner: "teamA" | "teamB",
+    underdogMvp?: string | null,
+    resultImageUrl?: string | null,
+  ) => {
+    await onUpdateWinner(id, winner, underdogMvp, resultImageUrl);
+    setEditingMatchId(null);
   };
 
   const getPlayerDisplayName = (idOrName: string) => {

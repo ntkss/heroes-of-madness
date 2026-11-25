@@ -745,8 +745,10 @@ export default function Home() {
   const handleUpdatePastWinner = async (
     matchId: string,
     winner: "teamA" | "teamB",
+    underdogMvp?: string | null,
+    resultImageUrl?: string | null,
   ) => {
-    await updateMatchWinner(matchId, winner);
+    await updateMatchWinner(matchId, winner, underdogMvp, resultImageUrl);
     if (matchId === activeMatchId) {
       setActiveWinner(winner);
     }
@@ -759,6 +761,10 @@ export default function Home() {
     ]);
     setMatches(updatedLogs);
     setAvailablePlayers(updatedPlayers);
+    setToast({
+      message: "MATCH RESULT SAVED! 🏆",
+      type: "success",
+    });
   };
 
   const handleUpdateUnderdogMvp = async (

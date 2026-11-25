@@ -160,7 +160,7 @@
 }
 
 .matchActionsCol {
-  @apply flex flex-row md:flex-col items-center justify-between md:justify-center border-t md:border-t-0 md:border-l border-slate-800/80 pt-4 md:pt-0 md:pl-4 gap-3 min-w-[140px];
+  @apply flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-slate-800/80 pt-4 md:pt-0 md:pl-4 gap-3 w-full md:w-auto min-w-[165px];
 }
 
 .winnerWrapper {
@@ -208,8 +208,100 @@
   @apply flex-grow font-pixel text-[8px] text-cyan-400 bg-cyan-950/20 border border-cyan-500/30 py-1.5 px-2 hover:bg-cyan-400 hover:text-black transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.15)] rounded-sm;
 }
 
+.pendingBtnBlueActive {
+  @apply bg-cyan-400 text-black border-white font-bold shadow-[0_0_14px_rgba(0,210,255,0.75)] ring-1 ring-cyan-300;
+}
+
 .pendingBtnRed {
   @apply flex-grow font-pixel text-[8px] text-rose-500 bg-rose-950/20 border border-rose-500/30 py-1.5 px-2 hover:bg-rose-500 hover:text-white transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(244,63,94,0.15)] rounded-sm;
+}
+
+.pendingBtnRedActive {
+  @apply bg-rose-500 text-white border-white font-bold shadow-[0_0_14px_rgba(255,42,95,0.75)] ring-1 ring-rose-300;
+}
+
+.resultImageUploadSection {
+  @apply flex flex-col gap-1.5 w-full mt-0.5;
+}
+
+.resultImageUploadBtn {
+  @apply w-full border border-dashed border-slate-600 hover:border-neon-yellow bg-slate-950/70 hover:bg-neon-yellow/10 text-slate-300 hover:text-neon-yellow font-pixel text-[7.5px] py-2 px-2.5 text-center cursor-pointer transition-all uppercase flex items-center justify-center gap-1.5 rounded-sm select-none;
+}
+
+.resultImagePreviewCard {
+  @apply flex flex-col gap-1.5 bg-slate-950/90 border border-slate-700 p-1.5 rounded-sm w-full;
+}
+
+.resultImagePreviewThumbBtn {
+  @apply relative w-full h-24 overflow-hidden border border-slate-700 hover:border-neon-yellow cursor-pointer bg-black;
+}
+
+.resultImagePreviewImg {
+  @apply w-full h-full object-cover hover:scale-105 transition-transform duration-200;
+}
+
+.resultImagePreviewActions {
+  @apply flex items-center justify-between gap-1.5 w-full;
+}
+
+.resultImageChangeBtn {
+  @apply flex-1 font-pixel text-[7px] text-neon-blue border border-neon-blue/40 hover:bg-neon-blue hover:text-black py-1 px-1.5 text-center cursor-pointer transition-all uppercase;
+}
+
+.resultImageRemoveBtn {
+  @apply flex-1 font-pixel text-[7px] text-rose-400 border border-rose-500/40 hover:bg-rose-500 hover:text-white py-1 px-1.5 text-center cursor-pointer transition-all uppercase;
+}
+
+.resultImageErrorText {
+  @apply font-thai text-[10px] text-neon-red text-center;
+}
+
+.saveOutcomeBtn {
+  @apply w-full font-pixel text-[8.5px] bg-emerald-500 hover:bg-emerald-400 text-black font-bold border-2 border-emerald-200 py-2 px-3 transition-all duration-200 uppercase cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.4)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none rounded-sm;
+}
+
+.savedResultImageBox {
+  @apply mt-2 w-full flex flex-col items-center;
+}
+
+.savedResultThumbBtn {
+  @apply relative w-full max-w-[160px] overflow-hidden border border-emerald-500/50 hover:border-neon-yellow bg-slate-950/90 p-1 flex flex-col items-center gap-1 cursor-pointer transition-all rounded-sm shadow-[0_0_10px_rgba(16,185,129,0.15)];
+}
+
+.savedResultThumbImg {
+  @apply w-full h-20 object-cover border border-slate-800 hover:scale-105 transition-transform duration-200;
+}
+
+.savedResultThumbLabel {
+  @apply font-pixel text-[7px] text-emerald-400 hover:text-neon-yellow uppercase tracking-wider;
+}
+
+.lightboxOverlay {
+  @apply fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6;
+}
+
+.lightboxContent {
+  @apply bg-slate-950 border-2 border-neon-yellow/80 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(255,210,0,0.25)];
+}
+
+.lightboxHeader {
+  @apply flex items-center justify-between border-b border-slate-800 px-4 py-2.5 bg-black/80 shrink-0;
+}
+
+.lightboxTitle {
+  @apply font-pixel text-[8.5px] sm:text-[10px] text-neon-yellow uppercase tracking-wider truncate;
+}
+
+.lightboxCloseBtn {
+  @apply font-pixel text-[8px] text-slate-300 hover:text-white bg-rose-950/60 hover:bg-rose-600 border border-rose-500/50 px-2.5 py-1 cursor-pointer transition-colors uppercase shrink-0;
+}
+
+.lightboxBody {
+  @apply p-2 sm:p-4 overflow-hidden flex items-center justify-center bg-black/60;
+}
+
+.lightboxImg {
+  @apply max-w-full max-h-[78vh] w-auto h-auto object-contain border border-slate-800;
 }
 
 .deleteBtn {

@@ -69,6 +69,7 @@ export interface Match {
   underdogMvp?: string;
   underdogTeam?: "teamA" | "teamB";
   predictedWinRateDiff?: number;
+  resultImageUrl?: string;
 }
 
 export interface MatchComment {
@@ -340,6 +341,7 @@ export async function fetchMatches(): Promise<Match[]> {
             data.predictedWinRateDiff !== undefined
               ? Number(data.predictedWinRateDiff)
               : undefined,
+          resultImageUrl: data.resultImageUrl || undefined,
         });
       });
 
@@ -423,6 +425,7 @@ export async function fetchMatchById(matchId: string): Promise<Match | null> {
             data.predictedWinRateDiff !== undefined
               ? Number(data.predictedWinRateDiff)
               : undefined,
+          resultImageUrl: data.resultImageUrl || undefined,
         };
       }
     } catch (e) {
@@ -504,6 +507,9 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
       if (newMatch.predictedWinRateDiff !== undefined) {
         firestoreData.predictedWinRateDiff = newMatch.predictedWinRateDiff;
       }
+      if (newMatch.resultImageUrl !== undefined) {
+        firestoreData.resultImageUrl = newMatch.resultImageUrl;
+      }
       const docRef = await addDoc(matchesCol, firestoreData);
       newMatch.id = docRef.id;
 
@@ -544,19 +550,44 @@ export async function saveMatch(matchData: Omit<Match, "id">): Promise<Match> {
   return newMatch;
 }
 
-// Mark match winner
+// Mark match winner (and optionally save/update result screenshot image)
 export async function updateMatchWinner(
   matchId: string,
   winner: "teamA" | "teamB" | null,
   underdogMvp?: string | null,
+  resultImageUrl?: string | null,
 ): Promise<boolean> {
   let success = false;
+  let resolvedImageUrl: string | null | undefined = resultImageUrl;
+
+  // If a new base64 image was provided, try uploading to Firebase Storage first, fallback to compressed base64
+  if (
+    typeof resultImageUrl === "string" &&
+    resultImageUrl.startsWith("data:image/") &&
+    storage &&
+    !matchId.startsWith("local_")
+  ) {
+    try {
+      const storagePath = `matches/result_${matchId}_${Date.now()}.jpg`;
+      resolvedImageUrl = await uploadBase64Image(resultImageUrl, storagePath);
+    } catch (storageErr) {
+      console.warn(
+        "Firebase Storage upload failed, falling back to inline compressed image:",
+        storageErr,
+      );
+      resolvedImageUrl = resultImageUrl;
+    }
+  }
+
   if (db && !matchId.startsWith("local_")) {
     try {
       const docRef = doc(db, "matches", matchId);
       const updatePayload: DocumentData = { winner };
       if (underdogMvp !== undefined) {
         updatePayload.underdogMvp = underdogMvp;
+      }
+      if (resolvedImageUrl !== undefined) {
+        updatePayload.resultImageUrl = resolvedImageUrl || null;
       }
       await updateDoc(docRef, updatePayload);
       success = true;
@@ -579,6 +610,13 @@ export async function updateMatchWinner(
           list[idx].winner = winner;
           if (underdogMvp !== undefined) {
             list[idx].underdogMvp = underdogMvp || undefined;
+          }
+          if (resolvedImageUrl !== undefined) {
+            if (resolvedImageUrl) {
+              list[idx].resultImageUrl = resolvedImageUrl;
+            } else {
+              delete list[idx].resultImageUrl;
+            }
           }
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
           if (!db) success = true;
@@ -1410,6 +1448,7 @@ export async function fetchAllMatches(): Promise<Match[]> {
             data.predictedWinRateDiff !== undefined
               ? Number(data.predictedWinRateDiff)
               : undefined,
+          resultImageUrl: data.resultImageUrl || undefined,
         });
       });
       if (typeof window !== "undefined" && list.length > 0) {

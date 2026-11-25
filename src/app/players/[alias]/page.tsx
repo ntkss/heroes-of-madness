@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, use, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CRTOverlay from "@/components/CRTOverlay";
@@ -47,7 +48,24 @@ export default function PlayerProfilePage({ params }: PageProps) {
   const [expandedMatchIds, setExpandedMatchIds] = useState<
     Record<string, boolean>
   >({});
+  const [previewResultImage, setPreviewResultImage] = useState<{
+    url: string;
+    date: number;
+  } | null>(null);
   const [allMatches, setAllMatches] = useState<Match[]>([]);
+
+  // Lock page scrollbar when fullscreen image lightbox is open
+  useEffect(() => {
+    if (!previewResultImage) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [previewResultImage]);
   const [selectedMode, setSelectedMode] = useState<MatchMode>("TEAM_LANE");
   const [loading, setLoading] = useState(true);
 
@@ -1382,12 +1400,12 @@ export default function PlayerProfilePage({ params }: PageProps) {
                                           ? styles.rosterToggleBtnActive
                                           : ""
                                       }`}
-                                      title="ดูรายชื่อผู้เล่นในแมตช์นี้"
+                                      title="ดูรายชื่อผู้เล่นและรูปผลการแข่งขันในแมตช์นี้"
                                     >
                                       <span>
                                         {isExpanded
-                                          ? "👥 HIDE ▲"
-                                          : "👥 PLAYERS ▼"}
+                                          ? `👥 HIDE${m.rawMatch.resultImageUrl ? " 📸" : ""} ▲`
+                                          : `👥 PLAYERS${m.rawMatch.resultImageUrl ? " 📸" : ""} ▼`}
                                       </span>
                                     </button>
                                   </div>
@@ -1413,6 +1431,57 @@ export default function PlayerProfilePage({ params }: PageProps) {
                                         "teamB",
                                       )}
                                     </div>
+
+                                    {m.rawMatch.resultImageUrl && (
+                                      <div
+                                        className={
+                                          styles.expandedResultImageSection
+                                        }
+                                      >
+                                        <div
+                                          className={
+                                            styles.expandedResultImageHeader
+                                          }
+                                        >
+                                          <span
+                                            className={
+                                              styles.expandedResultImageTitle
+                                            }
+                                          >
+                                            📸 MATCH RESULT SCREENSHOT
+                                          </span>
+                                          <span
+                                            className={
+                                              styles.expandedResultImageHint
+                                            }
+                                          >
+                                            🔍 คลิกที่รูปเพื่อขยายขนาดเต็ม
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setPreviewResultImage({
+                                              url:
+                                                m.rawMatch.resultImageUrl || "",
+                                              date: m.date,
+                                            })
+                                          }
+                                          className={
+                                            styles.expandedResultImageBtn
+                                          }
+                                          title="คลิกเพื่อดูรูปผลการแข่งขันขนาดเต็ม"
+                                        >
+                                          <img
+                                            src={m.rawMatch.resultImageUrl}
+                                            alt={`Match Result ${formatDate(m.date)}`}
+                                            className={
+                                              styles.expandedResultImage
+                                            }
+                                          />
+                                        </button>
+                                      </div>
+                                    )}
                                   </td>
                                 </tr>
                               )}
@@ -1427,6 +1496,58 @@ export default function PlayerProfilePage({ params }: PageProps) {
             </div>
           )}
         </main>
+
+        {/* Fullscreen Lightbox Modal for Match Result Screenshot (Portal to document.body to stay centered in current viewport) */}
+        {previewResultImage &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden"
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                overflow: "hidden",
+              }}
+              onClick={() => setPreviewResultImage(null)}
+            >
+              <div
+                className="bg-slate-950 border-2 border-neon-yellow/80 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(255,210,0,0.25)]"
+                style={{ maxHeight: "90vh", overflow: "hidden" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5 bg-black/80 shrink-0">
+                  <span className="font-pixel text-[8.5px] sm:text-[10px] text-neon-yellow uppercase tracking-wider truncate">
+                    📸 MATCH RESULT SCREENSHOT •{" "}
+                    {formatDate(previewResultImage.date)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewResultImage(null)}
+                    className="font-pixel text-[8px] text-slate-300 hover:text-white bg-rose-950/60 hover:bg-rose-600 border border-rose-500/50 px-2.5 py-1 cursor-pointer transition-colors uppercase shrink-0"
+                  >
+                    ✕ CLOSE
+                  </button>
+                </div>
+                <div
+                  className="p-2 sm:p-4 overflow-hidden flex items-center justify-center bg-black/60"
+                  style={{ overflow: "hidden" }}
+                >
+                  <img
+                    src={previewResultImage.url}
+                    alt="Match Result Fullscreen"
+                    className="max-w-full max-h-[78vh] w-auto h-auto object-contain border border-slate-800"
+                    style={{
+                      maxHeight: "78vh",
+                      maxWidth: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )}
 
         <footer className={styles.footer}>
           <span>

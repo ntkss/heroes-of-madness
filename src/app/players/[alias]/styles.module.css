@@ -473,6 +473,58 @@
   @apply font-pixel text-[6px] px-1 py-0.5 bg-neon-yellow text-black font-bold uppercase tracking-wider shrink-0;
 }
 
+.expandedResultImageSection {
+  @apply border-t border-slate-800/80 bg-black/70 px-3 pb-3 pt-2.5 flex flex-col gap-2;
+}
+
+.expandedResultImageHeader {
+  @apply flex items-center justify-between gap-2 flex-wrap;
+}
+
+.expandedResultImageTitle {
+  @apply font-pixel text-[8px] text-neon-yellow uppercase tracking-wider;
+}
+
+.expandedResultImageHint {
+  @apply font-thai text-[10px] text-slate-400;
+}
+
+.expandedResultImageBtn {
+  @apply relative w-full max-w-xl mx-auto overflow-hidden border-2 border-slate-700 hover:border-neon-yellow bg-slate-950 p-1 cursor-pointer transition-all;
+}
+
+.expandedResultImage {
+  @apply w-full max-h-[320px] object-contain bg-black hover:scale-[1.01] transition-transform duration-200;
+}
+
+.lightboxOverlay {
+  @apply fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6;
+}
+
+.lightboxContent {
+  @apply bg-slate-950 border-2 border-neon-yellow/80 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(255,210,0,0.25)];
+}
+
+.lightboxHeader {
+  @apply flex items-center justify-between border-b border-slate-800 px-4 py-2.5 bg-black/80 shrink-0;
+}
+
+.lightboxTitle {
+  @apply font-pixel text-[8.5px] sm:text-[10px] text-neon-yellow uppercase tracking-wider truncate;
+}
+
+.lightboxCloseBtn {
+  @apply font-pixel text-[8px] text-slate-300 hover:text-white bg-rose-950/60 hover:bg-rose-600 border border-rose-500/50 px-2.5 py-1 cursor-pointer transition-colors uppercase shrink-0;
+}
+
+.lightboxBody {
+  @apply p-2 sm:p-4 overflow-hidden flex items-center justify-center bg-black/60;
+}
+
+.lightboxImg {
+  @apply max-w-full max-h-[78vh] w-auto h-auto object-contain border border-slate-800;
+}
+
 .footer {
   @apply border-t-4 border-slate-800 bg-[#050508] py-4 text-center text-[9px] font-pixel text-slate-600 tracking-widest uppercase relative select-none mt-auto;
 }
